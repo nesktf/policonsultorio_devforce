@@ -52,6 +52,7 @@ model Profesional {
   telefono String @db.VarChar(14)
 
   obras_sociales ProfesionalObraSocial[]
+  turnos Turno[]
 }
 
 model ProfesionalObraSocial {
@@ -74,8 +75,9 @@ model Paciente {
   id_obra_social Int?
   num_obra_social String?
 
-  obra_social ObraSocial? @relation(fields: [id_obra_social], references: [id])
   historias HistoriaClinica[]
+  turnos Turno[]
+  obra_social ObraSocial? @relation(fields: [id_obra_social], references: [id])
 }
 
 model HistoriaClinica {
@@ -92,7 +94,7 @@ enum EstadoTurno {
   CONFIRMADO
 }
 
-model Turnos {
+model Turno {
   id Int @id @default(autoincrement())
   id_profesional Int
   id_paciente Int
