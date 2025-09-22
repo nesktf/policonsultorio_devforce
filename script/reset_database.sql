@@ -1,0 +1,9 @@
+BEGIN;
+  TRUNCATE "User" CASCADE;
+  TRUNCATE "ObraSocial" CASCADE;
+  TRUNCATE "Profesional" CASCADE;
+  TRUNCATE "ProfesionalObraSocial" CASCADE;
+  TRUNCATE "Paciente" CASCADE;
+  TRUNCATE "HistoriaClinica" CASCADE;
+  TRUNCATE "Turno" CASCADE;
+END;
