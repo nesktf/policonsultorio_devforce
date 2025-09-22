@@ -69,10 +69,18 @@ INSERT INTO "HistoriaClinica" ("id", "id_paciente", "id_profesional", "motivo", 
   (2, 2, 2, 'Migrañas', 'El paciente expresa haber empezado a sentir dolores de cabeza luego de comer carne en descomposición. Se le ha recetado un paracetamol y se le ha enviado a casa'),
   (3, 3, 3, 'Traumatismos Múltiples', 'El paciente se rompió 84 huesos del cuerpo al caer en una máquina para empaquetar pepinos. Se han iniciado tratamientos de recuperación'),
   (4, 9, 4, 'Extracción de material extraño', 'El paciente se ha quedado atorado misteriosamente dentro de una pared mientras se la construía. Se han llevado a cabo procedimientos para remover los materiales de construcción de su cintura.'),
-  (5, 5, 7, 'Esquizofrenia', 'El paciente ha empezado a experimentar síntomas de esquizofrenia luego de lastimarse un ojo. Se ha iniciado un tratamiento con medicamentos.'),
+  (5, 4, 7, 'Esquizofrenia', 'El paciente ha empezado a experimentar síntomas de esquizofrenia luego de lastimarse un ojo. Se ha iniciado un tratamiento con medicamentos.'),
   (6, 11, 11, 'Cáncer de pìel', 'El paciente presenta síntomas de cáncer de piel luego de haberse sometido a un experimento con energía misteriosa a manos de una mujer en silla de ruedas. Se ha iniciado quimioterapia.');
 ALTER SEQUENCE "HistoriaClinica_id_seq" RESTART WITH 6;
 
--- Faltan datos de: Turnos
+INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "estado") VALUES
+  (1, 1,  1, '2025-09-21 11:00:00.00', 'CONFIRMADO'),
+  (2, 1,  1, '2025-08-21 11:00:00.00', 'CANCELADO'),
+  (3, 2,  2, '2025-09-21 09:00:00.00', 'CONFIRMADO'),
+  (4, 3,  3, '2025-08-31 09:00:00.00', 'CONFIRMADO'),
+  (5, 4,  9, '2025-08-30 09:30:00.00', 'CONFIRMADO'),
+  (6, 7,  4, '2025-08-29 09:20:00.00', 'CONFIRMADO'),
+  (7, 11, 11, '2025-08-28 10:20:00.00', 'CONFIRMADO');
+ALTER SEQUENCE "Turno_id_seq" RESTART WITH 7;
 
 COMMIT;
