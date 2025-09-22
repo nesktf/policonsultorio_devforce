@@ -13,3 +13,92 @@ datasource db {
   provider = "postgresql"
   url      = "postgresql://funny_user:funny_password@localhost:5440/policonsultorio"
 }
+
+enum Role {
+  MESA_ENTRADA
+  PROFESIONAL
+  GERENTE
+}
+
+model User {
+  id String @id @default(cuid())
+  nombre String
+  email String @unique
+  password String
+  rol Role @default(MESA_ENTRADA)
+}
+
+enum EstadoObraSocial {
+  ACTIVA
+  INACTIVA
+}
+
+model ObraSocial {
+  id Int @id @default(autoincrement())
+  nombre String
+  estado EstadoObraSocial
+
+  pacientes Paciente[]
+  profesionales ProfesionalObraSocial[]
+}
+
+model Profesional {
+  id Int @id @default(autoincrement())
+  nombre String
+  apellido String
+  direccion String
+  dni String @db.VarChar(9)
+  especialidad String
+  telefono String @db.VarChar(14)
+
+  obras_sociales ProfesionalObraSocial[]
+}
+
+model ProfesionalObraSocial {
+  id Int @id @default(autoincrement())
+  id_obra_social Int
+  id_profesional Int
+
+  profesional Profesional @relation(fields: [id_profesional], references: [id])
+  obra_social ObraSocial @relation(fields: [id_obra_social], references: [id])
+}
+
+model Paciente {
+  id Int @id @default(autoincrement())
+  nombre String
+  apellido String
+  dni String @db.VarChar(9)
+  direccion String
+  fecha_nacimiento DateTime
+  telefono String @db.VarChar(14)
+  id_obra_social Int?
+  num_obra_social String?
+
+  obra_social ObraSocial? @relation(fields: [id_obra_social], references: [id])
+  historias HistoriaClinica[]
+}
+
+model HistoriaClinica {
+  id Int @id @default(autoincrement())
+  id_paciente Int
+  motivo String
+  detalle String
+
+  paciente Paciente @relation(fields: [id_paciente], references: [id])
+}
+
+enum EstadoTurno {
+  CANCELADO
+  CONFIRMADO
+}
+
+model Turnos {
+  id Int @id @default(autoincrement())
+  id_profesional Int
+  id_paciente Int
+  fecha DateTime
+  estado EstadoTurno
+
+  paciente Paciente @relation(fields: [id_paciente], references: [id])
+  profesional Profesional @relation(fields: [id_profesional], references: [id])
+}
