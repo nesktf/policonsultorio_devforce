@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_policonsultorio
+    restart: always
+    environment:
+      POSTGRES_USER: funny_user
+      POSTGRES_PASSWORD: funny_password
+      POSTGRES_DB: policonsultorio
+    ports:
+      - "127.0.0.1:5440:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
