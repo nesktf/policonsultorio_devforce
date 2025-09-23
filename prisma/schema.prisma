@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -14,18 +8,82 @@ datasource db {
   url      = "postgresql://funny_user:funny_password@localhost:5440/policonsultorio"
 }
 
+model User {
+  id       String @id @default(cuid())
+  nombre   String
+  email    String @unique
+  password String
+  rol      Role   @default(MESA_ENTRADA)
+}
+
+model ObraSocial {
+  id            Int                     @id @default(autoincrement())
+  nombre        String
+  estado        EstadoObraSocial
+  pacientes     Paciente[]
+  profesionales ProfesionalObraSocial[]
+}
+
+model Profesional {
+  id             Int                     @id @default(autoincrement())
+  nombre         String
+  apellido       String
+  direccion      String
+  dni            String                  @db.VarChar(9)
+  especialidad   String
+  telefono       String                  @db.VarChar(14)
+  historias      HistoriaClinica[]
+  obras_sociales ProfesionalObraSocial[]
+  turnos         Turno[]
+}
+
+model ProfesionalObraSocial {
+  id             Int         @id @default(autoincrement())
+  id_obra_social Int
+  id_profesional Int
+  obra_social    ObraSocial  @relation(fields: [id_obra_social], references: [id])
+  profesional    Profesional @relation(fields: [id_profesional], references: [id])
+}
+
+model Paciente {
+  id               Int               @id @default(autoincrement())
+  nombre           String
+  apellido         String
+  dni              String            @db.VarChar(9)
+  direccion        String
+  fecha_nacimiento DateTime
+  telefono         String            @db.VarChar(14)
+  id_obra_social   Int?
+  num_obra_social  String?
+  historias        HistoriaClinica[]
+  obra_social      ObraSocial?       @relation(fields: [id_obra_social], references: [id])
+  turnos           Turno[]
+}
+
+model HistoriaClinica {
+  id             Int         @id @default(autoincrement())
+  id_paciente    Int
+  motivo         String
+  detalle        String
+  id_profesional Int
+  paciente       Paciente    @relation(fields: [id_paciente], references: [id])
+  profesional    Profesional @relation(fields: [id_profesional], references: [id])
+}
+
+model Turno {
+  id             Int         @id @default(autoincrement())
+  id_profesional Int
+  id_paciente    Int
+  fecha          DateTime
+  estado         EstadoTurno
+  paciente       Paciente    @relation(fields: [id_paciente], references: [id])
+  profesional    Profesional @relation(fields: [id_profesional], references: [id])
+}
+
 enum Role {
   MESA_ENTRADA
   PROFESIONAL
   GERENTE
-}
-
-model User {
-  id String @id @default(cuid())
-  nombre String
-  email String @unique
-  password String
-  rol Role @default(MESA_ENTRADA)
 }
 
 enum EstadoObraSocial {
@@ -33,77 +91,7 @@ enum EstadoObraSocial {
   INACTIVA
 }
 
-model ObraSocial {
-  id Int @id @default(autoincrement())
-  nombre String
-  estado EstadoObraSocial
-
-  pacientes Paciente[]
-  profesionales ProfesionalObraSocial[]
-}
-
-model Profesional {
-  id Int @id @default(autoincrement())
-  nombre String
-  apellido String
-  direccion String
-  dni String @db.VarChar(9)
-  especialidad String
-  telefono String @db.VarChar(14)
-
-  obras_sociales ProfesionalObraSocial[]
-  historias HistoriaClinica[]
-  turnos Turno[]
-}
-
-model ProfesionalObraSocial {
-  id Int @id @default(autoincrement())
-  id_obra_social Int
-  id_profesional Int
-
-  profesional Profesional @relation(fields: [id_profesional], references: [id])
-  obra_social ObraSocial @relation(fields: [id_obra_social], references: [id])
-}
-
-model Paciente {
-  id Int @id @default(autoincrement())
-  nombre String
-  apellido String
-  dni String @db.VarChar(9)
-  direccion String
-  fecha_nacimiento DateTime
-  telefono String @db.VarChar(14)
-  id_obra_social Int?
-  num_obra_social String?
-
-  historias HistoriaClinica[]
-  turnos Turno[]
-  obra_social ObraSocial? @relation(fields: [id_obra_social], references: [id])
-}
-
-model HistoriaClinica {
-  id Int @id @default(autoincrement())
-  id_paciente Int
-  id_profesional Int
-  motivo String
-  detalle String
-
-  paciente Paciente @relation(fields: [id_paciente], references: [id])
-  profesional Profesional @relation(fields: [id_profesional], references: [id])
-}
-
 enum EstadoTurno {
   CANCELADO
   CONFIRMADO
-}
-
-model Turno {
-  id Int @id @default(autoincrement())
-  id_profesional Int
-  id_paciente Int
-  fecha DateTime
-  estado EstadoTurno
-
-  paciente Paciente @relation(fields: [id_paciente], references: [id])
-  profesional Profesional @relation(fields: [id_profesional], references: [id])
 }
