@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   };
 
   let search_state: EstadoObraSocial | undefined;
-  if (params.state_id && typeof(params.state_id) == "number") {
+  if (params.state_id) {
     let id = Number(params.state_id);
     switch (id) {
       case APIEstadoObraSocial.ACTIVA: {
