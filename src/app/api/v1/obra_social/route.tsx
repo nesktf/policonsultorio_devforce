@@ -33,11 +33,15 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  if (params.name) {
-    return NextResponse.json({obras_sociales: await findObrasSociales(params.name, search_state)});
-  } else {
-    return NextResponse.json({obras_sociales: await retrieveObrasSociales(search_state)})
-  }
+  let ret = params.name ? 
+    await findObrasSociales(params.name, search_state) :
+    await retrieveObrasSociales(search_state);
+
+  return NextResponse.json({
+    obras_sociales: ret.map((os) => {
+      return { id: os.id, nombre: os.data.getNombre(), estado: os.data.getEstado() }
+    }),
+  });
 }
 
 function parseState(maybe_id?: number): EstadoObraSocial {

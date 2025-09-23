@@ -2,8 +2,8 @@ import { EstadoObraSocial, PrismaClient } from "@/generated/prisma";
 
 const prisma = new PrismaClient();
 
-type DBId = number;
-type DBData<T> = { id: DBId, data: T };
+export type DBId = number;
+export type DBData<T> = { id: DBId, data: T };
 
 export async function getPacientes() {
   try {
