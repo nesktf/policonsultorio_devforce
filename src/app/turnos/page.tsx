@@ -1,7 +1,7 @@
 // src/app/turnos/page.tsx
 
 import { RegistrarTurnoSection } from '@/components/RegistrarTurnoSection';
-import getTurnosPageData from '@/app/prisma/turnos';
+import getTurnosPageData from '@/prisma/turnos';
 
 export default async function RegistrarTurnoPage() {
   const { pacientes, especialidades, turnos } = await getTurnosPageData();

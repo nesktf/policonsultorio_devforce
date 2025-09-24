@@ -1,4 +1,4 @@
-import { DBId, prisma } from "@/app/prisma/instance";
+import { DBId, prisma } from "@/prisma/instance";
 import { EstadoTurno } from "@/generated/prisma";
 
 interface TurnoResumen {

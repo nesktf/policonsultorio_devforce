@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Profesional, ObraSocial, ProfesionalObraSocial } from '@/generated/prisma';
 import { RegistrarProfesionalModal, type DatosProfesionalFormulario } from '../components/RegistrarProfesionalModal';
-import { crearProfesional } from '@/app/prisma/profesional';
+import { crearProfesional } from '@/prisma/profesional';
 
 type ProfesionalConRelaciones = Profesional & {
   obras_sociales: (ProfesionalObraSocial & {

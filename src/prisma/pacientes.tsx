@@ -1,4 +1,4 @@
-import { DBId, prisma } from "@/app/prisma/instance";
+import { DBId, prisma } from "@/prisma/instance";
 
 export async function getPacientes() {
   try {

@@ -1,4 +1,4 @@
-import { prisma } from "@/app/prisma/instance";
+import { prisma } from "@/prisma/instance";
 
 export async function getHistoriaClinica(pacienteId: number) {
   try {

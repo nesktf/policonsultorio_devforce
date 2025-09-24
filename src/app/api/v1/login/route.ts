@@ -1,7 +1,7 @@
 // src/app/api/login/route.ts
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
-import findUserByEmail from "@/app/prisma/login";
+import findUserByEmail from "@/prisma/login";
 
 /** Función que genera hash SHA-256 en hexadecimal */
 function sha256Hex(input: string) {

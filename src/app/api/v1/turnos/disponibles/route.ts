@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getProfesionalturnos } from '@/app/prisma/turnos';
+import { getProfesionalturnos } from '@/prisma/turnos';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

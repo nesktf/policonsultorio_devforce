@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { profesionalHasTurnoAt, registerTurno, TurnoData } from '@/app/prisma/turnos';
+import { profesionalHasTurnoAt, registerTurno, TurnoData } from '@/prisma/turnos';
 import type { EstadoTurno } from '@/generated/prisma';
-import { getProfesional } from '@/app/prisma/profesional';
-import { getPaciente } from '@/app/prisma/pacientes';
+import { getProfesional } from '@/prisma/profesional';
+import { getPaciente } from '@/prisma/pacientes';
 
 interface TurnoPayload {
   pacienteId?: unknown;

@@ -1,4 +1,4 @@
-import { DBId, prisma } from "@/app/prisma/instance";
+import { DBId, prisma } from "@/prisma/instance";
 import type { DatosProfesionalFormulario } from '@/components/RegistrarProfesionalModal';
 
 export async function crearProfesional(datos: DatosProfesionalFormulario) {

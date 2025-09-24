@@ -13,7 +13,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch("/api/login", {
+    const res = await fetch("/api/v1/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });

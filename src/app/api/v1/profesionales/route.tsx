@@ -1,7 +1,7 @@
 // src/app/api/profesionales/route.ts
 
 import { NextResponse } from 'next/server';
-import { getProfesionalesEspecialidad } from '@/app/prisma/profesional';
+import { getProfesionalesEspecialidad } from '@/prisma/profesional';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

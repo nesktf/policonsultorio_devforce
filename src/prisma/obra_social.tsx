@@ -1,4 +1,4 @@
-import { prisma, DBId, DBData } from "@/app/prisma/instance";
+import { prisma, DBId, DBData } from "@/prisma/instance";
 import { EstadoObraSocial } from "@/generated/prisma";
 
 export class ObraSocialData {
