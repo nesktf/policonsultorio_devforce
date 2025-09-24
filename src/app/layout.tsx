@@ -2,6 +2,9 @@
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Header } from "@/components/Header";
+import { Sidebar } from "@/components/Sidebar";
+import { UserProvider } from "@/context/user";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mi Aplicación",
-  description: "Sistema básico por roles",
+  title: "DevForce Policonsultorio",
+  description: "Sistema de gestión para policonsultorios",
 };
 
 export default function RootLayout({
@@ -27,9 +30,15 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
-        {children}
+        <UserProvider>
+          <Header />
+          <Sidebar />
+          <main className="pt-14 pl-64">
+            {children}
+          </main>
+        </UserProvider>
       </body>
     </html>
   );
