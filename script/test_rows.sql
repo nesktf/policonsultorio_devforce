@@ -2,7 +2,10 @@ BEGIN;
 
 -- Admin has "funny_password" as password. Stored a sha256 sum
 INSERT INTO "User" ("id", "nombre", "email", "password", "rol") VALUES
-  (1, 'admin', 'admin@admin.com', 'c1acb9b96414242b60f72c58c4f8006865ddd7ed08d82bb78bc4198dfb2e1f37', 'GERENTE');
+  (1, 'admin', 'admin@gmail.com', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'GERENTE'),
+  (2, 'profesional', 'profesional@gmail.com', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'PROFESIONAL'),
+  (3, 'mesa', 'mesa@gmail.com', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'MESA_ENTRADA');
+
 -- ALTER SEQUENCE "User_id_seq" RESTART WITH 1;
 
 INSERT INTO "ObraSocial" ("id", "nombre", "estado") VALUES
