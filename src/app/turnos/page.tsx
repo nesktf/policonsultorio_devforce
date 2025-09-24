@@ -1,38 +1,75 @@
 // src/app/turnos/page.tsx
 
-import { PrismaClient } from '@/generated/prisma';
-import { RegistrarTurnoClient } from '@/components/RegistrarTurnoClient';
+import { RegistrarTurnoSection } from '@/components/RegistrarTurnoSection';
+import prisma from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+interface TurnoResumen {
+  id: number;
+  paciente: string;
+  profesional: string;
+  fechaIso: string;
+}
 
-async function getFormData() {
+async function getPageData() {
   try {
-    const [pacientes, especialidades] = await Promise.all([
+    const [pacientes, especialidades, turnos] = await Promise.all([
       prisma.paciente.findMany({
         select: {
           id: true,
+          nombre: true,
           apellido: true,
           dni: true,
-        }
+        },
       }),
-      // CAMBIO AQUÍ: Esta es la nueva forma de obtener las especialidades.
-      // Pedimos solo el campo 'especialidad' y que los resultados sean distintos (únicos).
       prisma.profesional.findMany({
         select: {
           especialidad: true,
         },
         distinct: ['especialidad'],
-      })
+      }),
+      prisma.turno.findMany({
+        include: {
+          paciente: {
+            select: {
+              nombre: true,
+              apellido: true,
+            },
+          },
+          profesional: {
+            select: {
+              nombre: true,
+              apellido: true,
+            },
+          },
+        },
+        orderBy: {
+          fecha: 'asc',
+        },
+      }),
     ]);
-    return { pacientes, especialidades };
+
+    const turnosResumen: TurnoResumen[] = turnos.map((turno) => ({
+      id: turno.id,
+      paciente: `${turno.paciente.apellido}, ${turno.paciente.nombre}`,
+      profesional: `${turno.profesional.apellido}, ${turno.profesional.nombre}`,
+      fechaIso: turno.fecha.toISOString(),
+    }));
+
+    return { pacientes, especialidades, turnos: turnosResumen };
   } catch (error) {
-    console.error('Error fetching form data:', error);
-    return { pacientes: [], especialidades: [] };
+    console.error('Error fetching data for registrar turno page:', error);
+    return { pacientes: [], especialidades: [], turnos: [] };
   }
 }
 
 export default async function RegistrarTurnoPage() {
-  const { pacientes, especialidades } = await getFormData();
+  const { pacientes, especialidades, turnos } = await getPageData();
 
-  return <RegistrarTurnoClient pacientes={pacientes} especialidades={especialidades} />;
+  return (
+    <RegistrarTurnoSection
+      pacientes={pacientes}
+      especialidades={especialidades}
+      turnosIniciales={turnos}
+    />
+  );
 }
