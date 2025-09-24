@@ -9,7 +9,10 @@ export async function createPatient(data: {
   apellido: string;
   dni: string;
   telefono: string;
+  direccion: string;
+  fechaNacimiento: Date;
   obraSocialId: number | null;
+  numObraSocial: string | null;
 }) {
   try {
     // First, get the highest ID to manually handle auto-increment
@@ -28,14 +31,26 @@ export async function createPatient(data: {
         apellido: data.apellido,
         dni: data.dni,
         telefono: data.telefono,
+        direccion: data.direccion,
+        fecha_nacimiento: data.fechaNacimiento,
+        num_obra_social: data.numObraSocial,
         id_obra_social: data.obraSocialId,
-        direccion: 'Pendiente de actualización', // Required field
-        fecha_nacimiento: new Date(), // Required field
       },
       include: {
         obra_social: true,
       },
     });
+
+    // Crear registro inicial de historia clínica
+    await prisma.historiaClinica.create({
+      data: {
+        id_paciente: newId,
+        id_profesional: 1, // ID del profesional que registra
+        motivo: "Registro inicial del paciente",
+        detalle: "Se crea la historia clínica del paciente."
+      }
+    });
+
     return newPatient;
   } catch (error) {
     console.error('Error creating patient:', error);

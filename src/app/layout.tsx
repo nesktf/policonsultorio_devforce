@@ -1,7 +1,10 @@
+// src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
+import { UserProvider } from "@/context/user";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,19 +24,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
-        <Header />
-        <Sidebar />
-        <main className="pt-14 pl-64">
-          {children}
-        </main>
+        <UserProvider>
+          <Header />
+          <Sidebar />
+          <main className="pt-14 pl-64">
+            {children}
+          </main>
+        </UserProvider>
       </body>
     </html>
   );

@@ -11,7 +11,10 @@ interface RegisterPatientModalProps {
     apellido: string;
     dni: string;
     telefono: string;
+    direccion: string;
+    fechaNacimiento: Date;
     obraSocialId: number | null;
+    numObraSocial: string | null;
   }) => Promise<void>;
   obrasSociales: ObraSocial[];
 }
@@ -22,9 +25,13 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
     apellido: '',
     dni: '',
     telefono: '',
+    direccion: '',
+    fechaNacimiento: '',
     obraSocialId: '',
+    numObraSocial: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,18 +39,30 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
     try {
       await onSubmit({
         ...formData,
+        fechaNacimiento: new Date(formData.fechaNacimiento),
         obraSocialId: formData.obraSocialId ? parseInt(formData.obraSocialId) : null,
+        numObraSocial: formData.obraSocialId ? formData.numObraSocial : null,
       });
       setFormData({
         nombre: '',
         apellido: '',
         dni: '',
         telefono: '',
+        direccion: '',
+        fechaNacimiento: '',
         obraSocialId: '',
+        numObraSocial: '',
       });
-      onClose();
+      setNotification({
+        type: 'success',
+        message: 'Paciente registrado exitosamente'
+      });
     } catch (error) {
       console.error('Error al registrar paciente:', error);
+      setNotification({
+        type: 'error',
+        message: 'Error al registrar el paciente. Por favor, intente nuevamente.'
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -52,13 +71,13 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl transform transition-all">
+    <div className="fixed inset-0 bg-[#4D94C8]/40 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl transform transition-all border-2 border-[#AFE1EA]">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-xl font-bold text-gray-900">Registrar Nuevo Paciente</h3>
+          <h3 className="text-xl font-bold text-[#0AA2C7]">Registrar Nuevo Paciente</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-[#4D94C8] hover:text-[#0AA2C7] transition-colors"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -77,7 +96,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               required
               value={formData.nombre}
               onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
             />
           </div>
 
@@ -91,7 +110,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               required
               value={formData.apellido}
               onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
             />
           </div>
 
@@ -106,7 +125,35 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               maxLength={9}
               value={formData.dni}
               onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="direccion" className="block text-sm font-medium text-gray-700">
+              Dirección
+            </label>
+            <input
+              type="text"
+              id="direccion"
+              required
+              value={formData.direccion}
+              onChange={(e) => setFormData({ ...formData, direccion: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="fechaNacimiento" className="block text-sm font-medium text-gray-700">
+              Fecha de Nacimiento
+            </label>
+            <input
+              type="date"
+              id="fechaNacimiento"
+              required
+              value={formData.fechaNacimiento}
+              onChange={(e) => setFormData({ ...formData, fechaNacimiento: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
             />
           </div>
 
@@ -118,7 +165,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               id="obraSocial"
               value={formData.obraSocialId}
               onChange={(e) => setFormData({ ...formData, obraSocialId: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
             >
               <option value="">Sin obra social</option>
               {obrasSociales.map((os) => (
@@ -127,6 +174,20 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="numObraSocial" className="block text-sm font-medium text-gray-700">
+              Número de Obra Social
+            </label>
+            <input
+              type="text"
+              id="numObraSocial"
+              value={formData.numObraSocial}
+              disabled={!formData.obraSocialId}
+              onChange={(e) => setFormData({ ...formData, numObraSocial: e.target.value })}
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200 disabled:bg-gray-100 disabled:text-gray-500"
+            />
           </div>
 
           <div>
@@ -140,7 +201,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               maxLength={14}
               value={formData.telefono}
               onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200"
+              className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
             />
           </div>
 
@@ -148,19 +209,62 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 text-sm text-[#4D94C8] border border-[#AFE1EA] rounded-md hover:bg-[#E4F1F9] focus:outline-none focus:ring-2 focus:ring-[#0AA2C7] transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
+              className="px-4 py-2 text-sm text-white bg-[#18AEFB] rounded-md hover:bg-[#0AA2C7] focus:outline-none focus:ring-2 focus:ring-[#AFE1EA] disabled:bg-[#4D94C8] transition-colors"
             >
               {isSubmitting ? 'Registrando...' : 'Registrar'}
             </button>
           </div>
         </form>
+
+        {notification && (
+          <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
+              <div className="flex flex-col items-center text-center">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
+                  notification.type === 'success' ? 'bg-green-100 text-green-500' : 'bg-red-100 text-red-500'
+                }`}>
+                  {notification.type === 'success' ? (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </div>
+                <h3 className={`text-lg font-semibold mb-2 ${
+                  notification.type === 'success' ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {notification.type === 'success' ? 'Éxito' : 'Error'}
+                </h3>
+                <p className="text-gray-600 mb-6">{notification.message}</p>
+                <button
+                  onClick={() => {
+                    setNotification(null);
+                    if (notification.type === 'success') {
+                      onClose();
+                    }
+                  }}
+                  className={`px-6 py-2 text-sm text-white rounded-md focus:outline-none focus:ring-2 ${
+                    notification.type === 'success' 
+                      ? 'bg-green-500 hover:bg-green-600 focus:ring-green-200'
+                      : 'bg-red-500 hover:bg-red-600 focus:ring-red-200'
+                  }`}
+                >
+                  Aceptar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
