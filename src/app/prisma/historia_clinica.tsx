@@ -1,8 +1,4 @@
-'use server';
-
-import { PrismaClient } from '@/generated/prisma';
-
-const prisma = new PrismaClient();
+import { prisma } from "@/app/prisma/instance";
 
 export async function getHistoriaClinica(pacienteId: number) {
   try {

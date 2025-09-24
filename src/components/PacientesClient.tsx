@@ -5,8 +5,8 @@ import type { Paciente, ObraSocial } from '@/generated/prisma';
 import { PatientSearch } from '@/components/PatientSearch';
 import { RegisterPatientModal } from '@/components/RegisterPatientModal';
 import { HistoriaClinicaModal } from '@/components/HistoriaClinicaModal';
-import { createPatient } from '@/app/actions/patients';
-import { getHistoriaClinica } from '@/app/actions/historia-clinica';
+import { createPatient } from '@/app/prisma/pacientes';
+import { getHistoriaClinica } from '@/app/prisma/historia_clinica';
 
 type PacienteWithObraSocial = Paciente & {
   obra_social: ObraSocial | null;

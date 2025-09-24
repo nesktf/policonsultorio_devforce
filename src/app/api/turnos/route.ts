@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { profesionalHasTurnoAt, registerTurno, TurnoData } from '@/app/prisma/turnos';
 import type { EstadoTurno } from '@/generated/prisma';
+import { getProfesional } from '@/app/prisma/profesional';
+import { getPaciente } from '@/app/prisma/pacientes';
 
 interface TurnoPayload {
   pacienteId?: unknown;
@@ -83,8 +85,8 @@ export async function POST(request: Request) {
 
   try {
     const [paciente, profesional] = await Promise.all([
-      prisma.paciente.findUnique({ where: { id: parsedPacienteId } }),
-      prisma.profesional.findUnique({ where: { id: parsedProfesionalId } }),
+      getPaciente(parsedPacienteId),
+      getProfesional(parsedProfesionalId),
     ]);
 
     if (!paciente) {
@@ -101,14 +103,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const turnoExistente = await prisma.turno.findFirst({
-      where: {
-        id_profesional: parsedProfesionalId,
-        fecha: parsedFecha,
-      },
-    });
-
-    if (turnoExistente) {
+    if (await profesionalHasTurnoAt(parsedProfesionalId, parsedFecha)) {
       return NextResponse.json(
         { error: 'El profesional ya tiene un turno registrado para la fecha y hora indicadas.' },
         { status: 409 }
@@ -119,24 +114,9 @@ export async function POST(request: Request) {
     const turnoIso = parsedFecha.toISOString();
     const detalleHistoria = `${trimmedDetalle} | Registro: ${fechaRegistroIso}. Paciente DNI ${paciente.dni}. Turno ${turnoIso} con ${profesional.apellido}, ${profesional.nombre} (ID ${profesional.id}). Estado ${estadoTurno}.`;
 
-    const [nuevoTurno] = await prisma.$transaction([
-      prisma.turno.create({
-        data: {
-          id_paciente: parsedPacienteId,
-          id_profesional: parsedProfesionalId,
-          fecha: parsedFecha,
-          estado: estadoTurno,
-        },
-      }),
-      prisma.historiaClinica.create({
-        data: {
-          id_paciente: parsedPacienteId,
-          id_profesional: parsedProfesionalId,
-          motivo: trimmedMotivo,
-          detalle: detalleHistoria,
-        },
-      }),
-    ]);
+    let data = new TurnoData(parsedPacienteId, parsedProfesionalId, parsedFecha,
+                             estadoTurno, trimmedMotivo, detalleHistoria);
+    let nuevoTurno = await registerTurno(data);
 
     return NextResponse.json(nuevoTurno, { status: 201 });
   } catch (error) {
