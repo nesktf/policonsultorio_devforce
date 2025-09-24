@@ -1,30 +1,6 @@
-import { EstadoObraSocial, PrismaClient } from "@/generated/prisma";
+import { prisma, DBId, DBData } from "@/prisma/instance";
+import { EstadoObraSocial } from "@/generated/prisma";
 
-const prisma = new PrismaClient();
-
-export type DBId = number;
-export type DBData<T> = { id: DBId, data: T };
-
-export async function getPacientes() {
-  try {
-    const [pacientes, obrasSociales] = await Promise.all([
-      prisma.paciente.findMany({
-        include: {
-          obra_social: true,
-        },
-      }),
-      prisma.obraSocial.findMany({
-        where: {
-          estado: 'ACTIVA'
-        }
-      })
-    ]);
-    return { pacientes, obrasSociales };
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    return { pacientes: [], obrasSociales: [] };
-  }
-}
 export class ObraSocialData {
   private nombre: string;
   private estado: EstadoObraSocial;

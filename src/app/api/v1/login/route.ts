@@ -1,7 +1,7 @@
 // src/app/api/login/route.ts
-import { prisma } from "../../lib/prisma";
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
+import findUserByEmail from "@/prisma/login";
 
 /** Función que genera hash SHA-256 en hexadecimal */
 function sha256Hex(input: string) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     // Buscar usuario por email
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await findUserByEmail(email);
 
     if (!user) {
       return NextResponse.json(

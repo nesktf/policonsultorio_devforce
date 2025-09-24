@@ -85,7 +85,7 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
     setIsLoadingProfesionales(true);
     try {
       const response = await fetch(
-        `/api/profesionales?especialidad=${encodeURIComponent(nuevaEspecialidad)}`,
+        `/api/v1/profesionales?especialidad=${encodeURIComponent(nuevaEspecialidad)}`,
         { cache: 'no-store' }
       );
       if (!response.ok) {
@@ -130,7 +130,7 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
     try {
       const fechaHoraIso = new Date(`${fecha}T${horario}:00`).toISOString();
 
-      const response = await fetch('/api/turnos', {
+      const response = await fetch('/api/v1/turnos', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -227,7 +227,7 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
 
       try {
         const response = await fetch(
-          `/api/turnos/disponibles?profesionalId=${profesionalId}&fecha=${fecha}&timezoneOffset=${timezoneOffsetMinutes}`,
+          `/api/v1/turnos/disponibles?profesionalId=${profesionalId}&fecha=${fecha}&timezoneOffset=${timezoneOffsetMinutes}`,
           { cache: 'no-store' }
         );
 

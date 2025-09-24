@@ -1,7 +1,7 @@
 // src/app/api/profesionales/route.ts
 
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { getProfesionalesEspecialidad } from '@/prisma/profesional';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -22,19 +22,7 @@ export async function GET(request: Request) {
 
   try {
     // Usamos Prisma para buscar todos los profesionales que coincidan con la especialidad
-    const profesionales = await prisma.profesional.findMany({
-      where: {
-        especialidad,
-      },
-      select: {
-        id: true,
-        nombre: true,
-        apellido: true,
-      },
-      orderBy: {
-        apellido: 'asc',
-      },
-    });
+    const profesionales = getProfesionalesEspecialidad(especialidad);
 
     // Devolvemos solo los campos necesarios para el selector del cliente
     return NextResponse.json(profesionales, {

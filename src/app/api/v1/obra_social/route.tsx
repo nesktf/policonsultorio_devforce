@@ -1,4 +1,4 @@
-import { createObraSocial, findObrasSociales, ObraSocialData, retrieveObrasSociales, updateObraSocial } from "@/app/prisma"
+import { createObraSocial, findObrasSociales, ObraSocialData, retrieveObrasSociales, updateObraSocial } from "@/prisma/obra_social"
 import { EstadoObraSocial } from "@/generated/prisma";
 import { NextRequest, NextResponse } from "next/server";
 

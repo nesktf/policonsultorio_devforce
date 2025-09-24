@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { getProfesionalturnos } from '@/prisma/turnos';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -70,18 +70,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const turnos = await prisma.turno.findMany({
-      where: {
-        id_profesional: profesionalId,
-        fecha: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-      },
-      select: {
-        fecha: true,
-      },
-    });
+    const turnos = await getProfesionalturnos(profesionalId, startOfDay, endOfDay);
 
     const takenSlots = new Set(
       turnos.map(({ fecha }) => {

@@ -1,8 +1,25 @@
-'use server';
+import { DBId, prisma } from "@/prisma/instance";
 
-import { PrismaClient } from '@/generated/prisma';
-
-const prisma = new PrismaClient();
+export async function getPacientes() {
+  try {
+    const [pacientes, obrasSociales] = await Promise.all([
+      prisma.paciente.findMany({
+        include: {
+          obra_social: true,
+        },
+      }),
+      prisma.obraSocial.findMany({
+        where: {
+          estado: 'ACTIVA'
+        }
+      })
+    ]);
+    return { pacientes, obrasSociales };
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    return { pacientes: [], obrasSociales: [] };
+  }
+}
 
 export async function createPatient(data: {
   nombre: string;
@@ -56,4 +73,8 @@ export async function createPatient(data: {
     console.error('Error creating patient:', error);
     throw error;
   }
+}
+
+export async function getPaciente(id: DBId) {
+  return await prisma.paciente.findUnique({ where: { id } });
 }
