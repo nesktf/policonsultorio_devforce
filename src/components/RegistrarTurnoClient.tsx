@@ -13,6 +13,7 @@ interface RegistrarTurnoProps {
     paciente: string;
     profesional: string;
   }) => void;
+  onCloseModal?: () => void;
 }
 
 interface ProfesionalOption {
@@ -21,7 +22,7 @@ interface ProfesionalOption {
   apellido: string;
 }
 
-export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistrado }: RegistrarTurnoProps) {
+export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistrado, onCloseModal }: RegistrarTurnoProps) {
   const [pacienteId, setPacienteId] = useState<string>('');
   const [pacienteBusqueda, setPacienteBusqueda] = useState<string>('');
   const [isPacienteListOpen, setIsPacienteListOpen] = useState(false);
@@ -42,9 +43,11 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
 
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
 
   const noEspecialidades = especialidades.length === 0;
   const pacienteSearchContainerRef = useRef<HTMLDivElement | null>(null);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePacienteSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -171,6 +174,14 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
       setHorarios((prev) => prev.filter((slot) => slot !== horario));
       setMotivo('');
       setDetalle('');
+      setShowSuccessOverlay(true);
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+      successTimeoutRef.current = setTimeout(() => {
+        setShowSuccessOverlay(false);
+        onCloseModal?.();
+      }, 1500);
     } catch (error) {
       console.error('Error al registrar turno:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Error al registrar el turno.');
@@ -190,6 +201,14 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -262,7 +281,17 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
         <h2 className="text-2xl font-bold text-black">Registrar un Nuevo Turno</h2>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-8">
+      <div className="relative bg-white rounded-xl shadow-lg border-2 border-gray-200 p-8">
+        {showSuccessOverlay ? (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#E4F1F9]/80">
+            <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-8 py-6 shadow-lg border border-[#AFE1EA]">
+              <svg className="h-12 w-12 text-[#0AA2C7] animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-lg font-semibold text-[#0AA2C7]">Turno registrado con éxito</p>
+            </div>
+          </div>
+        ) : null}
         <form onSubmit={handleSubmit} className="space-y-6">
           {successMessage ? (
             <div className="rounded-md bg-green-100 border border-green-300 text-green-700 px-4 py-2">
@@ -452,7 +481,7 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
           <div className="text-right pt-4">
             <button
               type="submit"
-              className="px-6 py-3 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer"
+              className="px-6 py-3 text-sm font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               disabled={isSubmitting}
             >
               {isSubmitting ? 'Registrando...' : 'Confirmar Turno'}

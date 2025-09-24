@@ -31,15 +31,18 @@ export function RegistrarTurnoSection({ pacientes, especialidades, turnosInicial
   }, [isOpen]);
 
   return (
-    <div className="p-6 space-y-8">
-      <div className="flex justify-start mt-6 mb-4">
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-        >
-          Registrar un nuevo turno
-        </button>
+    <div className="p-6 bg-[#E4F1F9] space-y-6">
+      <div className="flex flex-col gap-4 mb-2">
+        <h2 className="text-2xl font-bold text-[#0AA2C7]">Listado de Turnos</h2>
+        <div>
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="px-4 py-2 text-sm text-white bg-[#18AEFB] rounded-lg hover:bg-[#4D94C8] focus:outline-none focus:ring-2 focus:ring-[#0AA2C7] cursor-pointer transition-colors"
+          >
+            Registrar un nuevo turno
+          </button>
+        </div>
       </div>
 
       {!isOpen ? null : (
@@ -75,41 +78,27 @@ export function RegistrarTurnoSection({ pacientes, especialidades, turnosInicial
                       { id, paciente, profesional, fechaIso },
                     ].sort((a, b) => new Date(a.fechaIso).getTime() - new Date(b.fechaIso).getTime());
                   });
-                  setIsOpen(false);
                 }}
+                onCloseModal={() => setIsOpen(false)}
               />
             </div>
           </div>
         </div>
       )}
 
-      <section className="bg-white rounded-xl shadow-lg border-2 border-gray-200 p-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">Turnos Registrados</h3>
-          <p className="text-sm text-gray-500">Vista preliminar antes del calendario</p>
-        </div>
+      <section className="bg-white rounded-xl shadow-lg border-2 border-[#AFE1EA]">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="w-full text-sm text-left">
+            <thead className="text-sm border-b-2 border-[#AFE1EA] bg-[#E4F1F9]">
               <tr>
-                <th scope="col" className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  ID
-                </th>
-                <th scope="col" className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Paciente
-                </th>
-                <th scope="col" className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Profesional
-                </th>
-                <th scope="col" className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th scope="col" className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Hora
-                </th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">ID</th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">Paciente</th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">Profesional</th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">Fecha</th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">Hora</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody>
               {turnos.length > 0 ? (
                 turnos.map((turno) => {
                   const timeZone = 'America/Argentina/Buenos_Aires';
@@ -128,18 +117,18 @@ export function RegistrarTurnoSection({ pacientes, especialidades, turnosInicial
                   }).format(fechaDate);
 
                   return (
-                    <tr key={turno.id}>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{turno.id}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{turno.paciente}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{turno.profesional}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{fecha}</td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{hora}</td>
+                    <tr key={turno.id} className="border-b border-gray-200 hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 font-medium text-gray-900">{turno.id}</td>
+                      <td className="px-6 py-4 text-gray-900">{turno.paciente}</td>
+                      <td className="px-6 py-4 text-gray-900">{turno.profesional}</td>
+                      <td className="px-6 py-4 text-gray-900">{fecha}</td>
+                      <td className="px-6 py-4 text-gray-600">{hora}</td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td className="px-4 py-6 text-center text-sm text-gray-500" colSpan={5}>
+                  <td className="px-6 py-6 text-center text-sm text-gray-500" colSpan={5}>
                     Aún no hay turnos registrados.
                   </td>
                 </tr>
