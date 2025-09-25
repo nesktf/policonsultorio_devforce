@@ -63,6 +63,7 @@ function parseState(maybe_id?: number): EstadoObraSocial {
 export async function POST(req: NextRequest) {
   try {
     let { nombre, estado } = await req.json();
+    console.log(`${nombre} ${estado}`)
     if (typeof(nombre) != "string") {
       throw Error("Nombre inválido");
     }
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     let { id, nombre, estado } = await req.json();
+    console.log(`${id} ${nombre} ${estado}`)
     if (typeof(id) != "number") {
       throw Error("ID inválido");
     }
