@@ -28,7 +28,7 @@ export default function LoginPage() {
     // Guardar usuario en localStorage
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    router.push("/sistema/secciones/pacientes");
+    router.push("/sist/pacientes");
 
     /*// Redirigir por rol
     switch (data.user.rol) {

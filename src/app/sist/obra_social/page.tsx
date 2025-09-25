@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { APIEstadoObraSocial } from "../../../../api/v1/obra_social/route";
+import { APIEstadoObraSocial } from "@/app/api/v1/obra_social/route";
 import { EstadoObraSocial } from "@/generated/prisma";
 
 function buildGETQuery(name?: string, state?: APIEstadoObraSocial): string {

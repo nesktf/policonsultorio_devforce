@@ -18,9 +18,6 @@ export function Sidebar() {
     GERENTE: "bg-purple-100 text-purple-800",
   }[user.role];
 
-  // Base de ruta según el rol
-  const baseRoute = `/secciones/roles/${user.role.toLowerCase()}`;
-
   return (
     <aside className="fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-lg">
       <div className="p-6">
@@ -41,7 +38,7 @@ export function Sidebar() {
           <ul className="space-y-2">
             <li>
               <Link
-                href={`${baseRoute}/pacientes`}
+                href="/sist/pacientes"
                 className="flex items-center px-4 py-3 text-gray-700 rounded-lg transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-sm active:bg-indigo-100"
               >
                 <span className="ml-3 font-medium">Pacientes</span>
@@ -49,7 +46,7 @@ export function Sidebar() {
             </li>
             <li>
               <Link
-                href={`${baseRoute}/profesionales`}
+                href="/sist/profesionales"
                 className="flex items-center px-4 py-3 text-gray-700 rounded-lg transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-sm active:bg-indigo-100"
               >
                 <span className="ml-3 font-medium">Profesionales</span>
@@ -57,7 +54,7 @@ export function Sidebar() {
             </li>
             <li>
               <Link
-                href={`${baseRoute}/turnos`}
+                href="/sist/turnos"
                 className="flex items-center px-4 py-3 text-gray-700 rounded-lg transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-sm active:bg-indigo-100"
               >
                 <span className="ml-3 font-medium">Turnos</span>
@@ -65,7 +62,7 @@ export function Sidebar() {
             </li>
             <li>
               <Link
-                href={`${baseRoute}/obra_social`}
+                href="/sist/obra_social"
                 className="flex items-center px-4 py-3 text-gray-700 rounded-lg transition-all hover:bg-indigo-50 hover:text-indigo-600 hover:shadow-sm active:bg-indigo-100"
               >
                 <span className="ml-3 font-medium">Obras sociales</span>
