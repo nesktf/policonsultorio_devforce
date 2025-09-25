@@ -1,10 +1,10 @@
 BEGIN;
 
--- Admin has "funny_password" as password. Stored a sha256 sum
+-- Admin has "admin" as password. Stored a sha256 sum
 INSERT INTO "User" ("id", "nombre", "email", "password", "rol") VALUES
-  (1, 'admin', 'admin@gmail.com', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'GERENTE'),
-  (2, 'profesional', 'profesional@gmail.com', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'PROFESIONAL'),
-  (3, 'mesa', 'mesa@gmail.com', '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4', 'MESA_ENTRADA');
+  (1, 'admin', 'admin@admin.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'GERENTE'),
+  (2, 'profesional', 'profesional@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (3, 'mesa', 'mesa@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'MESA_ENTRADA');
 
 -- ALTER SEQUENCE "User_id_seq" RESTART WITH 1;
 

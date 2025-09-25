@@ -28,20 +28,22 @@ export default function LoginPage() {
     // Guardar usuario en localStorage
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    // Redirigir por rol
+    router.push("/sist/pacientes");
+
+    /*// Redirigir por rol
     switch (data.user.rol) {
       case "GERENTE":
-        router.push("secciones/roles/gerente");
+        router.push("secciones/roles/gerente/pacientes");
         break;
       case "MESA_ENTRADA":
-        router.push("secciones/roles/mesa");
+        router.push("secciones/roles/mesa_entrada/pacientes");
         break;
       case "PROFESIONAL":
-        router.push("/secciones/roles/profesional");
+        router.push("secciones/roles/profesional/pacientes");
         break;
       default:
         alert("Rol no válido");
-    }
+    }*/
   };
 
   return (
