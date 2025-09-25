@@ -28,7 +28,9 @@ export default function LoginPage() {
     // Guardar usuario en localStorage
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    // Redirigir por rol
+    router.push("/sistema/secciones/pacientes");
+
+    /*// Redirigir por rol
     switch (data.user.rol) {
       case "GERENTE":
         router.push("secciones/roles/gerente/pacientes");
@@ -41,7 +43,7 @@ export default function LoginPage() {
         break;
       default:
         alert("Rol no válido");
-    }
+    }*/
   };
 
   return (
