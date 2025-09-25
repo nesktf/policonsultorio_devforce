@@ -14,7 +14,7 @@ INSERT INTO "ObraSocial" ("id", "nombre", "estado") VALUES
   (3, 'Swiss Medical', 'ACTIVA'),
   (4, 'Hourai Services', 'ACTIVA'),
   (5, 'Scarlet Services', 'INACTIVA');
-ALTER SEQUENCE "ObraSocial_id_seq" RESTART WITH 5;
+ALTER SEQUENCE "ObraSocial_id_seq" RESTART WITH 6;
 
 INSERT INTO "Profesional" ("id", "nombre", "apellido", "direccion", "dni", "especialidad", "telefono") VALUES
   (1, 'Eirin', 'Yagokoro', 'Forest of the Lost 1452', '3123412', 'Cardiología', '+543871234564'),
@@ -28,7 +28,7 @@ INSERT INTO "Profesional" ("id", "nombre", "apellido", "direccion", "dni", "espe
   (9, 'Yukari', 'Yakumo', 'Boundary 60', '66778899', 'Ginecología', '+543879012345'),
   (10, 'Ran', 'Yakumo', 'Boundary 61', '00112233', 'Oftalmología', '+543870123456'),
   (11, 'Chen', 'Yakumo', 'Boundary 62', '00112244', 'Dermatología', '+543870233456');
-ALTER SEQUENCE "Profesional_id_seq" RESTART WITH 11;
+ALTER SEQUENCE "Profesional_id_seq" RESTART WITH 12;
 
 INSERT INTO "ProfesionalObraSocial" ("id", "id_obra_social", "id_profesional") VALUES
   (1, 3, 5),
@@ -51,7 +51,7 @@ INSERT INTO "ProfesionalObraSocial" ("id", "id_obra_social", "id_profesional") V
   (18, 4, 8),
   (19, 1, 1),
   (20, 2, 3);
-ALTER SEQUENCE "ProfesionalObraSocial_id_seq" RESTART WITH 20;
+ALTER SEQUENCE "ProfesionalObraSocial_id_seq" RESTART WITH 21;
 
 INSERT INTO "Paciente" ("id", "nombre", "apellido", "dni", "direccion", "fecha_nacimiento", "telefono", "id_obra_social", "num_obra_social") VALUES
   (1, 'Aya', 'Shameimaru', '12345678', 'Tengu Village 100', '1995-10-25 15:30:00.123', '+543871234567', 2, '98765432'),
@@ -65,7 +65,7 @@ INSERT INTO "Paciente" ("id", "nombre", "apellido", "dni", "direccion", "fecha_n
   (9, 'Seiga', 'Kaku', '66778899', 'Graveyard 600', '1980-12-05 16:50:00.456', '+543879012345', 4, '66778899'),
   (10, 'Mamizou', 'Futatsuiwa', '00112233', 'Bamboo Forest 700', '1994-06-20 10:15:00.789', '+543870123456', NULL, NULL),
   (11, 'Cirno', 'Baka', '1231132', 'Misty Lake 123', '1939-09-01 10:00:00.000', '+543871234567', NULL, NULL);
-ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 11;
+ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 12;
 
 INSERT INTO "HistoriaClinica" ("id", "id_paciente", "id_profesional", "motivo", "detalle") VALUES
   (1, 1, 1, 'Infección Cardíaca', 'Al paciente se le extirpó el corazón por que se veía feo en las tomografías. Fue reemplazado por una bolsa con sangre y una bomba de nafta.'),
@@ -74,7 +74,7 @@ INSERT INTO "HistoriaClinica" ("id", "id_paciente", "id_profesional", "motivo", 
   (4, 9, 4, 'Extracción de material extraño', 'El paciente se ha quedado atorado misteriosamente dentro de una pared mientras se la construía. Se han llevado a cabo procedimientos para remover los materiales de construcción de su cintura.'),
   (5, 4, 7, 'Esquizofrenia', 'El paciente ha empezado a experimentar síntomas de esquizofrenia luego de lastimarse un ojo. Se ha iniciado un tratamiento con medicamentos.'),
   (6, 11, 11, 'Cáncer de pìel', 'El paciente presenta síntomas de cáncer de piel luego de haberse sometido a un experimento con energía misteriosa a manos de una mujer en silla de ruedas. Se ha iniciado quimioterapia.');
-ALTER SEQUENCE "HistoriaClinica_id_seq" RESTART WITH 6;
+ALTER SEQUENCE "HistoriaClinica_id_seq" RESTART WITH 7;
 
 INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "estado") VALUES
   (1, 1,  1, '2025-09-21 11:00:00.00', 'CONFIRMADO'),
@@ -84,6 +84,6 @@ INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "estado") V
   (5, 4,  9, '2025-08-30 09:30:00.00', 'CONFIRMADO'),
   (6, 7,  4, '2025-08-29 09:20:00.00', 'CONFIRMADO'),
   (7, 11, 11, '2025-08-28 10:20:00.00', 'CONFIRMADO');
-ALTER SEQUENCE "Turno_id_seq" RESTART WITH 7;
+ALTER SEQUENCE "Turno_id_seq" RESTART WITH 8;
 
 COMMIT;
