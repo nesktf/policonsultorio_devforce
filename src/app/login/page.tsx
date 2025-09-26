@@ -53,7 +53,7 @@ export default function LoginPage() {
           <Image
             src="/logo.png"
             alt="Logo de la empresa"
-            width={300}
+            width={400}
             height={250}
             className="rounded-md"
           />
