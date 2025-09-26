@@ -7,6 +7,9 @@ export async function getPacientes() {
         include: {
           obra_social: true,
         },
+        orderBy: {
+          apellido: 'asc',
+        },
       }),
       prisma.obraSocial.findMany({
         where: {
@@ -21,15 +24,43 @@ export async function getPacientes() {
   }
 }
 
+export async function getPacienteByDni(dni: string) {
+  try {
+    return await prisma.paciente.findUnique({
+      where: { dni },
+      include: {
+        obra_social: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching patient by DNI:', error);
+    return null;
+  }
+}
+
+export async function getPacienteById(id: DBId) {
+  try {
+    return await prisma.paciente.findUnique({
+      where: { id },
+      include: {
+        obra_social: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching patient by ID:', error);
+    return null;
+  }
+}
+
 export async function createPatient(data: {
   nombre: string;
   apellido: string;
   dni: string;
   telefono: string;
   direccion: string;
-  fechaNacimiento: Date;
-  obraSocialId: number | null;
-  numObraSocial: string | null;
+  fecha_nacimiento: Date;        
+  id_obra_social: number | null; 
+  num_obra_social: string | null;
 }) {
   try {
     // First, get the highest ID to manually handle auto-increment
@@ -49,9 +80,9 @@ export async function createPatient(data: {
         dni: data.dni,
         telefono: data.telefono,
         direccion: data.direccion,
-        fecha_nacimiento: data.fechaNacimiento,
-        num_obra_social: data.numObraSocial,
-        id_obra_social: data.obraSocialId,
+        fecha_nacimiento: data.fecha_nacimiento,
+        num_obra_social: data.num_obra_social,
+        id_obra_social: data.id_obra_social,
       },
       include: {
         obra_social: true,
@@ -75,6 +106,73 @@ export async function createPatient(data: {
   }
 }
 
+export async function updatePatient(id: DBId, data: Partial<{
+  nombre: string;
+  apellido: string;
+  dni: string;
+  direccion: string;
+  fecha_nacimiento: Date;
+  telefono: string;
+  id_obra_social: number | null;
+  num_obra_social: string | null;
+}>) {
+  try {
+    return await prisma.paciente.update({
+      where: { id },
+      data,
+      include: {
+        obra_social: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating patient:', error);
+    throw error;
+  }
+}
+
+export async function deletePatient(id: DBId) {
+  try {
+    // First delete related historia clinica records
+    await prisma.historiaClinica.deleteMany({
+      where: {
+        id_paciente: id,
+      },
+    });
+
+    // Then delete the patient
+    return await prisma.paciente.delete({
+      where: { id },
+    });
+  } catch (error) {
+    console.error('Error deleting patient:', error);
+    throw error;
+  }
+}
+
+export async function searchPacientes(searchTerm: string) {
+  try {
+    return await prisma.paciente.findMany({
+      where: {
+        OR: [
+          { nombre: { contains: searchTerm, mode: 'insensitive' } },
+          { apellido: { contains: searchTerm, mode: 'insensitive' } },
+          { dni: { contains: searchTerm } },
+        ],
+      },
+      include: {
+        obra_social: true,
+      },
+      orderBy: {
+        apellido: 'asc',
+      },
+    });
+  } catch (error) {
+    console.error('Error searching patients:', error);
+    return [];
+  }
+}
+
+// Keep the original getPaciente function for backward compatibility
 export async function getPaciente(id: DBId) {
   return await prisma.paciente.findUnique({ where: { id } });
 }
