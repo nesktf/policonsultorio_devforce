@@ -36,7 +36,7 @@ export async function findObrasSociales(nombre: string,
     return prisma.obraSocial.findMany({
       where: {
         nombre: {
-          startsWith: nombre,
+          contains: nombre,
           mode: "insensitive",
         },
         estado
