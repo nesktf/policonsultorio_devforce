@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   try {
     // Usamos Prisma para buscar todos los profesionales que coincidan con la especialidad
-    const profesionales = getProfesionalesEspecialidad(especialidad);
+    const profesionales = await getProfesionalesEspecialidad(especialidad);
 
     // Devolvemos solo los campos necesarios para el selector del cliente
     return NextResponse.json(profesionales, {
