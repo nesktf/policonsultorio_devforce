@@ -17,45 +17,46 @@ export function PacientesClient({
   initialPacientes: PacienteWithObraSocial[];
   obrasSociales: ObraSocial[];
 }) {
-  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<number | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pacientes, setPacientes] = useState(initialPacientes);
   const [selectedHistoria, setSelectedHistoria] = useState<any[]>([]);
   const [isHistoriaModalOpen, setIsHistoriaModalOpen] = useState(false);
 
-const onSelectHistoriaClinica = async (pacienteId: number) => {
-  console.log("🔹 Obteniendo historia clínica para paciente:", pacienteId);
-  
-  setIsHistoriaModalOpen(true);
-  setSelectedHistoria([]);
-  
-  try {
-    console.log("🔹 Haciendo fetch...");
-    const res = await fetch(`/api/historia-clinica/${pacienteId}`);
-    console.log("🔹 Respuesta:", res.status, res.statusText);
-    
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("🔸 Error en API:", res.status, errorText);
-      
-      alert(`Error ${res.status}: ${errorText}`);
-      return;
-    }
-    
-    const historia = await res.json();
-    console.log("🔹 Historia obtenida:", historia);
-    console.log("🔹 Registros encontrados:", historia.length);
-    
-    setSelectedHistoria(historia);
-    
-  } catch (error) {
-    console.error("🔸 Error completo:", error);
-    
+  const onSelectHistoriaClinica = async (pacienteId: number) => {
+    console.log("🔹 Obteniendo historia clínica para paciente:", pacienteId);
 
-    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    alert(`Error: ${errorMessage}`);
-  }
-};
+    setIsHistoriaModalOpen(true);
+    setSelectedHistoria([]);
+
+    try {
+      console.log("🔹 Haciendo fetch...");
+      const res = await fetch(`/api/historia-clinica/${pacienteId}`);
+      console.log("🔹 Respuesta:", res.status, res.statusText);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("🔸 Error en API:", res.status, errorText);
+
+        alert(`Error ${res.status}: ${errorText}`);
+        return;
+      }
+
+      const historia = await res.json();
+      console.log("🔹 Historia obtenida:", historia);
+      console.log("🔹 Registros encontrados:", historia.length);
+
+      setSelectedHistoria(historia);
+    } catch (error) {
+      console.error("🔸 Error completo:", error);
+
+      const errorMessage =
+        error instanceof Error ? error.message : "Error desconocido";
+      alert(`Error: ${errorMessage}`);
+    }
+  };
 
   const handleClearFilter = () => {
     setSelectedPatientId(null);
@@ -110,7 +111,7 @@ const onSelectHistoriaClinica = async (pacienteId: number) => {
               onSelect={setSelectedPatientId}
             />
           </div>
-          {userRole === "GERENTE" && (
+          {(userRole === "MESA_ENTRADA" || userRole === "GERENTE") && (
             <button
               onClick={() => setIsModalOpen(true)}
               className="px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -136,12 +137,22 @@ const onSelectHistoriaClinica = async (pacienteId: number) => {
                 <th className="px-6 py-4 font-bold text-[#0AA2C7]">Nombre</th>
                 <th className="px-6 py-4 font-bold text-[#0AA2C7]">Apellido</th>
                 <th className="px-6 py-4 font-bold text-[#0AA2C7]">DNI</th>
-                <th className="px-6 py-4 font-bold text-[#0AA2C7]">Dirección</th>
-                <th className="px-6 py-4 font-bold text-[#0AA2C7]">Fecha Nac.</th>
-                <th className="px-6 py-4 font-bold text-[#0AA2C7]">Obra Social</th>
-                <th className="px-6 py-4 font-bold text-[#0AA2C7]">N° Obra Social</th>
+                <th className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  Dirección
+                </th>
+                <th className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  Fecha Nac.
+                </th>
+                <th className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  Obra Social
+                </th>
+                <th className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  N° Obra Social
+                </th>
                 <th className="px-6 py-4 font-bold text-[#0AA2C7]">Teléfono</th>
-                <th className="px-6 py-4 font-bold text-[#0AA2C7]">Historia Clínica</th>
+                <th className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  Historia Clínica
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -153,9 +164,13 @@ const onSelectHistoriaClinica = async (pacienteId: number) => {
                   <td className="px-6 py-4 font-medium text-gray-900">
                     {paciente.nombre}
                   </td>
-                  <td className="px-6 py-4 text-gray-900">{paciente.apellido}</td>
+                  <td className="px-6 py-4 text-gray-900">
+                    {paciente.apellido}
+                  </td>
                   <td className="px-6 py-4 text-gray-900">{paciente.dni}</td>
-                  <td className="px-6 py-4 text-gray-900">{paciente.direccion}</td>
+                  <td className="px-6 py-4 text-gray-900">
+                    {paciente.direccion}
+                  </td>
                   <td className="px-6 py-4 text-gray-900">
                     {new Date(paciente.fecha_nacimiento).toLocaleDateString()}
                   </td>
@@ -173,7 +188,9 @@ const onSelectHistoriaClinica = async (pacienteId: number) => {
                   <td className="px-6 py-4 text-gray-900">
                     {paciente.num_obra_social || "-"}
                   </td>
-                  <td className="px-6 py-4 text-gray-600">{paciente.telefono}</td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {paciente.telefono}
+                  </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => onSelectHistoriaClinica(paciente.id)}
