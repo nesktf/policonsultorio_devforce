@@ -114,11 +114,29 @@ export async function POST(request: Request) {
     const turnoIso = parsedFecha.toISOString();
     const detalleHistoria = `${trimmedDetalle} | Registro: ${fechaRegistroIso}. Paciente DNI ${paciente.dni}. Turno ${turnoIso} con ${profesional.apellido}, ${profesional.nombre} (ID ${profesional.id}). Estado ${estadoTurno}.`;
 
-    let data = new TurnoData(parsedPacienteId, parsedProfesionalId, parsedFecha,
-                             estadoTurno, trimmedMotivo, detalleHistoria);
-    let nuevoTurno = await registerTurno(data);
+    const data = new TurnoData(
+      parsedPacienteId,
+      parsedProfesionalId,
+      parsedFecha,
+      estadoTurno,
+      trimmedMotivo,
+      detalleHistoria,
+    );
 
-    return NextResponse.json(nuevoTurno, { status: 201 });
+    const [turnoCreado] = await registerTurno(data);
+
+    if (!turnoCreado) {
+      throw new Error('No se pudo crear el turno.');
+    }
+
+    return NextResponse.json(
+      {
+        id: turnoCreado.id,
+        fecha: turnoCreado.fecha.toISOString(),
+        estado: turnoCreado.estado,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error al crear turno:', error);
     return NextResponse.json(

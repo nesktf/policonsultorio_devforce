@@ -1,7 +1,7 @@
 // src/app/api/v1/profesionales/route.ts
 
 import { NextResponse } from 'next/server';
-import { getProfesionalesEspecialidad, crearProfesional, obtenerProfesionales, verificarDNIExistente } from '@/prisma/profesional';
+import { crearProfesional, obtenerProfesionales, verificarDNIExistente } from '@/prisma/profesional';
 import type { DatosProfesionalFormulario } from '@/components/RegistrarProfesionalModal';
 
 export const dynamic = 'force-dynamic';
