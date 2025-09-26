@@ -1,31 +1,48 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useUser } from "@/context/user";
+
+interface User {
+  nombre: string;
+  apellido: string;
+  rol: "MESA_ENTRADA" | "PROFESIONAL" | "GERENTE";
+}
 
 export function Sidebar() {
-  const user = useUser();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (err) {
+        console.error("Error al parsear el usuario:", err);
+      }
+    }
+  }, []);
+
+  if (!user) return null; // Esperamos a que user exista
 
   const roleLabel = {
     MESA_ENTRADA: "Mesa de Entrada",
     PROFESIONAL: "Profesional",
     GERENTE: "Gerente",
-  }[user.role];
+  }[user.rol];
 
   const roleStyles = {
     MESA_ENTRADA: "bg-blue-100 text-blue-800",
     PROFESIONAL: "bg-green-100 text-green-800",
     GERENTE: "bg-purple-100 text-purple-800",
-  }[user.role];
+  }[user.rol];
 
   return (
     <aside className="fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-white shadow-lg">
       <div className="p-6">
         <div className="mb-6 pb-6 border-b border-gray-200">
           <div className="flex flex-col items-start gap-1">
-            <p className="text-sm font-medium text-gray-900">
-              {user.nombre} {user.apellido}
-            </p>
+            <p className="text-sm font-medium text-gray-900">{user.nombre}</p>
             <span
               className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${roleStyles}`}
             >
