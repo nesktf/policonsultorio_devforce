@@ -1,8 +1,64 @@
 import { DBId, prisma } from "@/prisma/instance";
 import type { DatosProfesionalFormulario } from '@/components/RegistrarProfesionalModal';
 
+
+export async function obtenerEspecialidadesUnicas() {
+  try {
+    const especialidades = await prisma.profesional.findMany({
+      select: {
+        especialidad: true
+      },
+      distinct: ['especialidad'],
+      orderBy: {
+        especialidad: 'asc'
+      }
+    });
+    return especialidades.map(prof => prof.especialidad);
+  } catch (error) {
+    console.error('Error al obtener especialidades:', error);
+    return [];
+  }
+}
+
+export async function obtenerObrasSocialesActivas() {
+  try {
+    const obrasSociales = await prisma.obraSocial.findMany({
+      where: {
+        estado: 'ACTIVA'
+      },
+      orderBy: {
+        nombre: 'asc'
+      }
+    });
+    return obrasSociales;
+  } catch (error) {
+    console.error('Error al obtener obras sociales activas:', error);
+    return [];
+  }
+}
+
+// verificar si un DNI ya existe
+export async function verificarDNIExistente(dni: string): Promise<boolean> {
+  try {
+    const profesionalExistente = await prisma.profesional.findFirst({
+      where: {
+        dni: dni
+      }
+    });
+    return profesionalExistente !== null;
+  } catch (error) {
+    console.error('Error al verificar DNI:', error);
+    return false;
+  }
+}
+
 export async function crearProfesional(datos: DatosProfesionalFormulario) {
   try {
+    const dniExiste = await verificarDNIExistente(datos.dni);
+    if (dniExiste) {
+      throw new Error(`Ya existe un profesional registrado con el DNI ${datos.dni}`);
+    }
+
     const nuevoProfesional = await prisma.profesional.create({
       data: {
         nombre: datos.nombre,
@@ -35,6 +91,13 @@ export async function crearProfesional(datos: DatosProfesionalFormulario) {
     return nuevoProfesional;
   } catch (error) {
     console.error('Error al crear profesional:', error);
+    
+    // Muestra el mensaje de error por DNI
+    if (error instanceof Error && error.message.includes('DNI')) {
+      throw error;
+    }
+    
+    // Sino muestra un mensaje de error general
     throw new Error('Error al registrar el profesional');
   }
 }
