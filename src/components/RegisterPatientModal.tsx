@@ -6,16 +6,7 @@ import { ObraSocial } from '@/generated/prisma';
 interface RegisterPatientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: {
-    nombre: string;
-    apellido: string;
-    dni: string;
-    telefono: string;
-    direccion: string;
-    fechaNacimiento: Date;
-    obraSocialId: number | null;
-    numObraSocial: string | null;
-  }) => Promise<void>;
+  onSubmit: (newPatient: any) => void; // Simplificamos el callback
   obrasSociales: ObraSocial[];
 }
 
@@ -36,13 +27,37 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     try {
-      await onSubmit({
-        ...formData,
-        fechaNacimiento: new Date(formData.fechaNacimiento),
-        obraSocialId: formData.obraSocialId ? parseInt(formData.obraSocialId) : null,
-        numObraSocial: formData.obraSocialId ? formData.numObraSocial : null,
+      // Preparar los datos para la API
+      const apiData = {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        dni: formData.dni,
+        telefono: formData.telefono,
+        direccion: formData.direccion,
+        fecha_nacimiento: formData.fechaNacimiento, // Nota: fecha_nacimiento, no fechaNacimiento
+        id_obra_social: formData.obraSocialId ? parseInt(formData.obraSocialId) : null,
+        num_obra_social: formData.obraSocialId ? formData.numObraSocial : null,
+      };
+
+      // Llamar a la API
+      const response = await fetch('/api/v1/pacientes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al registrar paciente');
+      }
+
+      const newPatient = await response.json();
+      
+      // Limpiar formulario
       setFormData({
         nombre: '',
         apellido: '',
@@ -53,15 +68,21 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
         obraSocialId: '',
         numObraSocial: '',
       });
+
+      // Notificar éxito
       setNotification({
         type: 'success',
         message: 'Paciente registrado exitosamente'
       });
-    } catch (error) {
+
+      // Actualizar la lista en el componente padre
+      onSubmit(newPatient);
+
+    } catch (error: any) {
       console.error('Error al registrar paciente:', error);
       setNotification({
         type: 'error',
-        message: 'Error al registrar el paciente. Por favor, intente nuevamente.'
+        message: error.message || 'Error al registrar el paciente. Por favor, intente nuevamente.'
       });
     } finally {
       setIsSubmitting(false);
@@ -123,8 +144,14 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               id="dni"
               required
               maxLength={9}
+              pattern="[0-9]*"
+              title="Solo se permiten números"
               value={formData.dni}
-              onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
+              onChange={(e) => {
+                // Solo permitir números
+                const value = e.target.value.replace(/\D/g, '');
+                setFormData({ ...formData, dni: value });
+              }}
               className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
             />
           </div>
@@ -202,6 +229,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               value={formData.telefono}
               onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
               className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
+              placeholder="+543871234567"
             />
           </div>
 
