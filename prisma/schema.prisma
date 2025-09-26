@@ -29,7 +29,7 @@ model Profesional {
   nombre         String
   apellido       String
   direccion      String
-  dni            String                  @db.VarChar(9)
+  dni            String                  @db.VarChar(9) @unique
   especialidad   String
   telefono       String                  @db.VarChar(14)
   historias      HistoriaClinica[]
@@ -49,7 +49,7 @@ model Paciente {
   id               Int               @id @default(autoincrement())
   nombre           String
   apellido         String
-  dni              String            @db.VarChar(9)
+  dni              String            @db.VarChar(9) @unique
   direccion        String
   fecha_nacimiento DateTime
   telefono         String            @db.VarChar(14)

@@ -39,13 +39,138 @@ export function RegistrarProfesionalModal({
   const [enviando, setEnviando] = useState(false);
   const [mostrarObrasSociales, setMostrarObrasSociales] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [errores, setErrores] = useState<{ [key: string]: string }>({});
+  const [verificandoDni, setVerificandoDni] = useState(false);
 
-  const manejarCambio = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Función para capitalizar la primera letra
+  const capitalizarPrimeraLetra = (texto: string): string => {
+    if (!texto) return texto;
+    return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+  };
+
+  // Validación para DNI (solo números, máximo 9 caracteres)
+  const validarDNI = (dni: string): boolean => {
+    const dniRegex = /^\d{1,9}$/;
+    return dniRegex.test(dni);
+  };
+
+  // Validación para teléfono (+ seguido de números, máximo 14 caracteres)
+  const validarTelefono = (telefono: string): boolean => {
+    const telefonoRegex = /^\+\d{1,13}$/;
+    return telefonoRegex.test(telefono);
+  };
+
+  // Validación para campos de solo letras
+  const validarSoloLetras = (texto: string): boolean => {
+    const letrasRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
+    return letrasRegex.test(texto);
+  };
+
+  // Validación para dirección (letras, números y espacios)
+  const validarDireccion = (direccion: string): boolean => {
+    const direccionRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$/;
+    return direccionRegex.test(direccion);
+  };
+
+  // Función para verificar DNI duplicado
+  const verificarDniDuplicado = async (dni: string): Promise<boolean> => {
+    if (!dni || dni.length < 7) return false; // Solo verificar DNIs con al menos 7 dígitos
+    
+    try {
+      setVerificandoDni(true);
+      const response = await fetch(`/api/v1/profesionales?verificar_dni=${dni}`);
+      const data = await response.json();
+      return data.existe;
+    } catch (error) {
+      console.error('Error al verificar DNI:', error);
+      return false;
+    } finally {
+      setVerificandoDni(false);
+    }
+  };
+
+  const manejarCambio = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    let valorProcesado = value;
+    let nuevoError = '';
+
+    // Aplicar restricciones y validaciones según el campo
+    switch (name) {
+      case 'dni':
+        // Solo permitir números y máximo 9 caracteres
+        valorProcesado = value.replace(/\D/g, '').slice(0, 9);
+        if (valorProcesado && !validarDNI(valorProcesado)) {
+          nuevoError = 'El DNI debe contener solo números y máximo 9 dígitos';
+        }
+        break;
+
+      case 'telefono':
+        // Permitir + al inicio y números, máximo 14 caracteres
+        if (value.length === 1 && value !== '+') {
+          valorProcesado = '+' + value.replace(/\D/g, '');
+        } else if (value.length > 1) {
+          valorProcesado = '+' + value.slice(1).replace(/\D/g, '');
+        } else if (value === '') {
+          valorProcesado = '';
+        } else {
+          valorProcesado = value;
+        }
+        valorProcesado = valorProcesado.slice(0, 14);
+        
+        if (valorProcesado && !validarTelefono(valorProcesado)) {
+          nuevoError = 'El teléfono debe comenzar con + seguido de números (máximo 14 caracteres)';
+        }
+        break;
+
+      case 'nombre':
+      case 'apellido':
+      case 'especialidad':
+        // Solo permitir letras y espacios
+        valorProcesado = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
+        if (valorProcesado && !validarSoloLetras(valorProcesado)) {
+          nuevoError = 'Este campo solo puede contener letras';
+        }
+        break;
+
+      case 'direccion':
+        // Permitir letras, números y espacios
+        valorProcesado = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]/g, '');
+        if (valorProcesado && !validarDireccion(valorProcesado)) {
+          nuevoError = 'La dirección solo puede contener letras, números y espacios';
+        }
+        break;
+
+      default:
+        valorProcesado = value;
+    }
+
+    // Actualizar formulario primero
     setDatosFormulario(prev => ({
       ...prev,
-      [name]: value
+      [name]: valorProcesado
     }));
+
+    // Actualizar errores
+    setErrores(prev => ({
+      ...prev,
+      [name]: nuevoError
+    }));
+
+    // Verificación especial para DNI duplicado
+    if (name === 'dni' && valorProcesado && valorProcesado.length >= 7 && !nuevoError) {
+      const dniExiste = await verificarDniDuplicado(valorProcesado);
+      if (dniExiste) {
+        setErrores(prev => ({
+          ...prev,
+          dni: `El DNI ${valorProcesado} ya está registrado`
+        }));
+      } else {
+        setErrores(prev => ({
+          ...prev,
+          dni: ''
+        }));
+      }
+    }
   };
 
   const manejarToggleObraSocial = (obraSocialId: number) => {
@@ -57,12 +182,74 @@ export function RegistrarProfesionalModal({
     }));
   };
 
+  const validarFormulario = (): boolean => {
+    const nuevosErrores: { [key: string]: string } = {};
+
+    // Validar campos requeridos
+    if (!datosFormulario.nombre.trim()) {
+      nuevosErrores.nombre = 'El nombre es requerido';
+    } else if (!validarSoloLetras(datosFormulario.nombre)) {
+      nuevosErrores.nombre = 'El nombre solo puede contener letras';
+    }
+
+    if (!datosFormulario.apellido.trim()) {
+      nuevosErrores.apellido = 'El apellido es requerido';
+    } else if (!validarSoloLetras(datosFormulario.apellido)) {
+      nuevosErrores.apellido = 'El apellido solo puede contener letras';
+    }
+
+    if (!datosFormulario.dni.trim()) {
+      nuevosErrores.dni = 'El DNI es requerido';
+    } else if (!validarDNI(datosFormulario.dni)) {
+      nuevosErrores.dni = 'El DNI debe contener solo números y máximo 9 dígitos';
+    } else if (errores.dni && errores.dni.includes('ya está registrado')) {
+      nuevosErrores.dni = errores.dni; // Mantener error de DNI duplicado
+    }
+
+    if (!datosFormulario.especialidad.trim()) {
+      nuevosErrores.especialidad = 'La especialidad es requerida';
+    } else if (!validarSoloLetras(datosFormulario.especialidad)) {
+      nuevosErrores.especialidad = 'La especialidad solo puede contener letras';
+    }
+
+    if (!datosFormulario.telefono.trim()) {
+      nuevosErrores.telefono = 'El teléfono es requerido';
+    } else if (!validarTelefono(datosFormulario.telefono)) {
+      nuevosErrores.telefono = 'El teléfono debe comenzar con + seguido de números (máximo 14 caracteres)';
+    }
+
+    if (!datosFormulario.direccion.trim()) {
+      nuevosErrores.direccion = 'La dirección es requerida';
+    } else if (!validarDireccion(datosFormulario.direccion)) {
+      nuevosErrores.direccion = 'La dirección solo puede contener letras, números y espacios';
+    }
+
+    setErrores(nuevosErrores);
+    return Object.keys(nuevosErrores).length === 0;
+  };
+
   const manejarEnvio = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validarFormulario()) {
+      return;
+    }
+
     setEnviando(true);
     
     try {
-      await onSubmit(datosFormulario);
+      // Capitalizar campos de texto antes de enviar
+      const datosCapitalizados: DatosProfesionalFormulario = {
+        ...datosFormulario,
+        nombre: capitalizarPrimeraLetra(datosFormulario.nombre.trim()),
+        apellido: capitalizarPrimeraLetra(datosFormulario.apellido.trim()),
+        especialidad: capitalizarPrimeraLetra(datosFormulario.especialidad.trim()),
+        direccion: capitalizarPrimeraLetra(datosFormulario.direccion.trim()),
+        dni: datosFormulario.dni.trim(),
+        telefono: datosFormulario.telefono.trim()
+      };
+
+      await onSubmit(datosCapitalizados);
       
       // Solo resetear el form y mostrar éxito si llegamos aquí sin errores
       setDatosFormulario({
@@ -75,6 +262,7 @@ export function RegistrarProfesionalModal({
         obras_sociales_ids: []
       });
       setMostrarObrasSociales(false);
+      setErrores({});
       
       setNotification({
         type: 'success',
@@ -82,9 +270,21 @@ export function RegistrarProfesionalModal({
       });
     } catch (error) {
       console.error('Error al registrar profesional:', error);
+      
+      // Determinar el mensaje de error basado en el tipo de error
+      let mensajeError = 'Error al registrar el profesional. Por favor, intente nuevamente.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('DNI')) {
+          mensajeError = 'No se pudo registrar el profesional: DNI ya registrado.';
+        } else {
+          mensajeError = error.message;
+        }
+      }
+      
       setNotification({
         type: 'error',
-        message: 'Error al registrar el profesional. Por favor, intente nuevamente.'
+        message: mensajeError
       });
     } finally {
       setEnviando(false);
@@ -110,6 +310,8 @@ export function RegistrarProfesionalModal({
     });
     setMostrarObrasSociales(false);
     setNotification(null);
+    setErrores({});
+    setVerificandoDni(false);
     onClose();
   };
 
@@ -144,9 +346,15 @@ export function RegistrarProfesionalModal({
                   name="nombre"
                   value={datosFormulario.nombre}
                   onChange={manejarCambio}
+                  placeholder='Juan'
                   required
-                  className="w-full px-3 py-2 border border-[#AFE1EA] text-gray-900 rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors ${
+                    errores.nombre ? 'border-red-500 text-gray-900' : 'border-[#AFE1EA] text-gray-900'
+                  }`}
                 />
+                {errores.nombre && (
+                  <p className="text-red-500 text-xs mt-1">{errores.nombre}</p>
+                )}
               </div>
 
               <div>
@@ -158,26 +366,50 @@ export function RegistrarProfesionalModal({
                   name="apellido"
                   value={datosFormulario.apellido}
                   onChange={manejarCambio}
+                  placeholder='Perez'
                   required
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors ${
+                    errores.apellido ? 'border-red-500 text-gray-900' : 'border-gray-300 text-gray-900'
+                  }`}
                 />
+                {errores.apellido && (
+                  <p className="text-red-500 text-xs mt-1">{errores.apellido}</p>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  DNI *
+                  DNI * <span className="text-xs text-gray-500">(Solo números, sin puntos)</span>
                 </label>
-                <input
-                  type="text"
-                  name="dni"
-                  value={datosFormulario.dni}
-                  onChange={manejarCambio}
-                  maxLength={9}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="dni"
+                    value={datosFormulario.dni}
+                    onChange={manejarCambio}
+                    maxLength={9}
+                    placeholder='11222333'
+                    required
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors ${
+                      errores.dni ? 'border-red-500 text-gray-900' : 'border-gray-300 text-gray-900'
+                    }`}
+                  />
+                  {verificandoDni && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {errores.dni && (
+                  <p className={`text-xs mt-1 ${errores.dni.includes('ya está registrado') ? 'text-red-600 font-medium' : 'text-red-500'}`}>
+                    {errores.dni}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -189,15 +421,21 @@ export function RegistrarProfesionalModal({
                   name="especialidad"
                   value={datosFormulario.especialidad}
                   onChange={manejarCambio}
+                  placeholder='Cardiología'
                   required
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors ${
+                    errores.especialidad ? 'border-red-500 text-gray-900' : 'border-gray-300 text-gray-900'
+                  }`}
                 />
+                {errores.especialidad && (
+                  <p className="text-red-500 text-xs mt-1">{errores.especialidad}</p>
+                )}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono *
+                Teléfono * <span className="text-xs text-gray-500">(+ seguido de números, máx 14 caracteres)</span>
               </label>
               <input
                 type="tel"
@@ -205,10 +443,15 @@ export function RegistrarProfesionalModal({
                 value={datosFormulario.telefono}
                 onChange={manejarCambio}
                 maxLength={14}
-                placeholder="+549333112233"
+                placeholder="+543876112233"
                 required
-                className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors ${
+                  errores.telefono ? 'border-red-500 text-gray-900' : 'border-gray-300 text-gray-900'
+                }`}
               />
+              {errores.telefono && (
+                <p className="text-red-500 text-xs mt-1">{errores.telefono}</p>
+              )}
             </div>
 
             <div>
@@ -220,9 +463,15 @@ export function RegistrarProfesionalModal({
                 name="direccion"
                 value={datosFormulario.direccion}
                 onChange={manejarCambio}
+                placeholder='Balcarce 1483'
                 required
-                className="w-full px-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#0AA2C7] focus:border-[#0AA2C7] transition-colors ${
+                  errores.direccion ? 'border-red-500 text-gray-900' : 'border-gray-300 text-gray-900'
+                }`}
               />
+              {errores.direccion && (
+                <p className="text-red-500 text-xs mt-1">{errores.direccion}</p>
+              )}
             </div>
 
             <div>

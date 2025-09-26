@@ -28,7 +28,7 @@ export function PatientSearch({ onSelect, patients }: PatientSearchProps) {
     setSearchTerm(e.target.value);
     setShowDropdown(true);
     if (e.target.value === '') {
-      onSelect(null); // Clear filter when search is empty
+      onSelect(null);
     }
   };
 
