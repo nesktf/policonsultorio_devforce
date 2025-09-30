@@ -40,6 +40,8 @@ interface User {
 
 export function SidebarOficial() {
   const [user, setUser] = useState<User | null>(null);
+  const pathname = usePathname();
+  const { state } = useSidebar();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -59,9 +61,6 @@ export function SidebarOficial() {
     PROFESIONAL: "Profesional",
     GERENTE: "Gerente",
   }[user.rol];
-
-  const pathname = usePathname();
-  const { state } = useSidebar();
 
   const menuItems = [
     ...(user.rol === "MESA_ENTRADA"
