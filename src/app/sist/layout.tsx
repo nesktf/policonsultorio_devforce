@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "../../components/Header";
-import { SidebarOficial } from "../../components/Sidebar";
+import { SidebarOficial } from "@/components/Sidebar";
 import { UserProvider } from "../../context/user";
 import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
