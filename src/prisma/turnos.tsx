@@ -154,13 +154,6 @@ export async function getTurnosPorEspecialidad(from: Date, to: Date) {
   }));
 }
 
-export async function profesionalHasTurnoAt(id_profesional: DBId, fecha: Date): Promise<boolean> {
-  return (await prisma.turno.findFirst({
-    where: {
-      id_profesional ,
-      fecha,
-    },
-  }) != undefined);
 export async function profesionalHasTurnoAt(
   id_profesional: DBId,
   fecha: Date
