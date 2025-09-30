@@ -1,8 +1,8 @@
 // src/components/RegistrarTurnoClient.tsx
 
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 interface RegistrarTurnoProps {
   pacientes: { id: number; nombre: string; apellido: string; dni: string }[];
@@ -12,6 +12,7 @@ interface RegistrarTurnoProps {
     fechaIso: string;
     paciente: string;
     profesional: string;
+    estado: string;
   }) => void;
   onCloseModal?: () => void;
 }
@@ -22,16 +23,22 @@ interface ProfesionalOption {
   apellido: string;
 }
 
-export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistrado, onCloseModal }: RegistrarTurnoProps) {
-  const [pacienteId, setPacienteId] = useState<string>('');
-  const [pacienteBusqueda, setPacienteBusqueda] = useState<string>('');
+export function RegistrarTurnoClient({
+  pacientes,
+  especialidades,
+  onTurnoRegistrado,
+  onCloseModal,
+}: RegistrarTurnoProps) {
+  const [pacienteId, setPacienteId] = useState<string>("");
+  const [pacienteBusqueda, setPacienteBusqueda] = useState<string>("");
   const [isPacienteListOpen, setIsPacienteListOpen] = useState(false);
-  const [especialidad, setEspecialidad] = useState<string>('');
-  const [profesionalId, setProfesionalId] = useState<string>('');
-  const [fecha, setFecha] = useState<string>('');
-  const [horario, setHorario] = useState<string>('');
-  const [motivo, setMotivo] = useState<string>('');
-  const [detalle, setDetalle] = useState<string>('');
+  const [especialidad, setEspecialidad] = useState<string>("");
+  const [profesionalId, setProfesionalId] = useState<string>("");
+  const [fecha, setFecha] = useState<string>("");
+  const [horario, setHorario] = useState<string>("");
+  const [motivo, setMotivo] = useState<string>("");
+  const [detalle, setDetalle] = useState<string>("");
+  const [estado, setEstado] = useState<string>("");
   const timezoneOffsetMinutes = new Date().getTimezoneOffset();
 
   const [profesionales, setProfesionales] = useState<ProfesionalOption[]>([]);
@@ -49,29 +56,37 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
   const pacienteSearchContainerRef = useRef<HTMLDivElement | null>(null);
   const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handlePacienteSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePacienteSearchChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const value = event.target.value;
     setPacienteBusqueda(value);
     setIsPacienteListOpen(true);
 
     if (pacienteId) {
-      setPacienteId('');
+      setPacienteId("");
     }
   };
 
-  const handlePacienteSelect = (paciente: RegistrarTurnoProps['pacientes'][number]) => {
+  const handlePacienteSelect = (
+    paciente: RegistrarTurnoProps["pacientes"][number]
+  ) => {
     setPacienteId(String(paciente.id));
-    setPacienteBusqueda(`${paciente.apellido}, ${paciente.nombre} (${paciente.dni})`);
+    setPacienteBusqueda(
+      `${paciente.apellido}, ${paciente.nombre} (${paciente.dni})`
+    );
     setIsPacienteListOpen(false);
   };
 
-  const handleEspecialidadChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleEspecialidadChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const nuevaEspecialidad = e.target.value;
     setEspecialidad(nuevaEspecialidad);
-    
-    setProfesionalId('');
-    setFecha('');
-    setHorario('');
+
+    setProfesionalId("");
+    setFecha("");
+    setHorario("");
     setProfesionales([]);
     setHorarios([]);
 
@@ -85,25 +100,31 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
     setIsLoadingProfesionales(true);
     try {
       const response = await fetch(
-        `/api/v1/profesionales?especialidad=${encodeURIComponent(nuevaEspecialidad)}`,
-        { cache: 'no-store' }
+        `/api/v1/profesionales?especialidad=${encodeURIComponent(
+          nuevaEspecialidad
+        )}`,
+        { cache: "no-store" }
       );
       if (!response.ok) {
-        throw new Error('No se pudieron obtener los profesionales.');
+        throw new Error("No se pudieron obtener los profesionales.");
       }
       const data: ProfesionalOption[] = await response.json();
       setProfesionales(data);
     } catch (error) {
-      console.error('Error al obtener profesionales:', error);
-      setErrorMessage('No se pudieron cargar los profesionales. Intenta nuevamente.');
+      console.error("Error al obtener profesionales:", error);
+      setErrorMessage(
+        "No se pudieron cargar los profesionales. Intenta nuevamente."
+      );
     } finally {
       setIsLoadingProfesionales(false);
     }
   };
 
-  const handleProfesionalChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleProfesionalChange = (
+    event: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setProfesionalId(event.target.value);
-    setHorario('');
+    setHorario("");
     setHorarios([]);
     setSuccessMessage(null);
     setErrorMessage(null);
@@ -116,13 +137,13 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
     setErrorMessage(null);
 
     if (!pacienteId) {
-      setErrorMessage('Selecciona un paciente válido antes de confirmar.');
+      setErrorMessage("Selecciona un paciente válido antes de confirmar.");
       setIsSubmitting(false);
       return;
     }
 
     if (!motivo.trim() || !detalle.trim()) {
-      setErrorMessage('Completa motivo y detalle antes de confirmar.');
+      setErrorMessage("Completa motivo y detalle antes de confirmar.");
       setIsSubmitting(false);
       return;
     }
@@ -130,10 +151,10 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
     try {
       const fechaHoraIso = new Date(`${fecha}T${horario}:00`).toISOString();
 
-      const response = await fetch('/api/v1/turnos', {
-        method: 'POST',
+      const response = await fetch("/api/v1/turnos", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           pacienteId: Number(pacienteId),
@@ -145,35 +166,43 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
       });
 
       if (!response.ok) {
-        const { error } = await response.json().catch(() => ({ error: 'Error al registrar el turno.' }));
-        throw new Error(error || 'Error al registrar el turno.');
+        const { error } = await response
+          .json()
+          .catch(() => ({ error: "Error al registrar el turno." }));
+        throw new Error(error || "Error al registrar el turno.");
       }
 
-      const turnoCreado: { id: number; fecha: string; estado: string } = await response.json();
+      const turnoCreado: { id: number; fecha: string; estado: string } =
+        await response.json();
 
-      const pacienteSeleccionado = pacientes.find((p) => p.id === Number(pacienteId));
-      const profesionalSeleccionado = profesionales.find((p) => p.id === Number(profesionalId));
+      const pacienteSeleccionado = pacientes.find(
+        (p) => p.id === Number(pacienteId)
+      );
+      const profesionalSeleccionado = profesionales.find(
+        (p) => p.id === Number(profesionalId)
+      );
 
       const pacienteNombre = pacienteSeleccionado
         ? `${pacienteSeleccionado.apellido}, ${pacienteSeleccionado.nombre}`
-        : 'Paciente';
+        : "Paciente";
 
       const profesionalNombre = profesionalSeleccionado
         ? `${profesionalSeleccionado.apellido}, ${profesionalSeleccionado.nombre}`
-        : 'Profesional';
+        : "Profesional";
 
       onTurnoRegistrado?.({
         id: turnoCreado.id,
         fechaIso: turnoCreado.fecha,
         paciente: pacienteNombre,
         profesional: profesionalNombre,
+        estado: turnoCreado.estado,
       });
 
-      setSuccessMessage('Turno registrado con éxito.');
-      setHorario('');
+      setSuccessMessage("Turno registrado con éxito.");
+      setHorario("");
       setHorarios((prev) => prev.filter((slot) => slot !== horario));
-      setMotivo('');
-      setDetalle('');
+      setMotivo("");
+      setDetalle("");
       setShowSuccessOverlay(true);
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
@@ -183,8 +212,10 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
         onCloseModal?.();
       }, 1500);
     } catch (error) {
-      console.error('Error al registrar turno:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Error al registrar el turno.');
+      console.error("Error al registrar turno:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Error al registrar el turno."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -192,15 +223,18 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (pacienteSearchContainerRef.current && !pacienteSearchContainerRef.current.contains(event.target as Node)) {
+      if (
+        pacienteSearchContainerRef.current &&
+        !pacienteSearchContainerRef.current.contains(event.target as Node)
+      ) {
         setIsPacienteListOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -228,27 +262,31 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
       try {
         const response = await fetch(
           `/api/v1/turnos/disponibles?profesionalId=${profesionalId}&fecha=${fecha}&timezoneOffset=${timezoneOffsetMinutes}`,
-          { cache: 'no-store' }
+          { cache: "no-store" }
         );
 
         if (!response.ok) {
-          const { error } = await response.json().catch(() => ({ error: 'No se pudieron obtener los horarios.' }));
-          throw new Error(error || 'No se pudieron obtener los horarios disponibles.');
+          const { error } = await response
+            .json()
+            .catch(() => ({ error: "No se pudieron obtener los horarios." }));
+          throw new Error(
+            error || "No se pudieron obtener los horarios disponibles."
+          );
         }
 
         const data: { slots: string[] } = await response.json();
         if (!cancelado) {
           setHorarios(data.slots);
-          setHorario('');
+          setHorario("");
         }
       } catch (error) {
-        console.error('Error al obtener horarios disponibles:', error);
+        console.error("Error al obtener horarios disponibles:", error);
         if (!cancelado) {
           setHorarios([]);
           setErrorMessage(
             error instanceof Error
               ? error.message
-              : 'No se pudieron obtener los horarios disponibles. Intenta nuevamente.'
+              : "No se pudieron obtener los horarios disponibles. Intenta nuevamente."
           );
         }
       } finally {
@@ -268,27 +306,45 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
   const normalizedQuery = pacienteBusqueda.trim().toLowerCase();
   const filteredPacientes = normalizedQuery
     ? pacientes.filter((paciente) => {
-        const searchable = `${paciente.apellido} ${paciente.nombre} ${paciente.dni}`.toLowerCase();
+        const searchable =
+          `${paciente.apellido} ${paciente.nombre} ${paciente.dni}`.toLowerCase();
         return searchable.includes(normalizedQuery);
       })
     : pacientes;
-  const pacientesParaMostrar = normalizedQuery ? filteredPacientes : pacientes.slice(0, 10);
-  const shouldShowEmptyState = normalizedQuery && filteredPacientes.length === 0;
+  const pacientesParaMostrar = normalizedQuery
+    ? filteredPacientes
+    : pacientes.slice(0, 10);
+  const shouldShowEmptyState =
+    normalizedQuery && filteredPacientes.length === 0;
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-black">Registrar un Nuevo Turno</h2>
+        <h2 className="text-2xl font-bold text-black">
+          Registrar un Nuevo Turno
+        </h2>
       </div>
 
       <div className="relative bg-white rounded-xl shadow-lg border-2 border-gray-200 p-8">
         {showSuccessOverlay ? (
           <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#E4F1F9]/80">
             <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-8 py-6 shadow-lg border border-[#AFE1EA]">
-              <svg className="h-12 w-12 text-[#0AA2C7] animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="h-12 w-12 text-[#0AA2C7] animate-pulse"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
-              <p className="text-lg font-semibold text-[#0AA2C7]">Turno registrado con éxito</p>
+              <p className="text-lg font-semibold text-[#0AA2C7]">
+                Turno registrado con éxito
+              </p>
             </div>
           </div>
         ) : null}
@@ -303,9 +359,12 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
               {errorMessage}
             </div>
           ) : null}
-          
+
           <div ref={pacienteSearchContainerRef} className="relative">
-            <label htmlFor="paciente" className="block text-sm font-bold text-gray-700 mb-1">
+            <label
+              htmlFor="paciente"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
               Paciente
             </label>
             <input
@@ -321,7 +380,9 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
             {isPacienteListOpen ? (
               <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
                 {shouldShowEmptyState ? (
-                  <p className="px-3 py-2 text-sm text-gray-500">No se encontraron pacientes.</p>
+                  <p className="px-3 py-2 text-sm text-gray-500">
+                    No se encontraron pacientes.
+                  </p>
                 ) : (
                   pacientesParaMostrar.map((p) => (
                     <button
@@ -337,12 +398,17 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
               </div>
             ) : null}
             {!pacienteId && pacienteBusqueda ? (
-              <p className="mt-2 text-sm text-red-500">Selecciona un paciente de la lista para continuar.</p>
+              <p className="mt-2 text-sm text-red-500">
+                Selecciona un paciente de la lista para continuar.
+              </p>
             ) : null}
           </div>
 
           <div>
-            <label htmlFor="motivo" className="block text-sm font-bold text-gray-700 mb-1">
+            <label
+              htmlFor="motivo"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
               Motivo del turno
             </label>
             <input
@@ -357,7 +423,10 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
           </div>
 
           <div>
-            <label htmlFor="detalle" className="block text-sm font-bold text-gray-700 mb-1">
+            <label
+              htmlFor="detalle"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
               Detalle para historia clínica
             </label>
             <textarea
@@ -373,7 +442,10 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
 
           {/* Especialidad */}
           <div>
-            <label htmlFor="especialidad" className="block text-sm font-bold text-gray-700 mb-1">
+            <label
+              htmlFor="especialidad"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
               Especialidad
             </label>
             <select
@@ -393,13 +465,17 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
             </select>
             {!noEspecialidades ? null : (
               <p className="mt-2 text-sm text-gray-500">
-                No hay especialidades registradas. Agrega profesionales para habilitar esta opción.
+                No hay especialidades registradas. Agrega profesionales para
+                habilitar esta opción.
               </p>
             )}
           </div>
 
           <div>
-            <label htmlFor="profesional" className="block text-sm font-bold text-gray-700 mb-1">
+            <label
+              htmlFor="profesional"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
               Profesional Disponible
             </label>
             <select
@@ -423,7 +499,8 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
                 )}
               </>
             </select>
-            {!especialidad || isLoadingProfesionales ? null : profesionales.length > 0 ? null : (
+            {!especialidad ||
+            isLoadingProfesionales ? null : profesionales.length > 0 ? null : (
               <p className="mt-2 text-sm text-gray-500">
                 No hay profesionales disponibles para esta especialidad.
               </p>
@@ -431,7 +508,10 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
           </div>
 
           <div>
-            <label htmlFor="fecha" className="block text-sm font-bold text-gray-700 mb-1">
+            <label
+              htmlFor="fecha"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
               Fecha
             </label>
             <input
@@ -440,7 +520,7 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
               value={fecha}
               onChange={(e) => {
                 setFecha(e.target.value);
-                setHorario('');
+                setHorario("");
                 setHorarios([]);
                 setSuccessMessage(null);
                 setErrorMessage(null);
@@ -452,7 +532,10 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
           </div>
 
           <div>
-            <label htmlFor="horario" className="block text-sm font-bold text-gray-700 mb-1">
+            <label
+              htmlFor="horario"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
               Horario Disponible
             </label>
             <select
@@ -460,7 +543,12 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
               value={horario}
               onChange={(e) => setHorario(e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg text-gray-900"
-              disabled={!profesionalId || !fecha || isLoadingHorarios || horarios.length === 0}
+              disabled={
+                !profesionalId ||
+                !fecha ||
+                isLoadingHorarios ||
+                horarios.length === 0
+              }
               required
             >
               <option value="">-- Seleccione un horario --</option>
@@ -484,7 +572,7 @@ export function RegistrarTurnoClient({ pacientes, especialidades, onTurnoRegistr
               className="px-6 py-3 text-sm font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Registrando...' : 'Confirmar Turno'}
+              {isSubmitting ? "Registrando..." : "Confirmar Turno"}
             </button>
           </div>
         </form>

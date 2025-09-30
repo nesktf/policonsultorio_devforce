@@ -1,8 +1,13 @@
-import { NextResponse } from 'next/server';
-import { profesionalHasTurnoAt, registerTurno, TurnoData } from '@/prisma/turnos';
-import type { EstadoTurno } from '@/generated/prisma';
-import { getProfesional } from '@/prisma/profesional';
-import { getPaciente } from '@/prisma/pacientes';
+import { NextResponse } from "next/server";
+import {
+  profesionalHasTurnoAt,
+  registerTurno,
+  TurnoData,
+} from "@/prisma/turnos";
+import type { EstadoTurno } from "@/generated/prisma";
+import { getProfesional } from "@/prisma/profesional";
+import { getPaciente } from "@/prisma/pacientes";
+import { prisma } from "@/prisma/instance";
 
 interface TurnoPayload {
   pacienteId?: unknown;
@@ -13,10 +18,18 @@ interface TurnoPayload {
   detalle?: unknown;
 }
 
-const ESTADO_DEFAULT: EstadoTurno = 'CONFIRMADO';
+const ESTADO_DEFAULT: EstadoTurno = "CONFIRMADO";
 
-const isEstadoTurno = (value: unknown): value is EstadoTurno =>
-  value === 'CONFIRMADO' || value === 'CANCELADO';
+const isEstadoTurno = (value: unknown): value is EstadoTurno => {
+  return [
+    "PROGRAMADO",
+    "SALA_ESPERA",
+    "EN_CONSULTA",
+    "COMPLETADO",
+    "NO_ASISTIO",
+    "CANCELADO",
+  ].includes(value as EstadoTurno);
+};
 
 export async function POST(request: Request) {
   let payload: TurnoPayload;
@@ -25,7 +38,7 @@ export async function POST(request: Request) {
     payload = await request.json();
   } catch (error) {
     return NextResponse.json(
-      { error: 'Cuerpo de la petición inválido. Debe ser JSON.' },
+      { error: "Cuerpo de la petición inválido. Debe ser JSON." },
       { status: 400 }
     );
   }
@@ -37,21 +50,21 @@ export async function POST(request: Request) {
 
   if (!Number.isInteger(parsedPacienteId) || parsedPacienteId <= 0) {
     return NextResponse.json(
-      { error: 'pacienteId debe ser un número entero positivo.' },
+      { error: "pacienteId debe ser un número entero positivo." },
       { status: 400 }
     );
   }
 
   if (!Number.isInteger(parsedProfesionalId) || parsedProfesionalId <= 0) {
     return NextResponse.json(
-      { error: 'profesionalId debe ser un número entero positivo.' },
+      { error: "profesionalId debe ser un número entero positivo." },
       { status: 400 }
     );
   }
 
-  if (typeof fecha !== 'string') {
+  if (typeof fecha !== "string") {
     return NextResponse.json(
-      { error: 'fecha es requerida y debe ser un string en formato ISO 8601.' },
+      { error: "fecha es requerida y debe ser un string en formato ISO 8601." },
       { status: 400 }
     );
   }
@@ -59,29 +72,35 @@ export async function POST(request: Request) {
   const parsedFecha = new Date(fecha);
   if (Number.isNaN(parsedFecha.getTime())) {
     return NextResponse.json(
-      { error: 'fecha inválida. Debe ser un string en formato ISO 8601.' },
+      { error: "fecha inválida. Debe ser un string en formato ISO 8601." },
       { status: 400 }
     );
   }
 
-  if (typeof motivo !== 'string' || motivo.trim().length === 0) {
+  if (typeof motivo !== "string" || motivo.trim().length === 0) {
     return NextResponse.json(
-      { error: 'motivo es requerido y debe ser un string no vacío.' },
+      { error: "motivo es requerido y debe ser un string no vacío." },
       { status: 400 }
     );
   }
 
-  if (typeof detalle !== 'string' || detalle.trim().length === 0) {
+  if (typeof detalle !== "string" || detalle.trim().length === 0) {
     return NextResponse.json(
-      { error: 'detalle es requerido y debe ser un string no vacío.' },
+      { error: "detalle es requerido y debe ser un string no vacío." },
       { status: 400 }
     );
+  }
+
+  if (typeof estado !== "string" || detalle.trim().length === 0) {
+    return NextResponse.json({ error: "estado es requerido" }, { status: 400 });
   }
 
   const trimmedMotivo = motivo.trim();
   const trimmedDetalle = detalle.trim();
 
-  const estadoTurno: EstadoTurno = isEstadoTurno(estado) ? estado : ESTADO_DEFAULT;
+  const estadoTurno: EstadoTurno = isEstadoTurno(estado)
+    ? estado
+    : ESTADO_DEFAULT;
 
   try {
     const [paciente, profesional] = await Promise.all([
@@ -98,14 +117,19 @@ export async function POST(request: Request) {
 
     if (!profesional) {
       return NextResponse.json(
-        { error: `No se encontró un profesional con id ${parsedProfesionalId}.` },
+        {
+          error: `No se encontró un profesional con id ${parsedProfesionalId}.`,
+        },
         { status: 404 }
       );
     }
 
     if (await profesionalHasTurnoAt(parsedProfesionalId, parsedFecha)) {
       return NextResponse.json(
-        { error: 'El profesional ya tiene un turno registrado para la fecha y hora indicadas.' },
+        {
+          error:
+            "El profesional ya tiene un turno registrado para la fecha y hora indicadas.",
+        },
         { status: 409 }
       );
     }
@@ -120,13 +144,13 @@ export async function POST(request: Request) {
       parsedFecha,
       estadoTurno,
       trimmedMotivo,
-      detalleHistoria,
+      detalleHistoria
     );
 
     const [turnoCreado] = await registerTurno(data);
 
     if (!turnoCreado) {
-      throw new Error('No se pudo crear el turno.');
+      throw new Error("No se pudo crear el turno.");
     }
 
     return NextResponse.json(
@@ -135,13 +159,15 @@ export async function POST(request: Request) {
         fecha: turnoCreado.fecha.toISOString(),
         estado: turnoCreado.estado,
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
-    console.error('Error al crear turno:', error);
+    console.error("Error al crear turno:", error);
     return NextResponse.json(
-      { error: 'Error interno del servidor al crear el turno.' },
+      { error: "Error interno del servidor al crear el turno." },
       { status: 500 }
     );
   }
 }
+
+// MODIFICAR TURNO
