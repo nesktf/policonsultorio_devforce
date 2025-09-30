@@ -1,8 +1,8 @@
 // src/app/secciones/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Header } from "../../components/Header";
-import { SidebarOficial } from "@/components/Sidebar";
+import { Header } from "../../components/header";
+import { SidebarOficial } from "@/components/sidebar";
 import { UserProvider } from "../../context/user";
 import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
