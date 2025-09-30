@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,112 +11,130 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Search, Moon, Sun, LogOut, User } from "lucide-react"
-import { useState } from "react"
-import { useAuth } from "@/context/auth-context"
-import { NotificationsPanel } from "./notifications-panel"
+} from "@/components/ui/dropdown-menu";
+import { Search, Moon, Sun, LogOut, User } from "lucide-react";
+import { useState, useEffect } from "react";
+
+interface User {
+  nombre: string;
+  apellido: string;
+  rol: "MESA_ENTRADA" | "PROFESIONAL" | "GERENTE";
+}
 
 export function Header() {
-  const [darkMode, setDarkMode] = useState(false)
-  const { user, logout } = useAuth()
+  const router = useRouter();
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Obtener usuario desde localStorage (similar a headerOficial)
+
+  const [users, setUsers] = useState<User | null>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        setUsers(JSON.parse(storedUser));
+      } catch (err) {
+        console.error("Error al parsear el usuario:", err);
+      }
+    }
+  }, []);
+
+  if (!users) return null; // Esperamos a que user exista
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode)
-    document.documentElement.classList.toggle("dark")
-  }
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle("dark");
+  };
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
-      case "mesa-entrada":
-        return "Mesa de Entrada"
-      case "profesional":
-        return "Profesional"
-      case "gerente":
-        return "Gerente"
+      case "MESA_ENTRADA":
+        return "Mesa de Entrada";
+      case "PROFESIONAL":
+        return "Profesional";
+      case "GERENTE":
+        return "Gerente";
       default:
-        return role
+        return role;
     }
-  }
+  };
 
-  const getUserInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-  }
+  const getUserInitials = (user: User) => {
+    const nombreInicial = user.nombre?.[0] || "";
+    const apellidoInicial = user.apellido?.[0] || "";
+    return `${nombreInicial}${apellidoInicial}`.toUpperCase();
+  };
 
   return (
-    <header className="bg-card border-b border-border px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold text-foreground">
-            {user?.role === "mesa-entrada"
-              ? "Mesa de Entrada"
-              : user?.role === "profesional"
-                ? "Panel Profesional"
-                : user?.role === "gerente"
-                  ? "Panel de Gestión"
-                  : "Dashboard"}
-          </h1>
-          <div className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString("es-ES", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar pacientes, profesionales..." className="pl-10 w-80" />
-          </div>
-
-          <NotificationsPanel />
-
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={toggleDarkMode}>
-            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {user ? getUserInitials(user.name) : "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{getRoleDisplayName(user?.role || "")}</p>
-                  {user?.especialidad && (
-                    <p className="text-xs leading-none text-muted-foreground">{user.especialidad}</p>
-                  )}
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Cerrar Sesión</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <header className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-indigo-600 to-indigo-700 z-50 shadow-lg px-6 flex items-center justify-between">
+      {/* Título y fecha */}
+      <div className="flex items-center gap-6">
+        <h1 className="text-2xl font-bold text-white tracking-tight">
+          DevForce
+        </h1>
+        <div className="hidden md:block text-sm text-indigo-200 capitalize">
+          {new Date().toLocaleDateString("es-ES", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
         </div>
       </div>
+
+      {/* Panel derecho: notificaciones, dark mode, avatar y logout */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 w-9 p-0 text-white"
+          onClick={toggleDarkMode}
+        >
+          {darkMode ? (
+            <Sun className="h-4 w-4" />
+          ) : (
+            <Moon className="h-4 w-4" />
+          )}
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="relative h-9 w-9 rounded-full p-0"
+            >
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="bg-white/20 text-white">
+                  {users ? getUserInitials(users) : "U"}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none text-gray-900">
+                  {users?.nombre}
+                </p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {getRoleDisplayName(users.rol || "")}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Cerrar Sesión</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
-  )
+  );
 }

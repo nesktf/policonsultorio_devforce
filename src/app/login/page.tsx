@@ -3,7 +3,18 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Stethoscope } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -29,63 +40,54 @@ export default function LoginPage() {
     localStorage.setItem("user", JSON.stringify(data.user));
 
     router.push("/sist/pacientes");
-
-    /*// Redirigir por rol
-    switch (data.user.rol) {
-      case "GERENTE":
-        router.push("secciones/roles/gerente/pacientes");
-        break;
-      case "MESA_ENTRADA":
-        router.push("secciones/roles/mesa_entrada/pacientes");
-        break;
-      case "PROFESIONAL":
-        router.push("secciones/roles/profesional/pacientes");
-        break;
-      default:
-        alert("Rol no válido");
-    }*/
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-600 to-indigo-700">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
-        <div className="flex justify-center mb-6">
-          <Image
-            src="/logo.png"
-            alt="Logo de la empresa"
-            width={400}
-            height={250}
-            className="rounded-md"
-          />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
-          Iniciar sesión
-        </h2>
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="text-black border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="text-black border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md shadow-md transition"
-          >
-            Iniciar sesión
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Stethoscope className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl font-bold text-primary">
+            MediAdmin
+          </CardTitle>
+          <CardDescription>
+            Sistema de Gestión de Policonsultorio
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="usuario@policonsultorio.com"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Iniciar Sesión
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

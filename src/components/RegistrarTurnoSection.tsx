@@ -38,6 +38,41 @@ export function RegistrarTurnoSection({
 
   const [selectedTurno, setSelectedTurno] = useState<Turno | null>(null);
 
+  // Ordenamiento
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof Turno;
+    direction: "asc" | "desc";
+  } | null>(null);
+
+  const sortedTurnos = [...turnos].sort((a, b) => {
+    if (!sortConfig) return 0;
+    const { key, direction } = sortConfig;
+
+    let aValue: any = a[key];
+    let bValue: any = b[key];
+
+    if (key === "fechaIso") {
+      aValue = new Date(aValue).getTime();
+      bValue = new Date(bValue).getTime();
+    }
+
+    if (aValue < bValue) return direction === "asc" ? -1 : 1;
+    if (aValue > bValue) return direction === "asc" ? 1 : -1;
+    return 0;
+  });
+
+  const requestSort = (key: keyof Turno) => {
+    let direction: "asc" | "desc" = "asc";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "asc"
+    ) {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
   // Bloquear scroll cuando el modal está abierto
   useEffect(() => {
     if (!isOpen && !selectedTurno) return;
@@ -63,6 +98,28 @@ export function RegistrarTurnoSection({
     );
   };
 
+  // Función para mostrar badge de estado
+  const renderEstadoBadge = (estado: string) => {
+    const colorMap: Record<string, string> = {
+      programado: "bg-blue-100 text-blue-700",
+      "en consulta": "bg-yellow-100 text-yellow-700",
+      completado: "bg-green-100 text-green-700",
+      cancelado: "bg-red-100 text-red-700",
+      "no asistio": "bg-gray-200 text-gray-600",
+      "sala de espera": "bg-purple-100 text-purple-700",
+    };
+
+    return (
+      <span
+        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+          colorMap[estado] || "bg-gray-100 text-gray-600"
+        }`}
+      >
+        {estado}
+      </span>
+    );
+  };
+
   return (
     <div className="p-6 bg-[#E4F1F9] space-y-6">
       <div className="flex flex-col gap-4 mb-2">
@@ -78,7 +135,8 @@ export function RegistrarTurnoSection({
         </div>
       </div>
 
-      {!isOpen ? null : (
+      {/* Modal de Registrar turno */}
+      {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4">
           <div className="relative w-full max-w-5xl rounded-2xl bg-white shadow-lg">
             <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
@@ -91,18 +149,7 @@ export function RegistrarTurnoSection({
                 className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 aria-label="Cerrar formulario"
               >
-                <svg
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                ✕
               </button>
             </div>
 
@@ -143,37 +190,43 @@ export function RegistrarTurnoSection({
         </div>
       )}
 
+      {/* Tabla */}
       <section className="bg-white rounded-xl shadow-lg border-2 border-[#AFE1EA]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-sm border-b-2 border-[#AFE1EA] bg-[#E4F1F9]">
               <tr>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
-                  ID
-                </th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
-                  Paciente
-                </th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
-                  Profesional
-                </th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
-                  Fecha
-                </th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
-                  Hora
-                </th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
-                  Estado
-                </th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
-                  Accion
-                </th>
+                {[
+                  { key: "id", label: "ID" },
+                  { key: "paciente", label: "Paciente" },
+                  { key: "profesional", label: "Profesional" },
+                  { key: "fechaIso", label: "Fecha" },
+                  { key: "estado", label: "Estado", sortable: false },
+                ].map(({ key, label, sortable = true }) => (
+                  <th
+                    key={key}
+                    onClick={
+                      sortable
+                        ? () => requestSort(key as keyof Turno)
+                        : undefined
+                    }
+                    className={`px-6 py-4 font-bold text-[#0AA2C7] ${
+                      sortable ? "cursor-pointer select-none" : ""
+                    }`}
+                  >
+                    {label}{" "}
+                    {sortable &&
+                      sortConfig?.key === key &&
+                      (sortConfig.direction === "asc" ? "↑" : "↓")}
+                  </th>
+                ))}
+                <th className="px-6 py-4 font-bold text-[#0AA2C7]">Hora</th>
+                <th className="px-6 py-4 font-bold text-[#0AA2C7]">Acción</th>
               </tr>
             </thead>
             <tbody>
-              {turnos.length > 0 ? (
-                turnos.map((turno) => {
+              {sortedTurnos.length > 0 ? (
+                sortedTurnos.map((turno) => {
                   const timeZone = "America/Argentina/Buenos_Aires";
                   const fechaDate = new Date(turno.fechaIso);
                   const fecha = new Intl.DateTimeFormat("es-AR", {
@@ -204,14 +257,14 @@ export function RegistrarTurnoSection({
                         {turno.profesional}
                       </td>
                       <td className="px-6 py-4 text-gray-900">{fecha}</td>
-                      <td className="px-6 py-4 text-gray-600">{hora}</td>
-                      <td className="px-6 py-4 text-gray-900">
-                        {turno.estado}
+                      <td className="px-6 py-4">
+                        {renderEstadoBadge(turno.estado)}
                       </td>
+                      <td className="px-6 py-4 text-gray-600">{hora}</td>
                       <td className="px-6 py-4">
                         <button
                           onClick={() => setSelectedTurno(turno)}
-                          className="text-blue-500 hover:underline"
+                          className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
                         >
                           Ver detalle
                         </button>
@@ -223,7 +276,7 @@ export function RegistrarTurnoSection({
                 <tr>
                   <td
                     className="px-6 py-6 text-center text-sm text-gray-500"
-                    colSpan={5}
+                    colSpan={7}
                   >
                     Aún no hay turnos registrados.
                   </td>
@@ -234,7 +287,7 @@ export function RegistrarTurnoSection({
         </div>
       </section>
 
-      {/* Modal con el detalle del turno */}
+      {/* Modal con detalle del turno */}
       {selectedTurno && (
         <TurnoModal
           turno={selectedTurno}

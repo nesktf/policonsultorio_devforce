@@ -1,22 +1,24 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { MainLayout } from "@/components/layout/main-layout"
-import { TurnosCalendar } from "@/components/turnos/turnos-calendar"
-import { NuevoTurnoDialog } from "@/components/turnos/nuevo-turno-dialog"
-import { TurnosFilters } from "@/components/turnos/turnos-filters"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { useAuth } from "@/context/auth-context"
-import { hasPermission, getAccessDeniedMessage } from "@/lib/permissions"
-import { Plus, AlertCircle } from "lucide-react"
+import { useState } from "react";
+import { MainLayout } from "@/components/layout/main-layout";
+import { TurnosCalendar } from "@/components/turnos/turnos-calendar";
+import { NuevoTurnoDialog } from "@/components/turnos/nuevo-turno-dialog";
+import { TurnosFilters } from "@/components/turnos/turnos-filters";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/context/auth-context";
+import { hasPermission, getAccessDeniedMessage } from "@/lib/permissions";
+import { Plus, AlertCircle } from "lucide-react";
 
 export default function TurnosPage() {
-  const { user } = useAuth()
-  const [showNuevoTurno, setShowNuevoTurno] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [selectedProfesional, setSelectedProfesional] = useState<string>("todos")
-  const [selectedEspecialidad, setSelectedEspecialidad] = useState<string>("todas")
+  const { user } = useAuth();
+  const [showNuevoTurno, setShowNuevoTurno] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedProfesional, setSelectedProfesional] =
+    useState<string>("todos");
+  const [selectedEspecialidad, setSelectedEspecialidad] =
+    useState<string>("todas");
 
   if (!user) {
     return (
@@ -24,12 +26,14 @@ export default function TurnosPage() {
         <div className="p-6">
           <Card>
             <CardContent className="flex items-center justify-center h-32">
-              <p className="text-muted-foreground">Debes iniciar sesión para acceder a esta sección.</p>
+              <p className="text-muted-foreground">
+                Debes iniciar sesión para acceder a esta sección.
+              </p>
             </CardContent>
           </Card>
         </div>
       </MainLayout>
-    )
+    );
   }
 
   if (user.role === "profesional") {
@@ -39,7 +43,9 @@ export default function TurnosPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
-              <p className="text-muted-foreground text-center">{getAccessDeniedMessage(user.role, "turnos-todos")}</p>
+              <p className="text-muted-foreground text-center">
+                {getAccessDeniedMessage(user.role, "turnos-todos")}
+              </p>
               <p className="text-sm text-muted-foreground">
                 Puedes acceder a tu agenda personal desde el menú "Mi Agenda".
               </p>
@@ -47,10 +53,10 @@ export default function TurnosPage() {
           </Card>
         </div>
       </MainLayout>
-    )
+    );
   }
 
-  const canCreateTurnos = hasPermission(user.role, "canCreateTurnos")
+  const canCreateTurnos = hasPermission(user.role, "canCreateTurnos");
 
   return (
     <MainLayout>
@@ -59,7 +65,9 @@ export default function TurnosPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              {user.role === "gerente" ? "Gestión de Turnos" : "Turnos del Policonsultorio"}
+              {user.role === "gerente"
+                ? "Gestión de Turnos"
+                : "Turnos del Policonsultorio"}
             </h1>
             <p className="text-muted-foreground">
               {user.role === "gerente"
@@ -90,14 +98,20 @@ export default function TurnosPage() {
           selectedDate={selectedDate}
           selectedProfesional={selectedProfesional}
           selectedEspecialidad={selectedEspecialidad}
-          onNuevoTurno={canCreateTurnos ? () => setShowNuevoTurno(true) : undefined}
+          onNuevoTurno={
+            canCreateTurnos ? () => setShowNuevoTurno(true) : undefined
+          }
         />
 
         {/* Nuevo Turno Dialog */}
         {canCreateTurnos && (
-          <NuevoTurnoDialog open={showNuevoTurno} onOpenChange={setShowNuevoTurno} defaultDate={selectedDate} />
+          <NuevoTurnoDialog
+            open={showNuevoTurno}
+            onOpenChange={setShowNuevoTurno}
+            defaultDate={selectedDate}
+          />
         )}
       </div>
     </MainLayout>
-  )
+  );
 }
