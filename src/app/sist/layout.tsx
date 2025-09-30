@@ -4,13 +4,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Header } from "../../components/header";
 import { SidebarOficial } from "../../components/sidebar";
 import { UserProvider } from "../../context/user";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
 import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { NotificationsProvider } from "@/context/notifications-context";
-import { AuthProvider } from "@/context/auth-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
