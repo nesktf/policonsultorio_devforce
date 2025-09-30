@@ -6,6 +6,7 @@ interface TurnoResumen {
   paciente: string;
   profesional: string;
   fechaIso: string;
+  estado: string;
 }
 
 export default async function getTurnosPageData() {
@@ -23,7 +24,7 @@ export default async function getTurnosPageData() {
         select: {
           especialidad: true,
         },
-        distinct: ['especialidad'],
+        distinct: ["especialidad"],
       }),
       prisma.turno.findMany({
         include: {
@@ -41,7 +42,7 @@ export default async function getTurnosPageData() {
           },
         },
         orderBy: {
-          fecha: 'asc',
+          fecha: "asc",
         },
       }),
     ]);
@@ -51,16 +52,21 @@ export default async function getTurnosPageData() {
       paciente: `${turno.paciente.apellido}, ${turno.paciente.nombre}`,
       profesional: `${turno.profesional.apellido}, ${turno.profesional.nombre}`,
       fechaIso: turno.fecha.toISOString(),
+      estado: turno.estado,
     }));
 
     return { pacientes, especialidades, turnos: turnosResumen };
   } catch (error) {
-    console.error('Error fetching data for registrar turno page:', error);
+    console.error("Error fetching data for registrar turno page:", error);
     return { pacientes: [], especialidades: [], turnos: [] };
   }
 }
 
-export async function getProfesionalturnos(id: DBId, from_date: Date, to_date: Date) {
+export async function getProfesionalturnos(
+  id: DBId,
+  from_date: Date,
+  to_date: Date
+) {
   return await prisma.turno.findMany({
     where: {
       id_profesional: id,
@@ -155,6 +161,18 @@ export async function profesionalHasTurnoAt(id_profesional: DBId, fecha: Date): 
       fecha,
     },
   }) != undefined);
+export async function profesionalHasTurnoAt(
+  id_profesional: DBId,
+  fecha: Date
+): Promise<boolean> {
+  return (
+    (await prisma.turno.findFirst({
+      where: {
+        id_profesional,
+        fecha,
+      },
+    })) != undefined
+  );
 }
 
 export class TurnoData {
@@ -165,9 +183,14 @@ export class TurnoData {
   motivo: string;
   detalle: string;
 
-  constructor(id_paciente: DBId, id_profesional: DBId, fecha: Date,
-              estado: EstadoTurno, motivo: string, detalle: string)
-  {
+  constructor(
+    id_paciente: DBId,
+    id_profesional: DBId,
+    fecha: Date,
+    estado: EstadoTurno,
+    motivo: string,
+    detalle: string
+  ) {
     this.id_paciente = id_paciente;
     this.id_profesional = id_profesional;
     this.fecha = fecha;
@@ -176,13 +199,25 @@ export class TurnoData {
     this.detalle = detalle;
   }
 
-  getPaciente(): DBId { return this.id_paciente; }
-  getProfesional(): DBId { return this.id_profesional; }
-  getFecha(): Date { return this.fecha; }
-  getEstado(): EstadoTurno { return this.estado; }
-  getMotivo(): string { return this.motivo; }
-  getDetalle(): string { return this.detalle; }
-};
+  getPaciente(): DBId {
+    return this.id_paciente;
+  }
+  getProfesional(): DBId {
+    return this.id_profesional;
+  }
+  getFecha(): Date {
+    return this.fecha;
+  }
+  getEstado(): EstadoTurno {
+    return this.estado;
+  }
+  getMotivo(): string {
+    return this.motivo;
+  }
+  getDetalle(): string {
+    return this.detalle;
+  }
+}
 
 export async function registerTurno(data: TurnoData) {
   let id_paciente = data.getPaciente();

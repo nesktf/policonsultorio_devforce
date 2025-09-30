@@ -35,16 +35,23 @@ export default function ObraSocialPage() {
     []
   );
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [searchState, setSearchState] = useState<APIEstadoObraSocial | undefined>(undefined);
+  const [searchState, setSearchState] = useState<
+    APIEstadoObraSocial | undefined
+  >(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [modalTitle, setModalTitle] = useState<string>(modal_titles[0]);
 
-  const [selectedID, setSelectedID] = useState<number|undefined>(undefined);
-  const [selectedNombre, setSelectedNombre] = useState<string|undefined>(undefined);
+  const [selectedID, setSelectedID] = useState<number | undefined>(undefined);
+  const [selectedNombre, setSelectedNombre] = useState<string | undefined>(
+    undefined
+  );
   const [selectedEstado, setSelectedEstado] = useState<APIEstadoObraSocial>(1);
 
-  const queryObrasSociales = async (name?: string, state?: APIEstadoObraSocial) => {
+  const queryObrasSociales = async (
+    name?: string,
+    state?: APIEstadoObraSocial
+  ) => {
     setLoading(true);
     try {
       let res: Array<ObraSocialApiData> = await fetch(
@@ -87,13 +94,13 @@ export default function ObraSocialPage() {
           estado: selectedEstado,
         }),
       })
-      .then(async (body) => await body.json())
-      .then((json) => {
-        console.log(`${json}`);
-      });
+        .then(async (body) => await body.json())
+        .then((json) => {
+          console.log(`${json}`);
+        });
       queryObrasSociales(searchTerm, searchState);
       setModalOpen(false);
-    } catch (err) { 
+    } catch (err) {
       console.log(`${err}`);
     } finally {
       setLoading(true);
@@ -114,7 +121,7 @@ export default function ObraSocialPage() {
 
   const onAddObraSocial = () => {
     setSelectedID(undefined);
-    setSelectedNombre(undefined);
+    setSelectedNombre("");
     setSelectedEstado(1);
 
     setModalTitle(modal_titles[0]);
@@ -124,7 +131,11 @@ export default function ObraSocialPage() {
   const onSelectObraSocial = (os: ObraSocialApiData) => {
     setSelectedID(os.id);
     setSelectedNombre(os.nombre);
-    setSelectedEstado(os.estado == "ACTIVA" ? APIEstadoObraSocial.ACTIVA : APIEstadoObraSocial.INACTIVA);
+    setSelectedEstado(
+      os.estado == "ACTIVA"
+        ? APIEstadoObraSocial.ACTIVA
+        : APIEstadoObraSocial.INACTIVA
+    );
 
     setModalTitle(modal_titles[1]);
     setModalOpen(true);
@@ -138,7 +149,9 @@ export default function ObraSocialPage() {
     <div className="p-6 bg-[#E4F1F9]">
       <div className="flex flex-col gap-6 mb-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-[#0AA2C7]">Listado de Obras sociales</h2>
+          <h2 className="text-2xl font-bold text-[#0AA2C7]">
+            Listado de Obras sociales
+          </h2>
           <button
             type="button"
             onClick={onAddObraSocial}
@@ -160,7 +173,12 @@ export default function ObraSocialPage() {
                 className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 aria-label="Cerrar formulario"
               >
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
                   <path
                     fillRule="evenodd"
                     d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -192,11 +210,17 @@ export default function ObraSocialPage() {
                     className="select px-4 py-2 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={selectedEstado}
                     onChange={(e) => setSelectedEstado(Number(e.target.value))}
+                  >
+                    <option
+                      key={APIEstadoObraSocial.ACTIVA}
+                      value={APIEstadoObraSocial.ACTIVA}
                     >
-                    <option key={APIEstadoObraSocial.ACTIVA} value={APIEstadoObraSocial.ACTIVA}>
                       ACTIVA
                     </option>
-                    <option key={APIEstadoObraSocial.INACTIVA} value={APIEstadoObraSocial.INACTIVA}>
+                    <option
+                      key={APIEstadoObraSocial.INACTIVA}
+                      value={APIEstadoObraSocial.INACTIVA}
+                    >
                       INACTIVA
                     </option>
                   </select>
@@ -208,7 +232,7 @@ export default function ObraSocialPage() {
                   onClick={uploadObraSocial}
                   className="px-4 py-2 text-sm text-white bg-[#18AEFB] rounded-md hover:bg-[#0AA2C7] focus:outline-none focus:ring-2 focus:ring-[#AFE1EA] transition-colors"
                 >
-                  Aceptar 
+                  Aceptar
                 </button>
               </div>
             </div>
@@ -274,30 +298,50 @@ export default function ObraSocialPage() {
           <table className="w-full text-sm text-left">
             <thead className="text-sm border-b-2 border-[#AFE1EA] bg-[#E4F1F9]">
               <tr>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">Nombre</th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">Estado</th>
-                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">Editar</th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  Nombre
+                </th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  Estado
+                </th>
+                <th scope="col" className="px-6 py-4 font-bold text-[#0AA2C7]">
+                  Editar
+                </th>
               </tr>
             </thead>
             <tbody>
-            {obrasSociales.map((os) => (
-              <tr key={os.id} className="border-b border-gray-200 hover:bg-gray-50/50 transition-colors">
-                <td className="px-6 py-4 font-medium text-gray-900">{os.nombre}</td>
-                <td className="px-6 py-4 text-gray-900">{os.estado}</td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => onSelectObraSocial(os)}
-                    className="p-2 text-[#4D94C8] hover:text-[#0AA2C7] hover:bg-[#E4F1F9] rounded-full transition-colors"
-                    title="Editar obra social"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </button>
-                </td>
-              </tr>
-            ))}
+              {obrasSociales.map((os) => (
+                <tr
+                  key={os.id}
+                  className="border-b border-gray-200 hover:bg-gray-50/50 transition-colors"
+                >
+                  <td className="px-6 py-4 font-medium text-gray-900">
+                    {os.nombre}
+                  </td>
+                  <td className="px-6 py-4 text-gray-900">{os.estado}</td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => onSelectObraSocial(os)}
+                      className="p-2 text-[#4D94C8] hover:text-[#0AA2C7] hover:bg-[#E4F1F9] rounded-full transition-colors"
+                      title="Editar obra social"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
