@@ -1,5 +1,12 @@
-import { redirect } from "next/navigation";
+"use client"
+
+import { DashboardContent } from "@/components/dashboard-content"
+import { MainLayout } from "@/components/layout/main-layout"
 
 export default function HomePage() {
-  redirect("/login");
+  return (
+    <MainLayout>
+      <DashboardContent />
+    </MainLayout>
+  )
 }
