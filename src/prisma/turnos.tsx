@@ -75,6 +75,79 @@ export async function getProfesionalturnos(id: DBId, from_date: Date, to_date: D
   });
 }
 
+export async function getTurnosCalendarioProfesional(id: DBId, from: Date, to: Date) {
+  return prisma.turno.findMany({
+    where: {
+      id_profesional: id,
+      fecha: {
+        gte: from,
+        lte: to,
+      },
+    },
+    include: {
+      paciente: {
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          dni: true,
+        },
+      },
+      profesional: {
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          especialidad: true,
+        },
+      },
+    },
+    orderBy: {
+      fecha: 'asc',
+    },
+  });
+}
+
+export async function getTurnosPorEspecialidad(from: Date, to: Date) {
+  const turnos = await prisma.turno.findMany({
+    where: {
+      fecha: {
+        gte: from,
+        lte: to,
+      },
+    },
+    select: {
+      estado: true,
+      profesional: {
+        select: {
+          especialidad: true,
+        },
+      },
+    },
+  });
+
+  const agregados = new Map<string, { total: number; confirmados: number; cancelados: number }>();
+
+  for (const turno of turnos) {
+    const especialidad = turno.profesional?.especialidad ?? 'Sin especialidad';
+    const registro = agregados.get(especialidad) ?? { total: 0, confirmados: 0, cancelados: 0 };
+
+    registro.total += 1;
+    if (turno.estado === EstadoTurno.CONFIRMADO) {
+      registro.confirmados += 1;
+    } else if (turno.estado === EstadoTurno.CANCELADO) {
+      registro.cancelados += 1;
+    }
+
+    agregados.set(especialidad, registro);
+  }
+
+  return Array.from(agregados.entries()).map(([especialidad, valores]) => ({
+    especialidad,
+    ...valores,
+  }));
+}
+
 export async function profesionalHasTurnoAt(id_profesional: DBId, fecha: Date): Promise<boolean> {
   return (await prisma.turno.findFirst({
     where: {
