@@ -430,30 +430,9 @@ export default function HistoriasClinicasPage() {
     );
   }
 
-  if (user.role === "mesa-entrada") {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
-            <AlertCircle className="h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              No tienes permisos para acceder a las historias clínicas.
-            </p>
-            <Link href="/pacientes">
-              <Button variant="outline" className="gap-2 bg-transparent">
-                <ArrowLeft className="h-4 w-4" />
-                Volver a Pacientes
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   if (vistaLista) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 pt-16 flex-1">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

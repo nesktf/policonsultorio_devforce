@@ -146,7 +146,7 @@ export default function ObraSocialPage() {
   }, []);
 
   return (
-    <div className="p-6 bg-[#E4F1F9]">
+    <div className="p-6 bg-[#E4F1F9] pt-16 flex-1">
       <div className="flex flex-col gap-6 mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-[#0AA2C7]">

@@ -33,7 +33,7 @@ export default function SeccionesLayout({
       <SidebarProvider>
         <Header />
         <SidebarOficial /> {/* Este será el Sidebar nuevo, estilizado */}
-        <main>
+        <main className="flex w-full">
           <Suspense fallback={null}>{children}</Suspense>
           <Toaster />
         </main>

@@ -39,7 +39,7 @@ export default function LoginPage() {
     // Guardar usuario en localStorage
     localStorage.setItem("user", JSON.stringify(data.user));
 
-    router.push("/sist/pacientes");
+    router.push("sist/pacientes");
   };
 
   return (

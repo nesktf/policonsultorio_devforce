@@ -65,37 +65,49 @@ export function SidebarOficial() {
   const menuItems = [
     ...(user.rol === "MESA_ENTRADA"
       ? [
-          { icon: Users, label: "Pacientes", href: "/pacientes" },
-          { icon: Calendar, label: "Turnos", href: "/turnos" },
+          { icon: Users, label: "Pacientes", href: "/sist/pacientes" },
+          { icon: Calendar, label: "Turnos", href: "/sist/turnos" },
         ]
       : []),
     ...(user.rol === "PROFESIONAL"
       ? [
-          { icon: Calendar, label: "Turnos", href: "/turnos" },
-          { icon: Users, label: "Pacientes", href: "/pacientes" },
+          { icon: Calendar, label: "Turnos", href: "/sist/turnos" },
+          { icon: Users, label: "Pacientes", href: "/sist/pacientes" },
+          { icon: Users, label: "Mi agenda", href: "/sist/mi-agenda" },
+
           {
             icon: FileText,
             label: "Historias Clínicas",
-            href: "/historias-clinicas",
+            href: "/sist/historias-clinicas",
           },
         ]
       : []),
     ...(user.rol === "GERENTE"
       ? [
-          { icon: Users, label: "Pacientes", href: "/pacientes" },
-          { icon: UserCheck, label: "Profesionales", href: "/profesionales" },
-          { icon: Calendar, label: "Turnos", href: "/turnos" },
+          { icon: Users, label: "Pacientes", href: "/sist/pacientes" },
+          {
+            icon: UserCheck,
+            label: "Profesionales",
+            href: "/sist/profesionales",
+          },
+          { icon: Calendar, label: "Turnos", href: "/sist/turnos" },
+          {
+            icon: Calendar,
+            label: "Obras sociales",
+            href: "/sist/obra_social",
+          },
+
           {
             icon: FileText,
             label: "Historias Clínicas",
-            href: "/historias-clinicas",
+            href: "/sist/historias-clinicas",
           },
         ]
       : []),
   ];
 
   return (
-    <Sidebar>
+    <Sidebar className="pt-16">
       <SidebarRail />
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2">
