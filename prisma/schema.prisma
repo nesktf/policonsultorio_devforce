@@ -52,6 +52,7 @@ model Paciente {
   dni              String            @db.VarChar(9) @unique
   direccion        String
   fecha_nacimiento DateTime
+  fecha_registro   DateTime          @default(now())
   telefono         String            @db.VarChar(14)
   id_obra_social   Int?
   num_obra_social  String?

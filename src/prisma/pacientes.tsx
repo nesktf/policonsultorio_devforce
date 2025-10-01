@@ -176,3 +176,63 @@ export async function searchPacientes(searchTerm: string) {
 export async function getPaciente(id: DBId) {
   return await prisma.paciente.findUnique({ where: { id } });
 }
+
+const MONTH_LABELS = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
+export async function getPacientesNuevosPorMes(
+  year: number,
+  obraSocialId?: number | null,
+) {
+  const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
+  const end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+
+  const where: Record<string, unknown> = {
+    fecha_registro: {
+      gte: start,
+      lt: end,
+    },
+  };
+
+  if (obraSocialId != null) {
+    where.id_obra_social = obraSocialId;
+  }
+
+  const pacientes = await prisma.paciente.findMany({
+    where,
+    select: {
+      fecha_registro: true,
+    },
+  });
+
+  const meses = MONTH_LABELS.map((label, index) => ({
+    month: index + 1,
+    label,
+    cantidad: 0,
+  }));
+
+  for (const paciente of pacientes) {
+    const fecha = new Date(paciente.fecha_registro);
+    const monthIndex = fecha.getUTCMonth();
+    meses[monthIndex].cantidad += 1;
+  }
+
+  return {
+    year,
+    obraSocialId: obraSocialId ?? null,
+    total: pacientes.length,
+    meses,
+  };
+}
