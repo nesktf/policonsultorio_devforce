@@ -74,7 +74,7 @@ export function SidebarOficial() {
           { icon: Calendar, label: "Turnos", href: "/sist/turnos" },
           { icon: Users, label: "Pacientes", href: "/sist/pacientes" },
           { icon: Users, label: "Mi agenda", href: "/sist/mi-agenda" },
-
+          { icon: Users, label: "Mis pacientes", href: "/sist/mis_pacientes" },
           {
             icon: FileText,
             label: "Historias Clínicas",
