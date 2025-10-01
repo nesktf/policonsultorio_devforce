@@ -77,6 +77,7 @@ model Turno {
   id_profesional Int
   id_paciente    Int
   fecha          DateTime
+  duracion_minutos Int       @default(30)
   estado         EstadoTurno
   paciente       Paciente    @relation(fields: [id_paciente], references: [id])
   profesional    Profesional @relation(fields: [id_profesional], references: [id])
@@ -94,6 +95,8 @@ enum EstadoObraSocial {
 }
 
 enum EstadoTurno {
+  PROGRAMADO
+  ASISTIO
+  NO_ASISTIO
   CANCELADO
-  CONFIRMADO
 }

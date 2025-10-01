@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createPatient, getPacienteByDni } from '@/prisma/pacientes';
+import {
+  createPatient,
+  getPacienteByDni,
+  searchPacientes,
+} from '@/prisma/pacientes';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -30,6 +34,43 @@ const parseOptionalNumber = (value: unknown): number | null => {
   }
   return null;
 };
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const searchTerm = searchParams.get('search');
+
+  if (!searchTerm || searchTerm.trim().length === 0) {
+    return NextResponse.json(
+      { error: 'Debes indicar el parámetro "search".' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const pacientes = await searchPacientes(searchTerm.trim());
+    const resultados = pacientes.map((paciente) => ({
+      id: paciente.id,
+      nombre: paciente.nombre,
+      apellido: paciente.apellido,
+      dni: paciente.dni,
+      telefono: paciente.telefono,
+    }));
+
+    return NextResponse.json(
+      {
+        total: resultados.length,
+        pacientes: resultados,
+      },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  } catch (error) {
+    console.error('Error al buscar pacientes:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor al buscar pacientes.' },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   let payload: CreatePacientePayload;

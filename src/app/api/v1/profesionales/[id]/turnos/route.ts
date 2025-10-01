@@ -11,6 +11,7 @@ type EventoCalendario = {
   estado: EstadoTurno;
   fechaIso: string;
   horaLocal: string;
+  duracionMinutos: number;
   paciente: {
     id: number;
     nombre: string;
@@ -101,6 +102,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         estado: turno.estado,
         fechaIso: utcDate.toISOString(),
         horaLocal: hora,
+        duracionMinutos: turno.duracion_minutos,
         paciente: {
           id: turno.paciente.id,
           nombre: turno.paciente.nombre,

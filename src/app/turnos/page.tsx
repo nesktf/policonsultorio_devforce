@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { TurnosCalendar } from "@/components/turnos/turnos-calendar"
 import { NuevoTurnoDialog } from "@/components/turnos/nuevo-turno-dialog"
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { useAuth } from "@/context/auth-context"
 import { hasPermission, getAccessDeniedMessage } from "@/lib/permissions"
-import { Plus, AlertCircle } from "lucide-react"
+import { AlertCircle, Plus } from "lucide-react"
 
 export default function TurnosPage() {
   const { user } = useAuth()
@@ -17,6 +17,73 @@ export default function TurnosPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedProfesional, setSelectedProfesional] = useState<string>("todos")
   const [selectedEspecialidad, setSelectedEspecialidad] = useState<string>("todas")
+  const [especialidades, setEspecialidades] = useState<Array<{ id: string; nombre: string }>>([
+    { id: "todas", nombre: "Todas las especialidades" },
+  ])
+  const [profesionales, setProfesionales] = useState<Array<{ id: string; nombre: string; especialidad: string }>>([
+    { id: "todos", nombre: "Todos los profesionales", especialidad: "" },
+  ])
+  const [filtersLoading, setFiltersLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
+  useEffect(() => {
+    let cancelado = false
+
+    async function cargarFiltros() {
+      setFiltersLoading(true)
+      try {
+        const [especialidadesRes, profesionalesRes] = await Promise.all([
+          fetch("/api/v1/profesionales/especialidades", { cache: "no-store" }),
+          fetch("/api/v1/profesionales", { cache: "no-store" }),
+        ])
+
+        if (!especialidadesRes.ok) {
+          throw new Error("No se pudieron obtener las especialidades")
+        }
+        if (!profesionalesRes.ok) {
+          throw new Error("No se pudieron obtener los profesionales")
+        }
+
+        const especialidadesData: Array<{ id: string; nombre: string }> =
+          await especialidadesRes.json()
+        const profesionalesData: Array<{
+          id: number
+          nombre: string
+          apellido: string
+          especialidad: string
+        }> = await profesionalesRes.json()
+
+        if (cancelado) return
+
+        setEspecialidades([
+          { id: "todas", nombre: "Todas las especialidades" },
+          ...especialidadesData,
+        ])
+
+        setProfesionales([
+          { id: "todos", nombre: "Todos los profesionales", especialidad: "" },
+          ...profesionalesData.map((prof) => ({
+            id: String(prof.id),
+            nombre: `${prof.apellido}, ${prof.nombre}`,
+            especialidad: prof.especialidad,
+          })),
+        ])
+      } catch (error) {
+        console.error("Error al cargar filtros de turnos:", error)
+      } finally {
+        if (!cancelado) {
+          setFiltersLoading(false)
+        }
+      }
+    }
+
+    cargarFiltros()
+
+    return () => {
+      cancelado = true
+    }
+  }, [])
+
+
 
   if (!user) {
     return (
@@ -41,13 +108,18 @@ export default function TurnosPage() {
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground text-center">{getAccessDeniedMessage(user.role, "turnos-todos")}</p>
               <p className="text-sm text-muted-foreground">
-                Puedes acceder a tu agenda personal desde el menú "Mi Agenda".
+                Puedes acceder a tu agenda personal desde el menú &quot;Mi Agenda&quot;.
               </p>
             </CardContent>
           </Card>
         </div>
       </MainLayout>
     )
+  }
+
+  const handleTurnoCreado = () => {
+    setReloadKey((prev) => prev + 1)
+    setShowNuevoTurno(false)
   }
 
   const canCreateTurnos = hasPermission(user.role, "canCreateTurnos")
@@ -67,12 +139,6 @@ export default function TurnosPage() {
                 : "Visualiza y gestiona los turnos de todos los profesionales"}
             </p>
           </div>
-          {canCreateTurnos && (
-            <Button onClick={() => setShowNuevoTurno(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nuevo Turno
-            </Button>
-          )}
         </div>
 
         {/* Filters */}
@@ -83,19 +149,39 @@ export default function TurnosPage() {
           onProfesionalChange={setSelectedProfesional}
           selectedEspecialidad={selectedEspecialidad}
           onEspecialidadChange={setSelectedEspecialidad}
+          profesionales={profesionales}
+          especialidades={especialidades}
+          loading={filtersLoading}
         />
+
+
+        {canCreateTurnos && (
+          <div className="flex justify-end">
+            <Button onClick={() => setShowNuevoTurno(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Agendar turno
+            </Button>
+          </div>
+        )}
 
         {/* Calendar */}
         <TurnosCalendar
           selectedDate={selectedDate}
           selectedProfesional={selectedProfesional}
           selectedEspecialidad={selectedEspecialidad}
-          onNuevoTurno={canCreateTurnos ? () => setShowNuevoTurno(true) : undefined}
+          reloadKey={reloadKey}
         />
 
         {/* Nuevo Turno Dialog */}
         {canCreateTurnos && (
-          <NuevoTurnoDialog open={showNuevoTurno} onOpenChange={setShowNuevoTurno} defaultDate={selectedDate} />
+          <NuevoTurnoDialog
+            open={showNuevoTurno}
+            onOpenChange={setShowNuevoTurno}
+            defaultDate={selectedDate}
+            especialidades={especialidades.filter((esp) => esp.id !== "todas")}
+            profesionales={profesionales.filter((prof) => prof.id !== "todos")}
+            onTurnoCreado={handleTurnoCreado}
+          />
         )}
       </div>
     </MainLayout>

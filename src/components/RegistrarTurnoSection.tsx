@@ -29,6 +29,13 @@ export function RegistrarTurnoSection({
   especialidades,
   turnosIniciales,
 }: RegistrarTurnoSectionProps) {
+  const estadoLabels: Record<string, string> = {
+    PROGRAMADO: "Programado",
+    ASISTIO: "Asistió",
+    NO_ASISTIO: "No asistió",
+    CANCELADO: "Cancelado",
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [turnos, setTurnos] = useState(() =>
     [...turnosIniciales].sort(
@@ -127,7 +134,7 @@ export function RegistrarTurnoSection({
                         paciente,
                         profesional,
                         fechaIso,
-                        estado: "programado",
+                        estado: turnoCreado.estado,
                       },
                     ].sort(
                       (a, b) =>
@@ -206,7 +213,7 @@ export function RegistrarTurnoSection({
                       <td className="px-6 py-4 text-gray-900">{fecha}</td>
                       <td className="px-6 py-4 text-gray-600">{hora}</td>
                       <td className="px-6 py-4 text-gray-900">
-                        {turno.estado}
+                        {estadoLabels[turno.estado] ?? turno.estado}
                       </td>
                       <td className="px-6 py-4">
                         <button
