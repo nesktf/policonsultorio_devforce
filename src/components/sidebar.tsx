@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/auth-context"
 import {
   Users,
+  CalendarDays,
   UserCheck,
   Calendar,
   FileText,
@@ -32,6 +33,7 @@ export function Sidebar() {
         ...baseItems,
         { icon: Users, label: "Pacientes", href: "/pacientes" },
         { icon: Calendar, label: "Turnos", href: "/turnos" },
+        { icon: CalendarDays, label: "Calendario", href: "/calendario-mesa" },
       ]
     }
 
@@ -50,8 +52,9 @@ export function Sidebar() {
         { icon: Users, label: "Pacientes", href: "/pacientes" },
         { icon: UserCheck, label: "Profesionales", href: "/profesionales" },
         { icon: Calendar, label: "Turnos", href: "/turnos" },
+        { icon: CalendarDays, label: "Calendario", href: "/calendario-mesa" },
         { icon: FileText, label: "Historias Clínicas", href: "/historias-clinicas" },
-        { icon: Activity, label: "Indicadores", href: "/indicadores" },
+        { icon: Activity, label: "Reportes", href: "/reportes" },
         { icon: Settings, label: "Configuración", href: "/configuracion" },
       ]
     }
