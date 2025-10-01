@@ -5,6 +5,7 @@ export const ROLE_PERMISSIONS = {
   "mesa-entrada": {
     // Gestión de turnos
     canViewAllTurnos: true,
+    canViewOwnTurnos: false, // Agregado para consistencia de tipos - mesa de entrada ve todos los turnos
     canCreateTurnos: true,
     canEditTurnos: true,
     canCancelTurnos: true,
@@ -12,12 +13,14 @@ export const ROLE_PERMISSIONS = {
 
     // Gestión de pacientes
     canViewAllPacientes: true,
+    canViewOwnPacientes: false,
     canCreatePacientes: true,
     canEditPacientes: true,
     canViewPacienteDetails: true,
 
     // Historias clínicas - RESTRINGIDO
     canViewHistoriasClinicas: false,
+    canViewOwnHistoriasClinicas: false, // Agregado para consistencia de tipos
     canCreateHistoriasClinicas: false,
     canEditHistoriasClinicas: false,
 
@@ -38,14 +41,14 @@ export const ROLE_PERMISSIONS = {
     canCreateTurnos: false,
     canEditTurnos: false,
     canCancelTurnos: false,
-    canChangeEstadoTurno: true, // Solo para completar consultas
+    canChangeEstadoTurno: true,
 
     // Gestión de pacientes - SOLO SUS PACIENTES
     canViewAllPacientes: false,
     canViewOwnPacientes: true,
     canCreatePacientes: false,
     canEditPacientes: false,
-    canViewPacienteDetails: true, // Solo sus pacientes
+    canViewPacienteDetails: true,
 
     // Historias clínicas - SOLO SUS PACIENTES
     canViewHistoriasClinicas: true,
@@ -168,12 +171,12 @@ export const canPerformAction = (
     if (resource === "paciente") {
       if (["edit", "create"].includes(action)) return false // No puede crear/editar pacientes
       // Solo puede ver sus pacientes
-      return resourceData?.profesionalesAsignados?.includes(user.id) || resourceData?.profesionalId === user.id
+      return resourceData?.profesionalesAsignados?.includes(user.id) || resourceData?.profesionalId === user.id || false
     }
 
     if (resource === "historia") {
       // Puede gestionar historias clínicas solo de sus pacientes
-      return resourceData?.profesionalId === user.id || resourceData?.profesionalesAsignados?.includes(user.id)
+      return resourceData?.profesionalId === user.id || resourceData?.profesionalesAsignados?.includes(user.id) || false
     }
   }
 
@@ -182,7 +185,7 @@ export const canPerformAction = (
 
 // Mensajes de error personalizados por rol
 export const getAccessDeniedMessage = (userRole: UserRole, resource: string): string => {
-  const messages = {
+  const messages: Record<UserRole, Record<string, string>> = {
     "mesa-entrada": {
       "historias-clinicas": "Los usuarios de mesa de entrada no tienen acceso a las historias clínicas.",
       configuracion: "No tienes permisos para acceder a la configuración del sistema.",
