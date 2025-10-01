@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { TurnosCalendar } from "@/components/turnos/turnos-calendar"
 import { NuevoTurnoDialog } from "@/components/turnos/nuevo-turno-dialog"
@@ -10,10 +10,114 @@ import { useAuth } from "@/context/auth-context"
 import { hasPermission, getAccessDeniedMessage } from "@/lib/permissions"
 import { Plus, Calendar, Clock, Users, AlertCircle } from "lucide-react"
 
+type TurnoApi = {
+  id: number
+  fecha: string
+  duracion: number
+  estado: string
+  paciente: {
+    id: number
+    nombre: string
+    apellido: string
+    dni: string
+    telefono: string
+  }
+  profesional: {
+    id: number
+    nombre: string
+    apellido: string
+    especialidad: string
+  }
+}
+
 export default function MiAgendaPage() {
   const { user } = useAuth()
   const [showNuevoTurno, setShowNuevoTurno] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [turnos, setTurnos] = useState<TurnoApi[]>([])
+  const [turnosLoading, setTurnosLoading] = useState(false)
+  const [turnosError, setTurnosError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
+
+  const profesionalId = user?.id ?? null
+
+  useEffect(() => {
+    if (!profesionalId) {
+      setTurnos([])
+      setTurnosError(null)
+      setTurnosLoading(false)
+      return
+    }
+
+    let cancelado = false
+    const targetProfesionalId = profesionalId
+
+    async function cargarTurnos() {
+      setTurnosLoading(true)
+      setTurnosError(null)
+
+      const params = new URLSearchParams()
+      const fechaIso = selectedDate.toISOString().slice(0, 10)
+      params.set("from", fechaIso)
+      params.set("to", fechaIso)
+      params.set("profesionalId", targetProfesionalId)
+
+      try {
+        const response = await fetch(`/api/v1/turnos?${params.toString()}`, {
+          cache: "no-store",
+        })
+
+        if (!response.ok) {
+          const { error } = await response
+            .json()
+            .catch(() => ({ error: "No se pudieron obtener los turnos" }))
+          throw new Error(error)
+        }
+
+        const data: { turnos: TurnoApi[] } = await response.json()
+        if (!cancelado) {
+          setTurnos(data.turnos)
+        }
+      } catch (error) {
+        console.error("Error al cargar turnos:", error)
+        if (!cancelado) {
+          setTurnos([])
+          setTurnosError(
+            error instanceof Error
+              ? error.message
+              : "No se pudieron cargar los turnos. Intenta nuevamente.",
+          )
+        }
+      } finally {
+        if (!cancelado) {
+          setTurnosLoading(false)
+        }
+      }
+    }
+
+    cargarTurnos()
+
+    return () => {
+      cancelado = true
+    }
+  }, [selectedDate, profesionalId, reloadKey])
+
+  const proximoTurno = turnos.length > 0
+    ? [...turnos].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0]
+    : null
+
+  const proximoTurnoHora = proximoTurno
+    ? new Date(proximoTurno.fecha).toLocaleTimeString("es-AR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
+    : null
+
+  const handleTurnoCreado = () => {
+    setReloadKey((prev) => prev + 1)
+    setShowNuevoTurno(false)
+  }
 
   if (!user) {
     return (
@@ -45,8 +149,22 @@ export default function MiAgendaPage() {
     )
   }
 
-  const selectedProfesional = user.id // Usar ID en lugar de nombre
-  const selectedEspecialidad = user.especialidad?.toLowerCase() || "todas"
+  const especialidadNombre = user.especialidad?.trim() || "General"
+
+  const especialidades = [
+    {
+      id: especialidadNombre,
+      nombre: especialidadNombre,
+    },
+  ]
+
+  const profesionales = [
+    {
+      id: user.id,
+      nombre: user.name,
+      especialidad: especialidadNombre,
+    },
+  ]
 
   return (
     <MainLayout>
@@ -92,7 +210,9 @@ export default function MiAgendaPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Próximo Turno</p>
-                <p className="text-lg font-bold text-foreground">08:30</p>
+                <p className="text-lg font-bold text-foreground">
+                  {proximoTurnoHora ?? "Sin turnos"}
+                </p>
               </div>
             </div>
           </Card>
@@ -116,7 +236,7 @@ export default function MiAgendaPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Turnos Hoy</p>
-                <p className="text-2xl font-bold text-foreground">6</p>
+                <p className="text-2xl font-bold text-foreground">{turnos.length}</p>
               </div>
             </div>
           </Card>
@@ -146,9 +266,9 @@ export default function MiAgendaPage() {
         {/* Calendar - Filtrado automáticamente para el profesional actual */}
         <TurnosCalendar
           selectedDate={selectedDate}
-          selectedProfesional={selectedProfesional}
-          selectedEspecialidad={selectedEspecialidad}
-          onNuevoTurno={hasPermission(user.role, "canCreateTurnos") ? () => setShowNuevoTurno(true) : undefined}
+          turnos={turnos}
+          loading={turnosLoading}
+          error={turnosError}
         />
 
         {/* Nuevo Turno Dialog - Solo si tiene permisos */}
@@ -157,7 +277,9 @@ export default function MiAgendaPage() {
             open={showNuevoTurno}
             onOpenChange={setShowNuevoTurno}
             defaultDate={selectedDate}
-            defaultProfesional={user.name}
+            especialidades={especialidades}
+            profesionales={profesionales}
+            onTurnoCreado={handleTurnoCreado}
           />
         )}
       </div>

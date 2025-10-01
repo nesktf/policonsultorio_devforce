@@ -1,16 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 interface TurnosCalendarProps {
   selectedDate: Date
-  selectedProfesional: string
-  selectedEspecialidad: string
-  reloadKey: number
+  turnos: ApiTurno[]
+  loading: boolean
+  error: string | null
 }
 
 interface ApiTurno {
@@ -53,76 +51,10 @@ function formatHour(dateIso: string) {
 
 export function TurnosCalendar({
   selectedDate,
-  selectedProfesional,
-  selectedEspecialidad,
-  reloadKey,
+  turnos,
+  loading,
+  error,
 }: TurnosCalendarProps) {
-  const [turnos, setTurnos] = useState<ApiTurno[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const formattedDate = useMemo(() => {
-    return selectedDate.toISOString().slice(0, 10)
-  }, [selectedDate])
-
-  useEffect(() => {
-    let cancelado = false
-
-    async function cargarTurnos() {
-      setLoading(true)
-      setError(null)
-
-      const params = new URLSearchParams()
-      params.set("from", formattedDate)
-      params.set("to", formattedDate)
-
-      if (selectedProfesional !== "todos") {
-        params.set("profesionalId", selectedProfesional)
-      }
-      if (selectedEspecialidad !== "todas") {
-        params.set("especialidad", selectedEspecialidad)
-      }
-
-      try {
-        const response = await fetch(`/api/v1/turnos?${params.toString()}`, {
-          cache: "no-store",
-        })
-
-        if (!response.ok) {
-          const { error: message } = await response
-            .json()
-            .catch(() => ({ error: "No se pudieron obtener los turnos" }))
-          throw new Error(message)
-        }
-
-        const data: { turnos: ApiTurno[] } = await response.json()
-        if (!cancelado) {
-          setTurnos(data.turnos)
-        }
-      } catch (error) {
-        console.error("Error al cargar turnos:", error)
-        if (!cancelado) {
-          setError(
-            error instanceof Error
-              ? error.message
-              : "No se pudieron cargar los turnos. Intenta nuevamente.",
-          )
-          setTurnos([])
-        }
-      } finally {
-        if (!cancelado) {
-          setLoading(false)
-        }
-      }
-    }
-
-    cargarTurnos()
-
-    return () => {
-      cancelado = true
-    }
-  }, [formattedDate, selectedProfesional, selectedEspecialidad, reloadKey])
-
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">

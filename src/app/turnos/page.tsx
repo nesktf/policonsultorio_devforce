@@ -11,6 +11,15 @@ import { useAuth } from "@/context/auth-context"
 import { hasPermission, getAccessDeniedMessage } from "@/lib/permissions"
 import { AlertCircle, Plus } from "lucide-react"
 
+type TurnoApi = {
+  id: number
+  fecha: string
+  duracion: number
+  estado: string
+  paciente: { id: number; nombre: string; apellido: string; dni: string; telefono: string }
+  profesional: { id: number; nombre: string; apellido: string; especialidad: string }
+}
+
 export default function TurnosPage() {
   const { user } = useAuth()
   const [showNuevoTurno, setShowNuevoTurno] = useState(false)
@@ -25,6 +34,9 @@ export default function TurnosPage() {
   ])
   const [filtersLoading, setFiltersLoading] = useState(true)
   const [reloadKey, setReloadKey] = useState(0)
+  const [turnos, setTurnos] = useState<TurnoApi[]>([])
+  const [turnosLoading, setTurnosLoading] = useState(false)
+  const [turnosError, setTurnosError] = useState<string | null>(null)
   useEffect(() => {
     let cancelado = false
 
@@ -83,6 +95,66 @@ export default function TurnosPage() {
     }
   }, [])
 
+  useEffect(() => {
+    let cancelado = false
+
+    async function cargarTurnos() {
+      setTurnosLoading(true)
+      setTurnosError(null)
+
+      const params = new URLSearchParams()
+      const fechaIso = selectedDate.toISOString().slice(0, 10)
+      params.set("from", fechaIso)
+      params.set("to", fechaIso)
+
+      if (selectedProfesional !== "todos") {
+        params.set("profesionalId", selectedProfesional)
+      }
+
+      if (selectedEspecialidad !== "todas") {
+        params.set("especialidad", selectedEspecialidad)
+      }
+
+      try {
+        const response = await fetch(`/api/v1/turnos?${params.toString()}`, {
+          cache: "no-store",
+        })
+
+        if (!response.ok) {
+          const { error } = await response
+            .json()
+            .catch(() => ({ error: "No se pudieron obtener los turnos" }))
+          throw new Error(error)
+        }
+
+        const data: { turnos: TurnoApi[] } = await response.json()
+        if (!cancelado) {
+          setTurnos(data.turnos)
+        }
+      } catch (error) {
+        console.error("Error al cargar turnos:", error)
+        if (!cancelado) {
+          setTurnos([])
+          setTurnosError(
+            error instanceof Error
+              ? error.message
+              : "No se pudieron cargar los turnos. Intenta nuevamente.",
+          )
+        }
+      } finally {
+        if (!cancelado) {
+          setTurnosLoading(false)
+        }
+      }
+    }
+
+    cargarTurnos()
+
+    return () => {
+      cancelado = true
+    }
+  }, [selectedDate, selectedProfesional, selectedEspecialidad, reloadKey])
+
 
 
   if (!user) {
@@ -124,11 +196,53 @@ export default function TurnosPage() {
 
   const canCreateTurnos = hasPermission(user.role, "canCreateTurnos")
 
+  const resumenCounts = turnos.reduce(
+    (acc, turno) => {
+      if (turno.estado in acc) {
+        acc[turno.estado as keyof typeof acc] += 1
+      }
+      return acc
+    },
+    {
+      PROGRAMADO: 0,
+      ASISTIO: 0,
+      NO_ASISTIO: 0,
+      CANCELADO: 0,
+    },
+  )
+
+  const resumenCards = [
+    {
+      key: 'PROGRAMADO',
+      label: 'Programados',
+      color: 'bg-blue-50 text-blue-700',
+      count: resumenCounts.PROGRAMADO,
+    },
+    {
+      key: 'ASISTIO',
+      label: 'Asistieron',
+      color: 'bg-green-50 text-green-700',
+      count: resumenCounts.ASISTIO,
+    },
+    {
+      key: 'NO_ASISTIO',
+      label: 'No asistieron',
+      color: 'bg-orange-50 text-orange-700',
+      count: resumenCounts.NO_ASISTIO,
+    },
+    {
+      key: 'CANCELADO',
+      label: 'Cancelados',
+      color: 'bg-red-50 text-red-700',
+      count: resumenCounts.CANCELADO,
+    },
+  ]
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
         {/* Header Section */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
               {user.role === "gerente" ? "Gestión de Turnos" : "Turnos del Policonsultorio"}
@@ -139,6 +253,12 @@ export default function TurnosPage() {
                 : "Visualiza y gestiona los turnos de todos los profesionales"}
             </p>
           </div>
+          {canCreateTurnos && (
+            <Button onClick={() => setShowNuevoTurno(true)} className="gap-2 self-start lg:self-auto">
+              <Plus className="h-4 w-4" />
+              Agendar turno
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -154,22 +274,24 @@ export default function TurnosPage() {
           loading={filtersLoading}
         />
 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {resumenCards.map((card) => (
+            <Card key={card.key}>
+              <CardContent className="py-4">
+                <p className="text-sm text-muted-foreground">{card.label}</p>
+                <p className={`text-2xl font-semibold ${card.color}`}>{card.count}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-        {canCreateTurnos && (
-          <div className="flex justify-end">
-            <Button onClick={() => setShowNuevoTurno(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Agendar turno
-            </Button>
-          </div>
-        )}
 
         {/* Calendar */}
         <TurnosCalendar
           selectedDate={selectedDate}
-          selectedProfesional={selectedProfesional}
-          selectedEspecialidad={selectedEspecialidad}
-          reloadKey={reloadKey}
+          turnos={turnos}
+          loading={turnosLoading}
+          error={turnosError}
         />
 
         {/* Nuevo Turno Dialog */}
