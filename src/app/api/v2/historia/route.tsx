@@ -79,22 +79,23 @@ type HistoriaAPIData = {
   observaciones: string | undefined,
 };
 
+// Error format -> { error: string }
 // Args:
-// - ID Historia -> returns a single entry
-// - No ID -> returns every entry
-// - ID profesional -> returns every entry for profesionalId
+// - ID Historia -> returns a single entry (arr.len == 1) { historias: HistoriaAPIData[] }
+// - No ID -> returns every entry { historias: HistoriaAPIData[] }
+// - ID profesional -> returns every entry for profesionalId { historias: HistoriaAPIData[] }
 export async function GET(req: NextRequest) {
 
 }
 
 // Args:
-// - HistoriaAPIData without ID
+// - HistoriaAPIData without ID -> returns { historiaId: int }
 export async function POST(req: NextRequest) {
 
 }
 
 // Args:
-// - HistoriaAPIData
+// - HistoriaAPIData -> returns { historiaId: int }
 export async function PUT(req: NextRequest) {
 
 }
