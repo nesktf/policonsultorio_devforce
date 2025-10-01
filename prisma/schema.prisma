@@ -66,6 +66,8 @@ model HistoriaClinica {
   id_paciente    Int
   motivo         String
   detalle        String
+  examen_fisico  String?
+  signos_vitales Json?
   fecha          DateTime    @default(now())
   id_profesional Int
   paciente       Paciente    @relation(fields: [id_paciente], references: [id])
@@ -96,6 +98,7 @@ enum EstadoObraSocial {
 
 enum EstadoTurno {
   PROGRAMADO
+  EN_SALA_ESPERA
   ASISTIO
   NO_ASISTIO
   CANCELADO

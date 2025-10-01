@@ -23,7 +23,7 @@ const ESTADO_DEFAULT: EstadoTurno = "PROGRAMADO";
 
 const isEstadoTurno = (value: unknown): value is EstadoTurno =>
   typeof value === "string" &&
-  ["PROGRAMADO", "ASISTIO", "NO_ASISTIO", "CANCELADO"].includes(value);
+  ["PROGRAMADO", "EN_SALA_ESPERA", "ASISTIO", "NO_ASISTIO", "CANCELADO"].includes(value);
 
 export async function POST(request: Request) {
   let payload: TurnoPayload;

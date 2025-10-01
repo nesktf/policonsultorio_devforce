@@ -33,6 +33,7 @@ interface ApiTurno {
 
 const estadoConfig: Record<string, { label: string; color: string }> = {
   PROGRAMADO: { label: "Programado", color: "bg-blue-100 text-blue-800" },
+  EN_SALA_ESPERA: { label: "En sala de espera", color: "bg-cyan-100 text-cyan-800" },
   ASISTIO: { label: "Asistió", color: "bg-green-100 text-green-800" },
   NO_ASISTIO: { label: "No asistió", color: "bg-orange-100 text-orange-800" },
   CANCELADO: { label: "Cancelado", color: "bg-red-100 text-red-800" },

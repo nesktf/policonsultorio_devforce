@@ -205,6 +205,7 @@ export default function TurnosPage() {
     },
     {
       PROGRAMADO: 0,
+      EN_SALA_ESPERA: 0,
       ASISTIO: 0,
       NO_ASISTIO: 0,
       CANCELADO: 0,
@@ -217,6 +218,12 @@ export default function TurnosPage() {
       label: 'Programados',
       color: 'bg-blue-50 text-blue-700',
       count: resumenCounts.PROGRAMADO,
+    },
+    {
+      key: 'EN_SALA_ESPERA',
+      label: 'En sala de espera',
+      color: 'bg-cyan-50 text-cyan-700',
+      count: resumenCounts.EN_SALA_ESPERA,
     },
     {
       key: 'ASISTIO',
@@ -274,7 +281,7 @@ export default function TurnosPage() {
           loading={filtersLoading}
         />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {resumenCards.map((card) => (
             <Card key={card.key}>
               <CardContent className="py-4">

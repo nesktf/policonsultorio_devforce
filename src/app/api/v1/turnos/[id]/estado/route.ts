@@ -8,6 +8,7 @@ export const revalidate = 0;
 const ESTADOS_ACTUALIZABLES: EstadoTurno[] = [
   "ASISTIO",
   "NO_ASISTIO",
+  "EN_SALA_ESPERA",
   "CANCELADO",
 ];
 
@@ -44,7 +45,7 @@ export async function PATCH(
   if (!isEstadoActualizable(estado)) {
     return NextResponse.json(
       {
-        error: "estado es requerido y debe ser uno de: ASISTIO, NO_ASISTIO o CANCELADO.",
+        error: "estado es requerido y debe ser uno de: EN_SALA_ESPERA, ASISTIO, NO_ASISTIO o CANCELADO.",
       },
       { status: 400 },
     );

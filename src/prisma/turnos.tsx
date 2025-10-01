@@ -194,6 +194,7 @@ export async function getTurnosPorEspecialidad(from: Date, to: Date) {
     {
       total: number;
       programados: number;
+      enSalaEspera: number;
       asistidos: number;
       noAsistidos: number;
       cancelados: number;
@@ -206,6 +207,7 @@ export async function getTurnosPorEspecialidad(from: Date, to: Date) {
       agregados.get(especialidad) ?? {
         total: 0,
         programados: 0,
+        enSalaEspera: 0,
         asistidos: 0,
         noAsistidos: 0,
         cancelados: 0,
@@ -216,6 +218,9 @@ export async function getTurnosPorEspecialidad(from: Date, to: Date) {
     switch (turno.estado) {
       case EstadoTurno.PROGRAMADO:
         registro.programados += 1;
+        break;
+      case EstadoTurno.EN_SALA_ESPERA:
+        registro.enSalaEspera += 1;
         break;
       case EstadoTurno.ASISTIO:
         registro.asistidos += 1;
