@@ -64,7 +64,7 @@ export default function ReportesPage() {
     {
       id: "turnos-especialidad",
       titulo: "Turnos por Especialidad",
-      descripcion: "AnÃ¡lisis estadístico de turnos médicos agrupados por especialidad",
+      descripcion: "Análisis estadístico de turnos médicos agrupados por especialidad",
       icon: Stethoscope,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
