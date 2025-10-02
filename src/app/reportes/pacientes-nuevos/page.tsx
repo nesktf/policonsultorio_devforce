@@ -33,15 +33,9 @@ interface MesData {
 
 interface ReporteData {
   year: number
-  obraSocialId: number | null
   total: number
   meses: MesData[]
   mensaje?: string
-}
-
-interface ObraSocial {
-  id: number
-  nombre: string
 }
 
 export default function NuevosPacientesPage() {
@@ -50,9 +44,7 @@ export default function NuevosPacientesPage() {
   const [reporte, setReporte] = useState<ReporteData | null>(null)
   const [reporteAnterior, setReporteAnterior] = useState<ReporteData | null>(null)
   const [year, setYear] = useState<number>(new Date().getFullYear())
-  const [obraSocialId, setObraSocialId] = useState<string>("todos")
   const [error, setError] = useState<string | null>(null)
-  const [obrasSociales, setObrasSociales] = useState<ObraSocial[]>([])
 
   // Generar años disponibles (últimos 3 años)
   const generarYears = () => {
@@ -62,31 +54,13 @@ export default function NuevosPacientesPage() {
 
   const years = generarYears()
 
-  // Cargar obras sociales
-  useEffect(() => {
-    const cargarObrasSociales = async () => {
-      try {
-        const response = await fetch('/api/v1/obras-sociales')
-        if (response.ok) {
-          const data = await response.json()
-          setObrasSociales(data.filter((os: any) => os.estado === 'ACTIVA'))
-        }
-      } catch (err) {
-        console.error('Error cargando obras sociales:', err)
-      }
-    }
-    cargarObrasSociales()
-  }, [])
-
   const cargarReporte = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const obraSocialParam = obraSocialId === "todos" ? "" : `&obraSocialId=${obraSocialId}`
-      
       // Cargar año seleccionado
-      const response = await fetch(`/api/v1/reportes/pacientes-nuevos?year=${year}${obraSocialParam}`)
+      const response = await fetch(`/api/v1/reportes/pacientes-nuevos?year=${year}`)
       if (!response.ok) {
         const errorText = await response.text()
         throw new Error(`Error ${response.status}: ${errorText}`)
@@ -95,7 +69,7 @@ export default function NuevosPacientesPage() {
       setReporte(data)
 
       // Cargar año anterior para comparación
-      const responseAnterior = await fetch(`/api/v1/reportes/pacientes-nuevos?year=${year - 1}${obraSocialParam}`)
+      const responseAnterior = await fetch(`/api/v1/reportes/pacientes-nuevos?year=${year - 1}`)
       if (responseAnterior.ok) {
         const dataAnterior = await responseAnterior.json()
         setReporteAnterior(dataAnterior)
@@ -115,7 +89,7 @@ export default function NuevosPacientesPage() {
     if (user && (user.role === "gerente")) {
       cargarReporte()
     }
-  }, [year, obraSocialId, user])
+  }, [year, user])
 
   // Control de permisos
   if (!user) {
@@ -267,23 +241,6 @@ export default function NuevosPacientesPage() {
                     {years.map((y) => (
                       <SelectItem key={y} value={y.toString()}>
                         {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Obra Social:</label>
-                <Select value={obraSocialId} onValueChange={setObraSocialId}>
-                  <SelectTrigger className="w-[200px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todas las Obras Sociales</SelectItem>
-                    {obrasSociales.map((os) => (
-                      <SelectItem key={os.id} value={os.id.toString()}>
-                        {os.nombre}
                       </SelectItem>
                     ))}
                   </SelectContent>

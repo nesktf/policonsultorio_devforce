@@ -21,9 +21,12 @@ const isEstadoActualizable = (value: unknown): value is EstadoTurno =>
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const turnoId = Number(params.id);
+  // Await params antes de acceder a sus propiedades
+  const resolvedParams = await params;
+  const turnoId = Number(resolvedParams.id);
+  
   if (!Number.isInteger(turnoId) || turnoId <= 0) {
     return NextResponse.json(
       { error: "El identificador de turno es inválido." },

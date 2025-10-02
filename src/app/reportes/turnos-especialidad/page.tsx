@@ -199,6 +199,14 @@ export default function ReporteTurnosPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Link href="/reportes">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Reportes
+                </Button>
+              </Link>
+            </div>
             <h1 className="text-3xl font-bold text-foreground">Reporte de Turnos por Especialidad</h1>
             <p className="text-muted-foreground">Análisis estadístico de turnos médicos</p>
           </div>
@@ -417,37 +425,37 @@ export default function ReporteTurnosPage() {
                               </Badge>
                             </div>
 
-                            {/* Barra de progreso */}
+                            {/* Barra de progreso con colores más suaves */}
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
                                 <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden flex">
                                   {esp.programados > 0 && (
                                     <div 
-                                      className="bg-blue-500 flex items-center justify-center text-xs text-white font-medium"
+                                      className="bg-blue-100 flex items-center justify-center text-xs text-blue-800 font-medium"
                                       style={{ width: `${calcularPorcentaje(esp.programados, esp.total)}%` }}
                                     />
                                   )}
                                   {esp.enSalaEspera > 0 && (
                                     <div 
-                                      className="bg-yellow-500 flex items-center justify-center text-xs text-white font-medium"
+                                      className="bg-amber-100 flex items-center justify-center text-xs text-amber-800 font-medium"
                                       style={{ width: `${calcularPorcentaje(esp.enSalaEspera, esp.total)}%` }}
                                     />
                                   )}
                                   {esp.asistidos > 0 && (
                                     <div 
-                                      className="bg-green-500 flex items-center justify-center text-xs text-white font-medium"
+                                      className="bg-emerald-100 flex items-center justify-center text-xs text-emerald-800 font-medium"
                                       style={{ width: `${calcularPorcentaje(esp.asistidos, esp.total)}%` }}
                                     />
                                   )}
                                   {esp.noAsistidos > 0 && (
                                     <div 
-                                      className="bg-orange-500 flex items-center justify-center text-xs text-white font-medium"
+                                      className="bg-orange-100 flex items-center justify-center text-xs text-orange-800 font-medium"
                                       style={{ width: `${calcularPorcentaje(esp.noAsistidos, esp.total)}%` }}
                                     />
                                   )}
                                   {esp.cancelados > 0 && (
                                     <div 
-                                      className="bg-red-500 flex items-center justify-center text-xs text-white font-medium"
+                                      className="bg-red-200 flex items-center justify-center text-xs text-rose-800 font-medium"
                                       style={{ width: `${calcularPorcentaje(esp.cancelados, esp.total)}%` }}
                                     />
                                   )}
@@ -456,27 +464,27 @@ export default function ReporteTurnosPage() {
 
                               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                                  <div className="w-3 h-3 bg-blue-300 rounded-full" />
                                   <span className="text-muted-foreground">Programados:</span>
                                   <span className="font-semibold">{esp.programados}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+                                  <div className="w-3 h-3 bg-amber-300 rounded-full" />
                                   <span className="text-muted-foreground">En Sala:</span>
                                   <span className="font-semibold">{esp.enSalaEspera}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 bg-green-500 rounded-full" />
+                                  <div className="w-3 h-3 bg-emerald-300 rounded-full" />
                                   <span className="text-muted-foreground">Asistidos:</span>
                                   <span className="font-semibold">{esp.asistidos}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 bg-orange-500 rounded-full" />
+                                  <div className="w-3 h-3 bg-orange-300 rounded-full" />
                                   <span className="text-muted-foreground">No Asistidos:</span>
                                   <span className="font-semibold">{esp.noAsistidos}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <div className="w-3 h-3 bg-red-500 rounded-full" />
+                                  <div className="w-3 h-3 bg-red-100 rounded-full" />
                                   <span className="text-muted-foreground">Cancelados:</span>
                                   <span className="font-semibold">{esp.cancelados}</span>
                                 </div>

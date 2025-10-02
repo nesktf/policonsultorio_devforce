@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 
 interface CalendarioOverviewProps {
   selectedDate: Date
@@ -12,24 +12,40 @@ interface CalendarioOverviewProps {
   onViewDay: () => void
 }
 
-// Mock data - conteo de turnos por día con nuevos estados
-const mockTurnosPorDia: Record<string, { 
-  total: number
-  programados: number
-  enSalaEspera: number
-  asistidos: number
-  noAsistidos: number
-  cancelados: number 
-}> = {
-  "2025-09-30": { total: 8, programados: 3, enSalaEspera: 1, asistidos: 2, noAsistidos: 1, cancelados: 1 },
-  "2025-10-01": { total: 12, programados: 5, enSalaEspera: 2, asistidos: 3, noAsistidos: 1, cancelados: 1 },
-  "2025-10-02": { total: 6, programados: 3, enSalaEspera: 0, asistidos: 2, noAsistidos: 0, cancelados: 1 },
-  "2025-10-03": { total: 10, programados: 4, enSalaEspera: 1, asistidos: 3, noAsistidos: 1, cancelados: 1 },
-  "2025-10-04": { total: 5, programados: 2, enSalaEspera: 1, asistidos: 2, noAsistidos: 0, cancelados: 0 },
-}
-
 export function CalendarioOverview({ selectedDate, onDateSelect, onViewDay }: CalendarioOverviewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate))
+  const [turnosPorDia, setTurnosPorDia] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchEstadisticas() {
+      try {
+        setLoading(true)
+        
+        const year = currentMonth.getFullYear()
+        const month = currentMonth.getMonth()
+        
+        const from = new Date(year, month, 1).toISOString().split('T')[0]
+        const to = new Date(year, month + 1, 0).toISOString().split('T')[0]
+        
+        const response = await fetch(`/api/v1/calendario-mesa/estadisticas?from=${from}&to=${to}`)
+        
+        if (!response.ok) {
+          throw new Error("Error al cargar estadísticas")
+        }
+        
+        const data = await response.json()
+        setTurnosPorDia(data.estadisticas)
+      } catch (error) {
+        console.error("Error:", error)
+        setTurnosPorDia({})
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchEstadisticas()
+  }, [currentMonth])
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
@@ -60,7 +76,7 @@ export function CalendarioOverview({ selectedDate, onDateSelect, onViewDay }: Ca
 
   const getTurnosDelDia = (day: number) => {
     const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-    return mockTurnosPorDia[dateKey] || null
+    return turnosPorDia[dateKey] || null
   }
 
   const isToday = (day: number) => {
@@ -74,7 +90,6 @@ export function CalendarioOverview({ selectedDate, onDateSelect, onViewDay }: Ca
 
   const monthName = currentMonth.toLocaleDateString("es-AR", { month: "long", year: "numeric" })
 
-  // Crear array de días con espacios vacíos al inicio
   const days = []
   for (let i = 0; i < startingDayOfWeek; i++) {
     days.push(null)
@@ -83,9 +98,19 @@ export function CalendarioOverview({ selectedDate, onDateSelect, onViewDay }: Ca
     days.push(i)
   }
 
+  if (loading) {
+    return (
+      <Card className="p-12 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Cargando calendario...</p>
+        </div>
+      </Card>
+    )
+  }
+
   return (
     <Card className="p-6">
-      {/* Header del calendario */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold capitalize">{monthName}</h2>
         <div className="flex items-center gap-2">
@@ -98,7 +123,6 @@ export function CalendarioOverview({ selectedDate, onDateSelect, onViewDay }: Ca
         </div>
       </div>
 
-      {/* Días de la semana */}
       <div className="grid grid-cols-7 gap-2 mb-2">
         {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((dia) => (
           <div key={dia} className="text-center text-sm font-medium text-muted-foreground p-2">
@@ -107,7 +131,6 @@ export function CalendarioOverview({ selectedDate, onDateSelect, onViewDay }: Ca
         ))}
       </div>
 
-      {/* Grid de días */}
       <div className="grid grid-cols-7 gap-2">
         {days.map((day, index) => {
           if (day === null) {
@@ -163,7 +186,6 @@ export function CalendarioOverview({ selectedDate, onDateSelect, onViewDay }: Ca
         })}
       </div>
 
-      {/* Leyenda */}
       <div className="mt-6 pt-4 border-t">
         <div className="flex flex-wrap gap-4 text-xs">
           <div className="flex items-center gap-2">

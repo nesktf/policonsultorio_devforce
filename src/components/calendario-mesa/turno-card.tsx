@@ -168,15 +168,15 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
           </div>
         </div>
 
-        {/* Motivo */}
+        {/* Motivo 
         <div className="pt-2 border-t border-current/10">
           <p className="text-xs text-muted-foreground line-clamp-2">{turno.motivo}</p>
-        </div>
+        </div>*/}
 
-        {/* Duración */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {/* Duración*/}
+        <div className="pt-2 border-t border-current/10 flex items-center gap-2 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
-          <span>{turno.duracion} min</span>
+          <span>{turno.duracion} min - {turno.motivo}</span>
         </div>
       </div>
     </Card>

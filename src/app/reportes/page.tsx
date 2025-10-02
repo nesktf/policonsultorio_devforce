@@ -31,7 +31,7 @@ export default function ReportesPage() {
         <div className="p-6">
           <Card>
             <CardContent className="flex items-center justify-center h-32">
-              <p className="text-muted-foreground">Debes iniciar sesión para acceder a esta sección.</p>
+              <p className="text-muted-foreground">Debes iniciar sesiÃ³n para acceder a esta secciÃ³n.</p>
             </CardContent>
           </Card>
         </div>
@@ -64,7 +64,7 @@ export default function ReportesPage() {
     {
       id: "turnos-especialidad",
       titulo: "Turnos por Especialidad",
-      descripcion: "Análisis estadístico de turnos médicos agrupados por especialidad",
+      descripcion: "AnÃ¡lisis estadÃ­stico de turnos mÃ©dicos agrupados por especialidad",
       icon: Stethoscope,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
@@ -76,19 +76,19 @@ export default function ReportesPage() {
     {
       id: "nuevos-pacientes",
       titulo: "Nuevos Pacientes",
-      descripcion: "Registro de pacientes nuevos por período y análisis de crecimiento",
+      descripcion: "Registro de pacientes nuevos por perÃ­odo y anÃ¡lisis de crecimiento",
       icon: UserPlus,
       color: "text-green-600",
       bgColor: "bg-green-50",
       borderColor: "border-green-200",
       disponible: true,
       href: "/reportes/pacientes-nuevos",
-      stats: ["Por mes", "Por año", "Tendencias"]
+      stats: ["Por mes", "Por aÃ±o", "Tendencias"]
     },
     {
       id: "turnos-profesional",
       titulo: "Turnos por Profesional",
-      descripcion: "Distribución y estadísticas de turnos de cada profesional médico",
+      descripcion: "DistribuciÃ³n y estadÃ­sticas de turnos de cada profesional mÃ©dico",
       icon: Activity,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
@@ -100,14 +100,14 @@ export default function ReportesPage() {
     {
       id: "turnos-cancelados",
       titulo: "Turnos Cancelados",
-      descripcion: "Análisis de turnos cancelados, motivos y patrones de cancelación",
+      descripcion: "AnÃ¡lisis de turnos cancelados, motivos y patrones de cancelaciÃ³n",
       icon: XCircle,
       color: "text-red-600",
       bgColor: "bg-red-50",
       borderColor: "border-red-200",
       disponible: false,
       href: "/reportes/turnos-cancelados",
-      stats: ["Por motivo", "Tasa cancelación", "Profesional"]
+      stats: ["Por motivo", "Tasa cancelaciÃ³n", "Profesional"]
     },
   ]
 
@@ -116,9 +116,9 @@ export default function ReportesPage() {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Reportes y Estadísticas</h1>
+          <h1 className="text-3xl font-bold text-foreground">Reportes y EstadÃ­sticas</h1>
           <p className="text-muted-foreground">
-            Análisis detallados para la toma de decisiones
+            AnÃ¡lisis detallados para la toma de decisiones
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export default function ReportesPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Próximamente</p>
+                  <p className="text-sm text-muted-foreground">PrÃ³ximamente</p>
                   <p className="text-3xl font-bold text-orange-600">
                     {reportes.filter(r => !r.disponible).length}
                   </p>
@@ -156,7 +156,7 @@ export default function ReportesPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Categorías</p>
+                  <p className="text-sm text-muted-foreground">CategorÃ­as</p>
                   <p className="text-3xl font-bold text-blue-600">4</p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-600 opacity-20" />
@@ -223,7 +223,7 @@ export default function ReportesPage() {
                       ) : (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <AlertCircle className="h-4 w-4" />
-                          <span className="text-sm font-medium">Próximamente</span>
+                          <span className="text-sm font-medium">PrÃ³ximamente</span>
                         </div>
                       )}
                     </div>
@@ -240,10 +240,10 @@ export default function ReportesPage() {
             <div className="flex items-start gap-3">
               <BarChart3 className="h-5 w-5 text-blue-600 mt-0.5" />
               <div>
-                <p className="font-semibold text-blue-900">Más reportes en desarrollo</p>
+                <p className="font-semibold text-blue-900">MÃ¡s reportes en desarrollo</p>
                 <p className="text-sm text-blue-700">
                   Estamos trabajando en nuevos reportes.
-                  Los reportes marcados como "Próximamente" estarán disponibles en futuras actualizaciones.
+                  Los reportes marcados como "PrÃ³ximamente" estarÃ¡n disponibles en futuras actualizaciones.
                 </p>
               </div>
             </div>

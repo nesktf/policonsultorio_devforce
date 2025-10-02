@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TurnoCard } from "@/components/calendario-mesa/turno-card"
 import { TurnoDetailDialog } from "@/components/calendario-mesa/turno-detail-dialog"
 import { useAuth } from "@/context/auth-context"
-import { Clock } from "lucide-react"
+import { Clock, Loader2 } from "lucide-react"
 
 interface Turno {
   id: string
@@ -33,88 +33,17 @@ interface CalendarioMesaViewProps {
   selectedEspecialidad: string
 }
 
-// Mock data actualizado con nuevos estados
-const mockTurnos: Turno[] = [
-  {
-    id: "1",
-    hora: "08:00",
-    paciente: { nombre: "María González", dni: "12345678", telefono: "11-1234-5678" },
-    profesional: { id: "1", nombre: "Dr. Carlos Mendez", especialidad: "cardiologia" },
-    estado: "ASISTIO",
-    motivo: "Control rutinario",
-    duracion: 30,
-  },
-  {
-    id: "2",
-    hora: "08:00",
-    paciente: { nombre: "Juan Pérez", dni: "87654321", telefono: "11-8765-4321" },
-    profesional: { id: "2", nombre: "Dra. María López", especialidad: "pediatria" },
-    estado: "EN_SALA_ESPERA",
-    motivo: "Vacunación",
-    duracion: 30,
-  },
-  {
-    id: "3",
-    hora: "08:30",
-    paciente: { nombre: "Ana Martín", dni: "11223344", telefono: "11-1122-3344" },
-    profesional: { id: "1", nombre: "Dr. Carlos Mendez", especialidad: "cardiologia" },
-    estado: "PROGRAMADO",
-    motivo: "Dolor en el pecho",
-    duracion: 30,
-  },
-  {
-    id: "4",
-    hora: "09:00",
-    paciente: { nombre: "Pedro Sánchez", dni: "55667788", telefono: "11-5566-7788" },
-    profesional: { id: "3", nombre: "Dr. Martínez", especialidad: "traumatologia" },
-    estado: "PROGRAMADO",
-    motivo: "Dolor de espalda",
-    duracion: 45,
-  },
-  {
-    id: "5",
-    hora: "09:00",
-    paciente: { nombre: "Laura Fernández", dni: "99887766", telefono: "11-9988-7766" },
-    profesional: { id: "2", nombre: "Dra. María López", especialidad: "pediatria" },
-    estado: "ASISTIO",
-    motivo: "Control pediátrico",
-    duracion: 30,
-  },
-  {
-    id: "6",
-    hora: "09:30",
-    paciente: { nombre: "Carlos Ruiz", dni: "44332211", telefono: "11-4433-2211" },
-    profesional: { id: "1", nombre: "Dr. Carlos Mendez", especialidad: "cardiologia" },
-    estado: "CANCELADO",
-    motivo: "Electrocardiograma",
-    duracion: 30,
-  },
-  {
-    id: "7",
-    hora: "10:00",
-    paciente: { nombre: "Sofía Morales", dni: "33445566", telefono: "11-3344-5566" },
-    profesional: { id: "4", nombre: "Dra. Rodríguez", especialidad: "dermatologia" },
-    estado: "NO_ASISTIO",
-    motivo: "Control de lunares",
-    duracion: 30,
-  },
-  {
-    id: "8",
-    hora: "10:00",
-    paciente: { nombre: "Roberto Díaz", dni: "77889900", telefono: "11-7788-9900" },
-    profesional: { id: "3", nombre: "Dr. Martínez", especialidad: "traumatologia" },
-    estado: "EN_SALA_ESPERA",
-    motivo: "Dolor de rodilla",
-    duracion: 30,
-  },
-]
+const generarBloques = () => {
+  const bloques = []
+  for (let hora = 8; hora < 20; hora++) {
+    for (let minuto = 0; minuto < 60; minuto += 15) {
+      bloques.push(`${String(hora).padStart(2, '0')}:${String(minuto).padStart(2, '0')}`)
+    }
+  }
+  return bloques
+}
 
-const horarios = [
-  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
-  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-  "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
-]
+const bloquesHorarios = generarBloques()
 
 export function CalendarioMesaView({
   selectedDate,
@@ -123,53 +52,204 @@ export function CalendarioMesaView({
 }: CalendarioMesaViewProps) {
   const { user } = useAuth()
   const [selectedTurno, setSelectedTurno] = useState<Turno | null>(null)
-  const [turnos, setTurnos] = useState<Turno[]>(mockTurnos)
+  const [turnos, setTurnos] = useState<Turno[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Solo mesa de entrada puede modificar estados
   const puedeModificar = user?.role === "mesa-entrada"
 
-  const turnosFiltrados = turnos.filter((turno) => {
-    if (selectedProfesional !== "todos") {
-      if (turno.profesional.id !== selectedProfesional) {
-        return false
+  useEffect(() => {
+    async function fetchTurnos() {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const dateStr = selectedDate.toISOString().split('T')[0]
+        const params = new URLSearchParams({
+          from: dateStr,
+          to: dateStr,
+        })
+        
+        if (selectedProfesional !== "todos") {
+          params.append("profesionalId", selectedProfesional)
+        }
+        
+        if (selectedEspecialidad !== "todas") {
+          params.append("especialidad", selectedEspecialidad)
+        }
+        
+        const response = await fetch(`/api/v1/calendario-mesa/turnos?${params}`)
+        
+        if (!response.ok) {
+          throw new Error("Error al cargar los turnos")
+        }
+        
+        const data = await response.json()
+        
+        const turnosFormateados = data.turnos.map((turno: any) => ({
+          id: turno.id.toString(),
+          hora: turno.hora,
+          paciente: {
+            nombre: `${turno.paciente.nombre} ${turno.paciente.apellido}`,
+            dni: turno.paciente.dni,
+            telefono: turno.paciente.telefono,
+          },
+          profesional: {
+            id: turno.profesional.id.toString(),
+            nombre: `${turno.profesional.nombre} ${turno.profesional.apellido}`,
+            especialidad: turno.profesional.especialidad,
+          },
+          estado: turno.estado,
+          motivo: "Consulta general",
+          duracion: turno.duracion,
+          notas: "",
+        }))
+        
+        setTurnos(turnosFormateados)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error desconocido")
+        setTurnos([])
+      } finally {
+        setLoading(false)
       }
     }
     
-    if (selectedEspecialidad !== "todas") {
-      if (turno.profesional.especialidad !== selectedEspecialidad) {
-        return false
-      }
-    }
+    fetchTurnos()
+  }, [selectedDate, selectedProfesional, selectedEspecialidad])
+
+  const handleEstadoChange = async (turnoId: string, nuevoEstado: Turno["estado"]) => {
+    const turnoAnterior = turnos.find(t => t.id === turnoId)
     
-    return true
-  })
-
-  const getTurnosEnHorario = (hora: string) => {
-    return turnosFiltrados.filter((turno) => turno.hora === hora)
-  }
-
-  const handleEstadoChange = (turnoId: string, nuevoEstado: Turno["estado"]) => {
     setTurnos((prev) =>
       prev.map((t) =>
-        t.id === turnoId
-          ? { ...t, estado: nuevoEstado }
-          : t
+        t.id === turnoId ? { ...t, estado: nuevoEstado } : t
       )
     )
+    
+    try {
+      const response = await fetch(`/api/v1/turnos/${turnoId}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Error al actualizar el estado del turno')
+      }
+    } catch (error) {
+      console.error('Error al actualizar estado:', error)
+      
+      if (turnoAnterior) {
+        setTurnos((prev) =>
+          prev.map((t) =>
+            t.id === turnoId ? turnoAnterior : t
+          )
+        )
+      }
+    }
+  }
+
+  const calcularBloques = (duracion: number) => {
+    return Math.ceil(duracion / 15)
+  }
+
+  const organizarTurnosPorColumnas = () => {
+    // Sistema mejorado que evita completamente las superposiciones
+    const turnosConBloques = turnos.map(turno => {
+      const bloques = calcularBloques(turno.duracion)
+      const indiceInicio = bloquesHorarios.indexOf(turno.hora)
+      // Calcular altura mínima en bloques (120px = ~2.14 bloques, redondeamos a 3)
+      const bloquesMinimos = Math.max(bloques, 3)
+      return {
+        ...turno,
+        bloques,
+        bloquesMinimos,
+        indiceInicio,
+        indiceFin: indiceInicio + bloquesMinimos
+      }
+    }).filter(t => t.indiceInicio !== -1)
+    .sort((a, b) => a.indiceInicio - b.indiceInicio)
+
+    // Estructura para rastrear qué bloques están ocupados en cada columna
+    const columnasOcupadas: Array<Set<number>> = []
+    const turnosPorColumna: Array<Array<typeof turnosConBloques[0]>> = []
+
+    turnosConBloques.forEach(turno => {
+      let columnaAsignada = -1
+      
+      // Buscar la primera columna donde todos los bloques necesarios estén libres
+      for (let col = 0; col < columnasOcupadas.length; col++) {
+        let puedePoner = true
+        
+        // Verificar si todos los bloques que necesita el turno están libres
+        for (let bloque = turno.indiceInicio; bloque < turno.indiceFin; bloque++) {
+          if (columnasOcupadas[col].has(bloque)) {
+            puedePoner = false
+            break
+          }
+        }
+        
+        if (puedePoner) {
+          columnaAsignada = col
+          break
+        }
+      }
+      
+      // Si no se encontró columna disponible, crear una nueva
+      if (columnaAsignada === -1) {
+        columnaAsignada = columnasOcupadas.length
+        columnasOcupadas.push(new Set())
+        turnosPorColumna.push([])
+      }
+      
+      // Marcar todos los bloques como ocupados en esta columna
+      for (let bloque = turno.indiceInicio; bloque < turno.indiceFin; bloque++) {
+        columnasOcupadas[columnaAsignada].add(bloque)
+      }
+      
+      // Agregar el turno a su columna
+      turnosPorColumna[columnaAsignada].push(turno)
+    })
+
+    return turnosPorColumna
   }
 
   const getEstadisticas = () => {
     return {
-      total: turnosFiltrados.length,
-      programados: turnosFiltrados.filter((t) => t.estado === "PROGRAMADO").length,
-      enSalaEspera: turnosFiltrados.filter((t) => t.estado === "EN_SALA_ESPERA").length,
-      asistidos: turnosFiltrados.filter((t) => t.estado === "ASISTIO").length,
-      noAsistidos: turnosFiltrados.filter((t) => t.estado === "NO_ASISTIO").length,
-      cancelados: turnosFiltrados.filter((t) => t.estado === "CANCELADO").length,
+      total: turnos.length,
+      programados: turnos.filter((t) => t.estado === "PROGRAMADO").length,
+      enSalaEspera: turnos.filter((t) => t.estado === "EN_SALA_ESPERA").length,
+      asistidos: turnos.filter((t) => t.estado === "ASISTIO").length,
+      noAsistidos: turnos.filter((t) => t.estado === "NO_ASISTIO").length,
+      cancelados: turnos.filter((t) => t.estado === "CANCELADO").length,
     }
   }
 
+  if (loading) {
+    return (
+      <Card className="p-12 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Cargando turnos...</p>
+        </div>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="p-12">
+        <div className="text-center space-y-2">
+          <p className="text-red-600 font-medium">Error al cargar los turnos</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </Card>
+    )
+  }
+
   const stats = getEstadisticas()
+  const columnas = organizarTurnosPorColumnas()
+  const anchoColumna = 240 // Ancho reducido de cada columna
 
   return (
     <div className="space-y-4">
@@ -219,51 +299,102 @@ export function CalendarioMesaView({
         </Card>
       </div>
 
-      {/* Grid de Turnos */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          {horarios.map((hora) => {
-            const turnosHora = getTurnosEnHorario(hora)
-            const tieneDisponibilidad = turnosHora.length === 0
+      {/* Grid de Turnos - SCROLL VERTICAL EXTERNO */}
+      <Card className="p-0 overflow-hidden">
+        {/* Header fijo */}
+        <div className="sticky top-0 bg-background border-b h-12 flex items-center px-4 z-20">
+          <span className="text-xs font-semibold text-muted-foreground">CALENDARIO DEL DÍA</span>
+        </div>
 
-            return (
-              <div key={hora} className="space-y-2">
-                {/* Horario */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 w-20">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-mono text-sm font-medium">{hora}</span>
+        {/* Contenedor principal con scroll vertical */}
+        <div className="max-h-[calc(100vh-160px)] overflow-y-auto overflow-x-hidden">
+          <div className="flex overflow-x-auto pb-4">
+            {/* Columna de horas FIJA */}
+            <div className="w-16 border-r bg-muted/30 flex-shrink-0 sticky left-0 z-10">
+              {bloquesHorarios.map((bloque) => {
+                const esInicioHora = bloque.endsWith(':00')
+                return (
+                  <div 
+                    key={`hora-${bloque}`}
+                    className={`h-14 flex items-center justify-center ${
+                      esInicioHora ? 'border-t-2 border-t-gray-300 bg-muted/50' : 'border-t border-t-gray-100'
+                    }`}
+                  >
+                    {esInicioHora && (
+                      <span className="font-mono text-xs font-bold">
+                        {bloque}
+                      </span>
+                    )}
                   </div>
-                  {turnosHora.length > 0 && (
-                    <Badge variant="outline" className="text-xs">
-                      {turnosHora.length} {turnosHora.length === 1 ? "turno" : "turnos"}
-                    </Badge>
-                  )}
-                </div>
+                )
+              })}
+            </div>
 
-                {/* Turnos en Grid */}
-                {tieneDisponibilidad ? (
-                  <div className="ml-24 p-4 border-2 border-dashed border-gray-300 rounded-lg">
-                    <p className="text-sm text-muted-foreground text-center">
-                      Sin turnos programados
-                    </p>
+            {/* Área de turnos con SCROLL HORIZONTAL INTERNO */}
+            <div className="flex-1 overflow-x-auto">
+              <div 
+                className="relative"
+                style={{ 
+                  minWidth: `${columnas.length * anchoColumna}px`,
+                  height: `${bloquesHorarios.length * 56}px` // 56px por bloque (h-14)
+                }}
+              >
+                {/* Grid de fondo */}
+                {bloquesHorarios.map((bloque, index) => {
+                  const esInicioHora = bloque.endsWith(':00')
+                  return (
+                    <div
+                      key={`bg-${bloque}`}
+                      className={`absolute w-full ${
+                        esInicioHora ? 'border-t-2 border-t-gray-300' : 'border-t border-t-gray-100'
+                      }`}
+                      style={{
+                        top: `${index * 56}px`, //aca 56
+                        height: '56px'          //aca 56
+                      }}
+                    />
+                  )
+                })}
+
+                {/* Columnas de turnos */}
+                {columnas.map((columna, colIndex) => (
+                  <div
+                    key={`col-${colIndex}`}
+                    className="absolute top-0"
+                    style={{
+                      left: `${colIndex * anchoColumna + 8}px`,
+                      width: `${anchoColumna - 16}px`
+                    }}
+                  >
+                    {columna.map((turno) => {
+                      const alturaReal = turno.bloques * 56    //56
+                      const alturaMinima = 120
+                      const alturaFinal = Math.max(alturaReal, alturaMinima)
+                      
+                      return (
+                        <div
+                          key={turno.id}
+                          className="absolute"
+                          style={{
+                            top: `${turno.indiceInicio * 56}px`, //56
+                            height: `${alturaFinal}px`,
+                            width: '100%'
+                          }}
+                        >
+                          <TurnoCard
+                            turno={turno}
+                            onClick={() => setSelectedTurno(turno)}
+                            onEstadoChange={handleEstadoChange}
+                            puedeModificar={puedeModificar}
+                          />
+                        </div>
+                      )
+                    })}
                   </div>
-                ) : (
-                  <div className="ml-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    {turnosHora.map((turno) => (
-                      <TurnoCard
-                        key={turno.id}
-                        turno={turno}
-                        onClick={() => setSelectedTurno(turno)}
-                        onEstadoChange={handleEstadoChange}
-                        puedeModificar={puedeModificar}
-                      />
-                    ))}
-                  </div>
-                )}
+                ))}
               </div>
-            )
-          })}
+            </div>
+          </div>
         </div>
       </Card>
 
