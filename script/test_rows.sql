@@ -4,7 +4,18 @@ BEGIN;
 INSERT INTO "User" ("id", "nombre", "email", "password", "rol") VALUES
   (1, 'admin', 'admin@admin.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'GERENTE'),
   (2, 'profesional', 'profesional@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
-  (3, 'mesa', 'mesa@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'MESA_ENTRADA');
+  (3, 'mesa', 'mesa@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'MESA_ENTRADA'),
+  (4, 'profesional', 'profesional2@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (5, 'profesional', 'profesional3@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (6, 'profesional', 'profesional4@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (7, 'profesional', 'profesional5@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (8, 'profesional', 'profesional6@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (9, 'profesional', 'profesional7@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (10, 'profesional', 'profesional8@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (11, 'profesional', 'profesional9@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (12, 'profesional', 'profesional10@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (13, 'profesional', 'profesional11@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL');
+ALTER SEQUENCE "User_id_seq" RESTART WITH 14;
 
 -- ALTER SEQUENCE "User_id_seq" RESTART WITH 1;
 
@@ -16,18 +27,18 @@ INSERT INTO "ObraSocial" ("id", "nombre", "estado") VALUES
   (5, 'Scarlet Services', 'INACTIVA');
 ALTER SEQUENCE "ObraSocial_id_seq" RESTART WITH 6;
 
-INSERT INTO "Profesional" ("id", "nombre", "apellido", "direccion", "dni", "especialidad", "telefono") VALUES
-  (1, 'Eirin', 'Yagokoro', 'Forest of the Lost 1452', '3123412', 'Cardiología', '+543871234564'),
-  (2, 'Reimu', 'Hakurei', 'Hakurei Shrine 1031', '12345678', 'Medicina General', '+543871234567'),
-  (3, 'Marisa', 'Kirisame', 'Forest of Magic 2120', '87654321', 'Traumatología', '+543872345678'),
-  (4, 'Sakuya', 'Izayoi', 'Scarlet Devil Mansion 3032', '11223344', 'Cirugía', '+543873456789'),
-  (5, 'Remilia', 'Scarlet', 'Scarlet Devil Mansion 3121', '55667788', 'Cardiología', '+543874567890'),
-  (6, 'Youmu', 'Konpaku', 'Netherworld 4320', '99001122', 'Neurología', '+543875678901'),
-  (7, 'Flandre', 'Scarlet', 'Scarlet Devil Mansion 2132', '33445566', 'Psiquiatría', '+543876789012'),
-  (8, 'Yuyuko', 'Saigyouji', 'Netherworld 41', '77889900', 'Oncología', '+543877890123'),
-  (9, 'Yukari', 'Yakumo', 'Boundary 60', '66778899', 'Ginecología', '+543879012345'),
-  (10, 'Ran', 'Yakumo', 'Boundary 61', '00112233', 'Oftalmología', '+543870123456'),
-  (11, 'Chen', 'Yakumo', 'Boundary 62', '00112244', 'Dermatología', '+543870233456');
+INSERT INTO "Profesional" ("id", "nombre", "apellido", "direccion", "dni", "especialidad", "telefono", "userId") VALUES
+  (1, 'Eirin', 'Yagokoro', 'Forest of the Lost 1452', '3123412', 'Cardiología', '+543871234564', 2),
+  (2, 'Reimu', 'Hakurei', 'Hakurei Shrine 1031', '12345678', 'Medicina General', '+543871234567', 4),
+  (3, 'Marisa', 'Kirisame', 'Forest of Magic 2120', '87654321', 'Traumatología', '+543872345678', 5),
+  (4, 'Sakuya', 'Izayoi', 'Scarlet Devil Mansion 3032', '11223344', 'Cirugía', '+543873456789', 6),
+  (5, 'Remilia', 'Scarlet', 'Scarlet Devil Mansion 3121', '55667788', 'Cardiología', '+543874567890', 7),
+  (6, 'Youmu', 'Konpaku', 'Netherworld 4320', '99001122', 'Neurología', '+543875678901', 8),
+  (7, 'Flandre', 'Scarlet', 'Scarlet Devil Mansion 2132', '33445566', 'Psiquiatría', '+543876789012', 9),
+  (8, 'Yuyuko', 'Saigyouji', 'Netherworld 41', '77889900', 'Oncología', '+543877890123', 10),
+  (9, 'Yukari', 'Yakumo', 'Boundary 60', '66778899', 'Ginecología', '+543879012345', 11),
+  (10, 'Ran', 'Yakumo', 'Boundary 61', '00112233', 'Oftalmología', '+543870123456', 12),
+  (11, 'Chen', 'Yakumo', 'Boundary 62', '00112244', 'Dermatología', '+543870233456', 13);
 ALTER SEQUENCE "Profesional_id_seq" RESTART WITH 12;
 
 INSERT INTO "ProfesionalObraSocial" ("id", "id_obra_social", "id_profesional") VALUES
@@ -77,13 +88,13 @@ INSERT INTO "HistoriaClinica" ("id", "id_paciente", "id_profesional", "motivo", 
 ALTER SEQUENCE "HistoriaClinica_id_seq" RESTART WITH 7;
 
 INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "estado") VALUES
-  (1, 1,  1, '2025-09-21 11:00:00.00', 'CONFIRMADO'),
+  (1, 1,  1, '2025-09-21 11:00:00.00', 'PROGRAMADO'),
   (2, 1,  1, '2025-08-21 11:00:00.00', 'CANCELADO'),
-  (3, 2,  2, '2025-09-21 09:00:00.00', 'CONFIRMADO'),
-  (4, 3,  3, '2025-08-31 09:00:00.00', 'CONFIRMADO'),
-  (5, 4,  9, '2025-08-30 09:30:00.00', 'CONFIRMADO'),
-  (6, 7,  4, '2025-08-29 09:20:00.00', 'CONFIRMADO'),
-  (7, 11, 11, '2025-08-28 10:20:00.00', 'CONFIRMADO');
+  (3, 2,  2, '2025-09-21 09:00:00.00', 'EN_SALA_ESPERA'),
+  (4, 3,  3, '2025-08-31 09:00:00.00', 'ASISTIO'),
+  (5, 4,  9, '2025-08-30 09:30:00.00', 'PROGRAMADO'),
+  (6, 7,  4, '2025-08-29 09:20:00.00', 'NO_ASISTIO'),
+  (7, 11, 11, '2025-08-28 10:20:00.00', 'CANCELADO');
 ALTER SEQUENCE "Turno_id_seq" RESTART WITH 8;
 
 COMMIT;

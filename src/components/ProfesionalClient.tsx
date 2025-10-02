@@ -212,8 +212,8 @@ export function ProfesionalClient({
           >
             <option value="0">Todas las obras sociales</option>
             {obrasSociales.map((obraSocial) => (
-              <option key={obraSocial.id} value={obraSocial.id.toString()}>
-                {obraSocial.nombre}
+                <option key={obraSocial.id} value={obraSocial.id.toString()}>
+                  {obraSocial.nombre}
               </option>
             ))}
           </select>

@@ -73,11 +73,10 @@ export function SidebarOficial() {
       ? [
           { icon: Calendar, label: "Turnos", href: "/sist/turnos" },
           { icon: Users, label: "Pacientes", href: "/sist/pacientes" },
-          { icon: Users, label: "Mi agenda", href: "/sist/mi-agenda" },
           { icon: Users, label: "Mis pacientes", href: "/sist/mis_pacientes" },
           {
             icon: Users,
-            label: "Calendario",
+            label: "Mi agenda",
             href: "/sist/calendario_profesional",
           },
 

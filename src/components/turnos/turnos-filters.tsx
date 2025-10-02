@@ -1,37 +1,30 @@
-"use client"
+"use client";
 
-import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useAuth } from "@/context/auth-context"
-import { Calendar, ChevronLeft, ChevronRight, Filter } from "lucide-react"
+import { useEffect, useMemo } from "react";
+
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/context/auth-context";
+import { Calendar, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 
 interface TurnosFiltersProps {
-  selectedDate: Date
-  onDateChange: (date: Date) => void
-  selectedProfesional: string
-  onProfesionalChange: (profesional: string) => void
-  selectedEspecialidad: string
-  onEspecialidadChange: (especialidad: string) => void
+  selectedDate: Date;
+  onDateChange: (date: Date) => void;
+  selectedProfesional: string;
+  onProfesionalChange: (profesional: string) => void;
+  selectedEspecialidad: string;
+  onEspecialidadChange: (especialidad: string) => void;
+  profesionales: Array<{ id: string; nombre: string; especialidad?: string }>;
+  especialidades: Array<{ id: string; nombre: string }>;
+  loading?: boolean;
 }
-
-// Mock data - en producción vendría de la API
-const profesionales = [
-  { id: "todos", nombre: "Todos los profesionales" },
-  { id: "2", nombre: "Dr. Carlos Mendez - Cardiología" },
-  { id: "3", nombre: "Dra. María López - Pediatría" },
-  { id: "4", nombre: "Dr. Martínez - Traumatología" },
-  { id: "5", nombre: "Dra. Rodríguez - Dermatología" },
-]
-
-const especialidades = [
-  { id: "todas", nombre: "Todas las especialidades" },
-  { id: "cardiologia", nombre: "Cardiología" },
-  { id: "pediatria", nombre: "Pediatría" },
-  { id: "traumatologia", nombre: "Traumatología" },
-  { id: "dermatologia", nombre: "Dermatología" },
-  { id: "ginecologia", nombre: "Ginecología" },
-]
 
 export function TurnosFilters({
   selectedDate,
@@ -40,8 +33,11 @@ export function TurnosFilters({
   onProfesionalChange,
   selectedEspecialidad,
   onEspecialidadChange,
+  profesionales,
+  especialidades,
+  loading = false,
 }: TurnosFiltersProps) {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("es-AR", {
@@ -49,39 +45,51 @@ export function TurnosFilters({
       year: "numeric",
       month: "long",
       day: "numeric",
-    })
-  }
+    });
+  };
 
   const changeDate = (days: number) => {
-    const newDate = new Date(selectedDate)
-    newDate.setDate(newDate.getDate() + days)
-    onDateChange(newDate)
-  }
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + days);
+    onDateChange(newDate);
+  };
 
   const goToToday = () => {
-    onDateChange(new Date())
-  }
+    onDateChange(new Date());
+  };
 
-  const getProfesionalesDisponibles = () => {
+  const profesionalesDisponibles = useMemo(() => {
     if (user?.role === "profesional") {
-      // Los profesionales solo ven su propia opción (esto no debería ejecutarse en /turnos)
-      return profesionales.filter((p) => p.id === user.id)
+      return profesionales.filter((p) => p.id === user.id);
+    }
+    return profesionales;
+  }, [profesionales, user]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (
+      profesionalesDisponibles.length > 0 &&
+      !profesionalesDisponibles.some((prof) => prof.id === selectedProfesional)
+    ) {
+      onProfesionalChange(profesionalesDisponibles[0].id);
     }
 
-    if (user?.role === "mesa-entrada") {
-      // Mesa de entrada ve todos los profesionales
-      return profesionales
+    if (
+      especialidades.length > 0 &&
+      !especialidades.some((esp) => esp.id === selectedEspecialidad)
+    ) {
+      onEspecialidadChange(especialidades[0].id);
     }
-
-    if (user?.role === "gerente") {
-      // Gerente ve todos los profesionales
-      return profesionales
-    }
-
-    return profesionales
-  }
-
-  const profesionalesDisponibles = getProfesionalesDisponibles()
+  }, [
+    loading,
+    profesionalesDisponibles,
+    especialidades,
+    selectedProfesional,
+    selectedEspecialidad,
+    onProfesionalChange,
+    onEspecialidadChange,
+  ]);
 
   return (
     <Card className="p-4">
@@ -94,7 +102,9 @@ export function TurnosFilters({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground capitalize">{formatDate(selectedDate)}</p>
+              <p className="text-sm font-medium text-foreground capitalize">
+                {formatDate(selectedDate)}
+              </p>
             </div>
             <Button variant="outline" size="sm" onClick={() => changeDate(1)}>
               <ChevronRight className="h-4 w-4" />
@@ -108,33 +118,75 @@ export function TurnosFilters({
         {/* Filters */}
         <div className="flex items-center gap-2 flex-1">
           <Filter className="h-4 w-4 text-muted-foreground" />
-          <Select value={selectedProfesional} onValueChange={onProfesionalChange}>
-            <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="Seleccionar profesional" />
+          <Select
+            value={selectedProfesional}
+            onValueChange={onProfesionalChange}
+            disabled={loading}
+          >
+            <SelectTrigger
+              className="w-[250px]"
+              disabled={loading || profesionalesDisponibles.length === 0}
+            >
+              <SelectValue
+                placeholder={
+                  loading ? "Cargando..." : "Seleccionar profesional"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {profesionalesDisponibles.map((prof) => (
-                <SelectItem key={prof.id} value={prof.id}>
-                  {prof.nombre}
+              {loading ? (
+                <SelectItem value="loading" disabled>
+                  Cargando profesionales...
                 </SelectItem>
-              ))}
+              ) : profesionalesDisponibles.length === 0 ? (
+                <SelectItem value="none" disabled>
+                  No hay profesionales disponibles
+                </SelectItem>
+              ) : (
+                profesionalesDisponibles.map((prof) => (
+                  <SelectItem key={prof.id} value={prof.id}>
+                    {prof.nombre}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
 
-          <Select value={selectedEspecialidad} onValueChange={onEspecialidadChange}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Seleccionar especialidad" />
+          <Select
+            value={selectedEspecialidad}
+            onValueChange={onEspecialidadChange}
+            disabled={loading}
+          >
+            <SelectTrigger
+              className="w-[200px]"
+              disabled={loading || especialidades.length === 0}
+            >
+              <SelectValue
+                placeholder={
+                  loading ? "Cargando..." : "Seleccionar especialidad"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {especialidades.map((esp) => (
-                <SelectItem key={esp.id} value={esp.id}>
-                  {esp.nombre}
+              {loading ? (
+                <SelectItem value="loading" disabled>
+                  Cargando especialidades...
                 </SelectItem>
-              ))}
+              ) : especialidades.length === 0 ? (
+                <SelectItem value="none" disabled>
+                  No hay especialidades disponibles
+                </SelectItem>
+              ) : (
+                especialidades.map((esp) => (
+                  <SelectItem key={esp.id} value={esp.id}>
+                    {esp.nombre}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>
       </div>
     </Card>
-  )
+  );
 }

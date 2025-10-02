@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TurnoCard } from "@/components/calendario-profesional/turno-card";
@@ -8,18 +8,21 @@ import { TurnoDetailDialog } from "@/components/calendario-profesional/turno-det
 import { useAuth } from "@/context/auth-context";
 import { Clock } from "lucide-react";
 
-// Interface de turno
-interface Turno {
+export interface Turno {
   id: string;
-  hora: string; // formato HH:mm
+  fecha: string; // ISO
+  hora: string; // obligatorio
   paciente: {
+    id: number;
     nombre: string;
+    apellido: string;
     dni: string;
     telefono: string;
   };
   profesional: {
-    id: string;
+    id: number;
     nombre: string;
+    apellido: string;
     especialidad: string;
   };
   estado:
@@ -28,67 +31,11 @@ interface Turno {
     | "ASISTIO"
     | "NO_ASISTIO"
     | "CANCELADO";
-  motivo: string;
-  duracion: number; // en minutos
+  motivo: string; // también obligatorio para evitar undefined
+  duracion: number; // minutos
   notas?: string;
 }
 
-// Mock de turnos de un solo profesional
-const mockTurnos: Turno[] = [
-  {
-    id: "1",
-    hora: "2025-10-01T08:00:00",
-    paciente: {
-      nombre: "María González",
-      dni: "12345678",
-      telefono: "11-1234-5678",
-    },
-    profesional: {
-      id: "1",
-      nombre: "Dr. Carlos Mendez",
-      especialidad: "Clínica Médica",
-    },
-    estado: "ASISTIO",
-    motivo: "Control rutinario",
-    duracion: 30,
-  },
-  {
-    id: "2",
-    hora: "2025-10-01T08:30:00",
-    paciente: {
-      nombre: "Juan Pérez",
-      dni: "87654321",
-      telefono: "11-8765-4321",
-    },
-    profesional: {
-      id: "1",
-      nombre: "Dr. Carlos Mendez",
-      especialidad: "Clínica Médica",
-    },
-    estado: "EN_SALA_ESPERA",
-    motivo: "Vacunación",
-    duracion: 30,
-  },
-  {
-    id: "3",
-    hora: "2025-10-01T09:00:00",
-    paciente: {
-      nombre: "Ana Martín",
-      dni: "11223344",
-      telefono: "11-1122-3344",
-    },
-    profesional: {
-      id: "1",
-      nombre: "Dr. Carlos Mendez",
-      especialidad: "Clínica Médica",
-    },
-    estado: "PROGRAMADO",
-    motivo: "Dolor en el pecho",
-    duracion: 30,
-  },
-];
-
-// Horarios posibles
 const horarios = [
   "08:00",
   "08:30",
@@ -116,7 +63,6 @@ const horarios = [
   "19:30",
 ];
 
-// Helper para comparar fechas sin hora
 function esMismaFecha(fecha1: Date, fecha2: Date) {
   return (
     fecha1.getFullYear() === fecha2.getFullYear() &&
@@ -127,32 +73,94 @@ function esMismaFecha(fecha1: Date, fecha2: Date) {
 
 interface CalendarioMesaViewProps {
   selectedDate: Date;
+  profesionalId: number;
 }
 
-export function CalendarioMesaView({ selectedDate }: CalendarioMesaViewProps) {
+export function CalendarioMesaView({
+  selectedDate,
+  profesionalId,
+}: CalendarioMesaViewProps) {
   const { user } = useAuth();
   const [selectedTurno, setSelectedTurno] = useState<Turno | null>(null);
-  const [turnos] = useState<Turno[]>(mockTurnos);
+  const [turnos, setTurnos] = useState<Turno[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Solo mesa de entrada puede modificar estados
   const puedeModificar = user?.role === "mesa-entrada";
 
-  // Filtramos solo turnos del día seleccionado
+  // Fechas para rango completo del día
+  const from = new Date(selectedDate);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(selectedDate);
+  to.setHours(23, 59, 59, 999);
+
+  useEffect(() => {
+    if (!profesionalId) return;
+
+    async function fetchTurnos() {
+      setLoading(true);
+      setError(null);
+      try {
+        const fromStr = from.toISOString();
+        const toStr = to.toISOString();
+
+        const res = await fetch(
+          `/api/v1/turnos?profesionalId=${profesionalId}&from=${fromStr}&to=${toStr}`
+        );
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || "Error al cargar turnos");
+        }
+
+        const data = await res.json();
+
+        const turnosConHora = (data.turnos || []).map((turno: Turno) => ({
+          ...turno,
+          hora: new Date(turno.fecha).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          motivo: turno.motivo || "", // para evitar undefined en motivo
+        }));
+
+        setTurnos(turnosConHora);
+      } catch (err: any) {
+        setError(err.message || "Error desconocido");
+        setTurnos([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTurnos();
+  }, [profesionalId, selectedDate]);
+  console.log("Turnos recibidos:", turnos);
+  console.log("Selected date:", selectedDate.toISOString());
+  // Filtrar solo turnos del día seleccionado por si vienen fuera del rango
   const turnosFiltrados = turnos.filter((t) =>
-    esMismaFecha(new Date(t.hora), selectedDate)
+    esMismaFecha(new Date(t.fecha), selectedDate)
   );
+  console.log("Turnos filtrados:", turnosFiltrados);
 
   const getTurnosEnHorario = (hora: string) => {
-    return turnosFiltrados.filter(
-      (t) =>
-        new Date(t.hora).getHours() === Number(hora.split(":")[0]) &&
-        new Date(t.hora).getMinutes() === Number(hora.split(":")[1])
-    );
+    return turnosFiltrados.filter((t) => {
+      const date = new Date(t.fecha);
+      const h = date.getUTCHours().toString().padStart(2, "0");
+      const m = date.getUTCMinutes().toString().padStart(2, "0");
+      const turnoHora = `${h}:${m}`;
+
+      console.log(`Turno ${t.id} -> Hora: ${turnoHora}`); // para debug
+
+      return turnoHora === hora;
+    });
   };
+
+  if (loading) return <p>Cargando turnos...</p>;
+  if (error) return <p className="text-red-600">Error: {error}</p>;
 
   return (
     <div className="space-y-4">
-      {/* Grid de turnos */}
       <Card className="p-6">
         <div className="space-y-4">
           {horarios.map((hora) => {
@@ -161,7 +169,6 @@ export function CalendarioMesaView({ selectedDate }: CalendarioMesaViewProps) {
 
             return (
               <div key={hora} className="space-y-2">
-                {/* Horario */}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2 w-20">
                     <Clock className="h-4 w-4 text-muted-foreground" />
@@ -177,7 +184,6 @@ export function CalendarioMesaView({ selectedDate }: CalendarioMesaViewProps) {
                   )}
                 </div>
 
-                {/* Turnos */}
                 {tieneDisponibilidad ? (
                   <div className="ml-24 p-4 border-2 border-dashed border-gray-300 rounded-lg">
                     <p className="text-sm text-muted-foreground text-center">
@@ -191,7 +197,7 @@ export function CalendarioMesaView({ selectedDate }: CalendarioMesaViewProps) {
                         key={turno.id}
                         turno={turno}
                         onClick={() => setSelectedTurno(turno)}
-                        puedeModificar={false}
+                        puedeModificar={puedeModificar}
                         onEstadoChange={() => {}}
                       />
                     ))}
@@ -203,7 +209,6 @@ export function CalendarioMesaView({ selectedDate }: CalendarioMesaViewProps) {
         </div>
       </Card>
 
-      {/* Dialog de detalles */}
       {selectedTurno && (
         <TurnoDetailDialog
           turno={selectedTurno}

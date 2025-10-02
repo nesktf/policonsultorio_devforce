@@ -1,50 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CalendarioMesaView } from "@/components/calendario-profesional/calendario-mesa-view";
 import { CalendarioOverview } from "@/components/calendario-profesional/calendario-overview";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useAuth } from "@/context/auth-context";
-import {
-  Calendar,
-  Grid3x3,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  AlertCircle,
-  ArrowLeft,
-} from "lucide-react";
-import Link from "next/link";
+import { Calendar, Grid3x3, ChevronLeft, ChevronRight } from "lucide-react";
 
-const profesionales = [
-  { id: "todos", nombre: "Todos los profesionales" },
-  { id: "1", nombre: "Dr. Carlos Mendez" },
-  { id: "2", nombre: "Dra. María López" },
-  { id: "3", nombre: "Dr. Martínez" },
-  { id: "4", nombre: "Dra. Rodríguez" },
-];
-
-const especialidades = [
-  { id: "todas", nombre: "Todas las especialidades" },
-  { id: "cardiologia", nombre: "Cardiología" },
-  { id: "pediatria", nombre: "Pediatría" },
-  { id: "traumatologia", nombre: "Traumatología" },
-  { id: "dermatologia", nombre: "Dermatología" },
-];
+type Profesional = {
+  id: number;
+  nombre: string;
+  apellido: string;
+};
 
 export default function CalendarioMesaPage() {
-  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<"day" | "overview">("day");
+  const [profesional, setProfesional] = useState<Profesional | null>(null);
+  const [profesionalError, setProfesionalError] = useState<string>("");
+
+  // 📥 Obtener el profesional desde el userId del localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) return;
+
+    const user = JSON.parse(storedUser);
+    const userId = user?.id;
+
+    if (userId) {
+      fetch(`/api/v1/profesionales/me?userId=${userId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.nombre && data?.apellido && data?.id) {
+            setProfesional({
+              id: data.id,
+              nombre: data.nombre,
+              apellido: data.apellido,
+            });
+          } else {
+            setProfesionalError("Profesional no encontrado");
+          }
+        })
+        .catch((err) => {
+          console.error("Error cargando profesional:", err);
+          setProfesionalError("Error al cargar profesional");
+        });
+    }
+  }, []);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("es-AR", {
@@ -71,7 +74,10 @@ export default function CalendarioMesaPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            Mi agenda - Nombre del profesional
+            Mi agenda -{" "}
+            {profesional
+              ? `${profesional.nombre} ${profesional.apellido}`
+              : profesionalError || "Cargando..."}
           </h1>
           <p className="text-muted-foreground">
             <span className="text-xs ml-2 text-yellow-600">
@@ -129,13 +135,23 @@ export default function CalendarioMesaPage() {
 
       {/* Content */}
       {view === "day" ? (
-        <CalendarioMesaView selectedDate={selectedDate} />
-      ) : (
+        profesional ? (
+          <CalendarioMesaView
+            selectedDate={selectedDate}
+            profesionalId={profesional.id}
+          />
+        ) : (
+          <p>Cargando profesional...</p>
+        )
+      ) : profesional ? (
         <CalendarioOverview
           selectedDate={selectedDate}
           onDateSelect={setSelectedDate}
           onViewDay={() => setView("day")}
+          profesionalId={profesional.id} // 👈 nuevo
         />
+      ) : (
+        <p>Cargando profesional...</p>
       )}
     </div>
   );
