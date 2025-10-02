@@ -6,8 +6,6 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/context/auth-context"
 import { NuevaConsultaDialog } from "@/components/pacientes/nueva-consulta-dialog"
 import {
@@ -24,8 +22,6 @@ import {
   Heart,
   Thermometer,
   Weight,
-  Search,
-  Filter,
   Eye,
   UserCheck,
 } from "lucide-react"
@@ -216,8 +212,6 @@ export default function HistoriasClinicasPage() {
   const [historiaClinica, setHistoriaClinica] = useState<any[]>([])
   const [showNuevaConsulta, setShowNuevaConsulta] = useState(false)
   const [vistaLista, setVistaLista] = useState(!pacienteId) // Si no hay pacienteId, mostrar lista
-  const [filtroNombre, setFiltroNombre] = useState("")
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState("")
   const [pacientesFiltrados, setPacientesFiltrados] = useState<any[]>([])
 
   const obtenerPacientesPermitidos = () => {
@@ -240,26 +234,7 @@ export default function HistoriasClinicasPage() {
 
   const filtrarPacientes = () => {
     const pacientesPermitidos = obtenerPacientesPermitidos()
-
-    let filtrados = pacientesPermitidos
-
-    if (filtroNombre) {
-      filtrados = filtrados.filter(
-        (p) =>
-          `${p.nombre} ${p.apellido}`.toLowerCase().includes(filtroNombre.toLowerCase()) ||
-          p.dni.includes(filtroNombre),
-      )
-    }
-
-    if (filtroEspecialidad) {
-      // Filtrar por especialidad basado en las consultas del paciente
-      filtrados = filtrados.filter((p) => {
-        const consultasPaciente = mockHistoriaClinica.filter((h) => h.pacienteId === p.id)
-        return consultasPaciente.some((c) => c.especialidad.toLowerCase().includes(filtroEspecialidad.toLowerCase()))
-      })
-    }
-
-    setPacientesFiltrados(filtrados)
+    setPacientesFiltrados(pacientesPermitidos)
   }
 
   const verHistoriaClinica = (pacienteSeleccionado: any) => {
@@ -278,7 +253,7 @@ export default function HistoriasClinicasPage() {
     if (vistaLista) {
       filtrarPacientes()
     }
-  }, [filtroNombre, filtroEspecialidad, vistaLista, user])
+  }, [vistaLista, user])
 
   useEffect(() => {
     if (pacienteId && !vistaLista) {
@@ -394,41 +369,6 @@ export default function HistoriasClinicasPage() {
               </p>
             </div>
           </div>
-
-          {/* Filtros */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filtros de Búsqueda
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nombre o DNI..."
-                    value={filtroNombre}
-                    onChange={(e) => setFiltroNombre(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrar por especialidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas las especialidades</SelectItem>
-                    <SelectItem value="cardiologia">Cardiología</SelectItem>
-                    <SelectItem value="pediatria">Pediatría</SelectItem>
-                    <SelectItem value="ginecologia">Ginecología</SelectItem>
-                    <SelectItem value="medicina-general">Medicina General</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Lista de pacientes */}
           <Card>
@@ -729,9 +669,11 @@ export default function HistoriasClinicasPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Columna izquierda */}
                       <div className="space-y-4">
-                        {/* Anamnesis */}
+                        {/* HISTORIA DE LA ENFERMEDAD ACTUAL */}
                         <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">ANAMNESIS</h4>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                            HISTORIA DE LA ENFERMEDAD ACTUAL
+                          </h4>
                           <p className="text-sm">{consulta.anamnesis}</p>
                         </div>
 
@@ -773,42 +715,6 @@ export default function HistoriasClinicasPage() {
 
                       {/* Columna derecha */}
                       <div className="space-y-4">
-                        {/* Medicamentos */}
-                        {consulta.medicamentos && consulta.medicamentos.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-sm text-muted-foreground mb-2">MEDICAMENTOS</h4>
-                            <div className="space-y-2">
-                              {consulta.medicamentos.map((med: any, idx: number) => (
-                                <div key={idx} className="bg-muted/50 p-2 rounded text-xs">
-                                  <div className="font-medium">
-                                    {med.nombre} {med.dosis}
-                                  </div>
-                                  <div className="text-muted-foreground">
-                                    {med.frecuencia} - {med.duracion}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Estudios complementarios */}
-                        {consulta.estudiosComplementarios && consulta.estudiosComplementarios.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-sm text-muted-foreground mb-2">ESTUDIOS COMPLEMENTARIOS</h4>
-                            <div className="space-y-2">
-                              {consulta.estudiosComplementarios.map((estudio: any, idx: number) => (
-                                <div key={idx} className="bg-muted/50 p-2 rounded text-xs">
-                                  <div className="font-medium">{estudio.tipo}</div>
-                                  <div className="text-muted-foreground">
-                                    {estudio.resultado} ({formatearFechaCorta(estudio.fecha)})
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         {/* Indicaciones */}
                         <div>
                           <h4 className="font-medium text-sm text-muted-foreground mb-2">INDICACIONES</h4>
