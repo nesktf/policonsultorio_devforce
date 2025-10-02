@@ -54,6 +54,7 @@ model Paciente {
   fecha_nacimiento DateTime
   fecha_registro   DateTime          @default(now())
   telefono         String            @db.VarChar(14)
+  antecedentes     String?
   id_obra_social   Int?
   num_obra_social  String?
   historias        HistoriaClinica[]

@@ -209,13 +209,16 @@ export default function HistoriasClinicasPage() {
   const router = useRouter()
   const pacienteId = searchParams.get("paciente")
 
+  const [pacientes, setPacientes] = useState<Array<any>>([]);
+  const [historias, setHistorias] = useState<Array<any>>([]);
+
   const [paciente, setPaciente] = useState<any>(null)
   const [historiaClinica, setHistoriaClinica] = useState<any[]>([])
   const [showNuevaConsulta, setShowNuevaConsulta] = useState(false)
   const [vistaLista, setVistaLista] = useState(!pacienteId) // Si no hay pacienteId, mostrar lista
   const [pacientesFiltrados, setPacientesFiltrados] = useState<any[]>([])
 
-  const obtenerPacientesPermitidos = () => {
+  const obtenerPacientesPermitidos = (pacientes_data: any) => {
     if (!user) return []
 
     if (user.role === "mesa-entrada") {
@@ -223,20 +226,47 @@ export default function HistoriasClinicasPage() {
     }
 
     if (user.role === "gerente") {
-      return mockPacientes // Gerente ve todos los pacientes
+      return pacientes_data // Gerente ve todos los pacientes
     }
 
     if (user.role === "profesional") {
-      return mockPacientes.filter((p) => p.profesionalesAsignados.includes(user.id))
+      return pacientes_data.filter((p: any) => p.profesionalesAsignados.includes(user.id))
     }
 
     return []
+  };
+
+  const fetchPacienteData = async () => {
+    const pac_data = await fetch("api/v2/historia/paciente", {
+      method: "GET",
+    })
+    .then(async (body) => await body.json());
+    if (pac_data.error) {
+      console.error(pac_data.error);
+    }
+    const pacientes_fetched = pac_data.pacientes;
+    setPacientes(pacientes_fetched);
+    setPacientesFiltrados(obtenerPacientesPermitidos(pacientes_fetched));
+    console.log(pacientes_fetched);
+  };
+
+  const fetchHistoriaData = async () => {
+    const hist_data = await fetch("api/v2/historia", {
+      method: "GET",
+    })
+    .then(async (body) => await body.json());
+    if (hist_data.error) {
+      console.error(hist_data.error);
+      return;
+    }
+    const historias_fetched = hist_data.historias;
+    setHistorias(historias_fetched);
+    console.log(historias_fetched);
   }
 
-  const filtrarPacientes = () => {
-    const pacientesPermitidos = obtenerPacientesPermitidos()
-    setPacientesFiltrados(pacientesPermitidos)
-  }
+  const obtenerHistorsDePaciente = (data: any, id_paciente: number) => {
+    return data.filter((h: any) => h.pacienteId == id_paciente.toString());
+  };
 
   const verHistoriaClinica = (pacienteSeleccionado: any) => {
     router.push(`/historias-clinicas?paciente=${pacienteSeleccionado.id}`)
@@ -252,14 +282,16 @@ export default function HistoriasClinicasPage() {
 
   useEffect(() => {
     if (vistaLista) {
-      filtrarPacientes()
+      fetchPacienteData();
     }
+    fetchHistoriaData();
   }, [vistaLista, user])
 
   useEffect(() => {
     if (pacienteId && !vistaLista) {
       // Buscar paciente
-      const pacienteEncontrado = mockPacientes.find((p) => p.id === pacienteId)
+      const parsed = parseInt(pacienteId);
+      const pacienteEncontrado = pacientes.find((p) => p.id === parsed)
 
       if (user?.role === "profesional" && pacienteEncontrado) {
         const tienePermiso = pacienteEncontrado.profesionalesAsignados.includes(user.id)
@@ -273,13 +305,13 @@ export default function HistoriasClinicasPage() {
 
       if (pacienteEncontrado) {
         // Buscar historia clínica
-        let historia = mockHistoriaClinica.filter((h) => h.pacienteId === pacienteId)
+        let historia = obtenerHistorsDePaciente(historias, parsed);
 
         if (user?.role === "profesional") {
-          historia = historia.filter((h) => h.profesionalId === user.id)
+          historia = historia.filter((h: any) => h.profesionalId === user.id)
         }
 
-        setHistoriaClinica(historia.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()))
+        setHistoriaClinica(historia.sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()))
       }
     } else {
       setVistaLista(true)
@@ -385,7 +417,7 @@ export default function HistoriasClinicasPage() {
                 <div className="text-center py-8">
                   <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">
-                    {obtenerPacientesPermitidos().length === 0
+                    {obtenerPacientesPermitidos(pacientes).length === 0
                       ? "No tienes pacientes asignados"
                       : "No se encontraron pacientes con los filtros aplicados"}
                   </p>
@@ -393,11 +425,11 @@ export default function HistoriasClinicasPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pacientesFiltrados.map((pacienteItem) => {
-                    const consultasPaciente = mockHistoriaClinica.filter((h) => h.pacienteId === pacienteItem.id)
+                    const consultasPaciente = obtenerHistorsDePaciente(historias, pacienteItem.id as number);
                     const ultimaConsulta = consultasPaciente.sort(
-                      (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+                      (a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
                     )[0]
-                    const especialidades = [...new Set(consultasPaciente.map((c) => c.especialidad))]
+                    const especialidades = [...new Set(consultasPaciente.map((c: any) => c.especialidad))]
 
                     return (
                       <Card
@@ -443,7 +475,7 @@ export default function HistoriasClinicasPage() {
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {especialidades.slice(0, 2).map((esp, idx) => (
                                   <Badge key={idx} variant="outline" className="text-xs">
-                                    {esp}
+                                    {esp as string}
                                   </Badge>
                                 ))}
                                 {especialidades.length > 2 && (
