@@ -1,7 +1,8 @@
 import { Maybe } from "@/lib/error_monads";
 import { DBData } from "@/prisma/instance"
-import { retrieveHistoriaClinica, retrieveHistoriasFromProfesional, retrieveHistoriasClinicas, HistoriaDBData } from "@/prisma/historia_clinica";
+import { retrieveHistoriaClinica, retrieveHistoriasFromProfesional, retrieveHistoriasClinicas, HistoriaDBData, HistoriaClinicaDBInput, registerHistoriaClinica, updateHistoriaClinica, SignoVitalDBData, MedicamentoDBData, EstudioDBData } from "@/prisma/historia_clinica";
 import { NextRequest, NextResponse } from "next/server";
+import { JsonArray } from "@/generated/prisma/runtime/library";
 
 /* Sample data
 {
@@ -180,14 +181,200 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Args:
-// - HistoriaAPIData without ID -> returns { historiaId: int }
-export async function POST(req: NextRequest) {
+function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, where: string} {
+  const onErr = (where: string) => {
+    return { parsed: null, where: `historia.${where}`}
+  };
 
+  const id_paciente = parseId(data.pacienteId);
+  if (!id_paciente.hasValue()) {
+    return onErr("profesionalId");
+  }
+  const id_profesional = parseId(data.profesionalId);
+  if (!id_profesional.hasValue()) {
+    return onErr("profesionalId");
+  }
+  if (!data.fecha) {
+    return onErr("fecha")
+  }
+  const fecha = new Date(data.fecha);
+
+  if (!data.motivo) {
+    return onErr("motivo")
+  }
+  const motivo = data.motivo as string;
+
+  if (!data.detalle) {
+    return onErr("detalle");
+  }
+  const detalle = data.detalle as string;
+
+  const examen_fisico = data.examen_fisico ? data.examenFisico as string : null;
+
+  let signos_vitales: SignoVitalDBData | null = null;
+  if (data.signosVitales) {
+    const signos = data.signosVitales;
+    if (!signos.presionArterial) {
+      return onErr("signosVitales.presionArterial");
+    }
+    if (!signos.frecuenciaCardiaca) {
+      return onErr("signosVitales.frecuenciaCardiaca");
+    }
+    if (!signos.temperatura) {
+      return onErr("signosVitales.temperatura");
+    }
+    if (!signos.peso) {
+      return onErr("signosVitales.peso");
+    }
+    if (!signos.altura) {
+      return onErr("signosVitales.altura");
+    }
+    signos_vitales = {
+      presion: signos.presionArterial as string,
+      frecuencia: signos.frecuenciaCardiaca as string,
+      temperatura: signos.temperatura as string,
+      peso: signos.peso as string,
+      altura: signos.altura as string,
+    }
+  }
+
+  if (!data.diagnostico) {
+    return onErr("diagnostico");
+  }
+
+  if (!data.proximoControl) {
+
+  }
+  const proximo_control = new Date(data.proximoControl as string);
+
+  const diagnostico = data.diagnostico as string;
+  const tratamiento = data.tratamiento ? data.tratamiento as string : null;
+  const indicaciones = data.indicaciones ? data.indicaciones as string : null;
+  const observaciones = data.observaciones ? data.observaciones as string : null;
+
+  let medicamentos: Array<MedicamentoDBData> = [];
+  if (data.medicamentos) {
+    try {
+      if (Array.isArray(data.medicamentos)) {
+        return onErr(`medicamentos`);
+      }
+      medicamentos = (data.medicamentos as Array<any>).map((med: any) => {
+        if (!med.nombre) {
+          throw new Error("nombre");
+        }
+        if (!med.dosis) {
+          throw new Error("dosis");
+        }
+        if (!med.frecuencia) {
+          throw new Error("frecuencia");
+        }
+        if (!med.duracion) {
+          throw new Error("duracion");
+        }
+        return med as MedicamentoDBData;
+      });
+    } catch (where) {
+      return onErr(`medicamentos.${where as string}`);
+    }
+  }
+
+  let estudios: Array<EstudioDBData> = []
+  if (data.estudiosComplementarios) {
+    try {
+      if (Array.isArray(data.estudios)) {
+        return onErr(`medicamentos`);
+      }
+      estudios = (data.estudios as Array<any>).map((est: any) => {
+        if (!est.tipo) {
+          throw new Error("tipo");
+        }
+        if (!est.resultado) {
+          throw new Error("resultado");
+        }
+        if (!est.fecha) {
+          throw new Error("fecha");
+        }
+        return est as EstudioDBData;
+      });
+    } catch (where) {
+      return onErr(`estudios.${where as string}`);
+    }
+  }
+
+  return {
+    parsed: {
+      id_paciente: id_paciente.unwrap(),
+      id_profesional: id_profesional.unwrap(),
+      fecha,
+      motivo,
+      detalle,
+      examen_fisico,
+      signos_vitales,
+      diagnostico,
+      tratamiento,
+      indicaciones,
+      observaciones,
+      proximo_control,
+      medicamentos,
+      estudios,
+    },
+    where: "",
+  };
 }
 
 // Args:
-// - HistoriaAPIData -> returns { historiaId: int }
-export async function PUT(req: NextRequest) {
+// - { historia: HistoriaAPIData } without ID -> returns { historiaId: int }
+export async function POST(req: NextRequest) {
+  try {
+    const data = await req.json();
+    const {parsed, where} = validateInputData(data.historia);
+    if (!parsed) {
+      return NextResponse.json(
+        { error: `Invalid input format at ${where}`},
+        { status: 400 }
+      );
+    }
+    const ret = await registerHistoriaClinica(parsed);
+    return NextResponse.json(
+      { historiaId: ret.unwrap() }
+    );
+  } catch (error) {
+    console.log(`ERROR: api/v2/historia @ POST: ${error}`);
+    return NextResponse.json(
+      { error },
+      { status: 500 }
+    );
+  }
+}
 
+// Args:
+// - { historia: HistoriaDBData } -> returns { historiaId: int }
+export async function PUT(req: NextRequest) {
+  try {
+    const data = await req.json();
+    const id = parseId(data.historia.id);
+    if (!id) {
+      return NextResponse.json(
+        { error: `Invalid input format at historia.id`},
+        { status: 400 }
+      );
+    }
+    const {parsed, where} = validateInputData(data.historia);
+    if (!parsed) {
+      return NextResponse.json(
+        { error: `Invalid input format at ${where}`},
+        { status: 400 }
+      );
+    }
+    const ret = await updateHistoriaClinica(id.unwrap(), parsed);
+    return NextResponse.json(
+      { historiaId: ret.unwrap() }
+    );
+  } catch (error) {
+    console.log(`ERROR: api/v2/historia @ POST: ${error}`);
+    return NextResponse.json(
+      { error },
+      { status: 500 }
+    );
+  }
 }
