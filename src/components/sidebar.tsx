@@ -76,6 +76,12 @@ export function SidebarOficial() {
           { icon: Users, label: "Mi agenda", href: "/sist/mi-agenda" },
           { icon: Users, label: "Mis pacientes", href: "/sist/mis_pacientes" },
           {
+            icon: Users,
+            label: "Calendario",
+            href: "/sist/calendario_profesional",
+          },
+
+          {
             icon: FileText,
             label: "Historias Clínicas",
             href: "/sist/historias-clinicas",
