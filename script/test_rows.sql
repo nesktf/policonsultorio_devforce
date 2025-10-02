@@ -77,13 +77,13 @@ INSERT INTO "HistoriaClinica" ("id", "id_paciente", "id_profesional", "motivo", 
 ALTER SEQUENCE "HistoriaClinica_id_seq" RESTART WITH 7;
 
 INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "estado") VALUES
-  (1, 1,  1, '2025-09-21 11:00:00.00', 'CONFIRMADO'),
+  (1, 1,  1, '2025-09-21 11:00:00.00', 'PROGRAMADO'),
   (2, 1,  1, '2025-08-21 11:00:00.00', 'CANCELADO'),
-  (3, 2,  2, '2025-09-21 09:00:00.00', 'CONFIRMADO'),
-  (4, 3,  3, '2025-08-31 09:00:00.00', 'CONFIRMADO'),
-  (5, 4,  9, '2025-08-30 09:30:00.00', 'CONFIRMADO'),
-  (6, 7,  4, '2025-08-29 09:20:00.00', 'CONFIRMADO'),
-  (7, 11, 11, '2025-08-28 10:20:00.00', 'CONFIRMADO');
+  (3, 2,  2, '2025-09-21 09:00:00.00', 'EN_SALA_ESPERA'),
+  (4, 3,  3, '2025-08-31 09:00:00.00', 'ASISTIO'),
+  (5, 4,  9, '2025-08-30 09:30:00.00', 'PROGRAMADO'),
+  (6, 7,  4, '2025-08-29 09:20:00.00', 'NO_ASISTIO'),
+  (7, 11, 11, '2025-08-28 10:20:00.00', 'CANCELADO');
 ALTER SEQUENCE "Turno_id_seq" RESTART WITH 8;
 
 COMMIT;

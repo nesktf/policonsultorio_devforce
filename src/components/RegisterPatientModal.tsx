@@ -23,10 +23,33 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ dni?: string }>(() => ({}));
+
+  const validateForm = () => {
+    const errors: { dni?: string } = {};
+
+    if (formData.dni.length < 7 || formData.dni.length > 9) {
+      errors.dni = 'El DNI debe tener entre 7 y 9 dígitos.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleClose = () => {
+    setFieldErrors({});
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const isValid = validateForm();
+    if (!isValid) {
+      setIsSubmitting(false);
+      return;
+    }
     
     try {
       // Preparar los datos para la API
@@ -68,6 +91,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
         obraSocialId: '',
         numObraSocial: '',
       });
+      setFieldErrors({});
 
       // Notificar éxito
       setNotification({
@@ -97,7 +121,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-[#0AA2C7]">Registrar Nuevo Paciente</h3>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-[#4D94C8] hover:text-[#0AA2C7] transition-colors"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -148,12 +172,17 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
               title="Solo se permiten números"
               value={formData.dni}
               onChange={(e) => {
-                // Solo permitir números
                 const value = e.target.value.replace(/\D/g, '');
                 setFormData({ ...formData, dni: value });
+                if (fieldErrors.dni) {
+                  setFieldErrors((prev) => ({ ...prev, dni: undefined }));
+                }
               }}
               className="mt-1 block w-full rounded-lg border border-[#AFE1EA] px-4 py-2.5 bg-white text-gray-900 placeholder-gray-500 focus:border-[#0AA2C7] focus:ring-2 focus:ring-[#AFE1EA] transition-all duration-200"
             />
+            {fieldErrors.dni ? (
+              <p className="mt-1 text-sm text-red-500">{fieldErrors.dni}</p>
+            ) : null}
           </div>
 
           <div>
@@ -236,7 +265,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
           <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 text-sm text-[#4D94C8] border border-[#AFE1EA] rounded-md hover:bg-[#E4F1F9] focus:outline-none focus:ring-2 focus:ring-[#0AA2C7] transition-colors"
             >
               Cancelar
@@ -278,7 +307,7 @@ export function RegisterPatientModal({ isOpen, onClose, onSubmit, obrasSociales 
                   onClick={() => {
                     setNotification(null);
                     if (notification.type === 'success') {
-                      onClose();
+                      handleClose();
                     }
                   }}
                   className={`px-6 py-2 text-sm text-white rounded-md focus:outline-none focus:ring-2 ${

@@ -52,6 +52,7 @@ model Paciente {
   dni              String            @db.VarChar(9) @unique
   direccion        String
   fecha_nacimiento DateTime
+  fecha_registro   DateTime          @default(now())
   telefono         String            @db.VarChar(14)
   id_obra_social   Int?
   num_obra_social  String?
@@ -65,6 +66,8 @@ model HistoriaClinica {
   id_paciente    Int
   motivo         String
   detalle        String
+  examen_fisico  String?
+  signos_vitales Json?
   fecha          DateTime    @default(now())
   id_profesional Int
   paciente       Paciente    @relation(fields: [id_paciente], references: [id])
@@ -76,6 +79,7 @@ model Turno {
   id_profesional Int
   id_paciente    Int
   fecha          DateTime
+  duracion_minutos Int       @default(30)
   estado         EstadoTurno
   paciente       Paciente    @relation(fields: [id_paciente], references: [id])
   profesional    Profesional @relation(fields: [id_profesional], references: [id])
@@ -93,6 +97,9 @@ enum EstadoObraSocial {
 }
 
 enum EstadoTurno {
+  PROGRAMADO
+  EN_SALA_ESPERA
+  ASISTIO
+  NO_ASISTIO
   CANCELADO
-  CONFIRMADO
 }

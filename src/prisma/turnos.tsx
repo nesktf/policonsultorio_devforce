@@ -77,28 +77,214 @@ export async function getProfesionalturnos(
     },
     select: {
       fecha: true,
+      duracion_minutos: true,
     },
   });
 }
 
-export async function profesionalHasTurnoAt(
-  id_profesional: DBId,
-  fecha: Date
-): Promise<boolean> {
-  return (
-    (await prisma.turno.findFirst({
-      where: {
-        id_profesional,
-        fecha,
+export async function getTurnosCalendarioProfesional(id: DBId, from: Date, to: Date) {
+  return prisma.turno.findMany({
+    where: {
+      id_profesional: id,
+      fecha: {
+        gte: from,
+        lte: to,
       },
-    })) != undefined
-  );
+    },
+    select: {
+      id: true,
+      fecha: true,
+      duracion_minutos: true,
+      estado: true,
+      paciente: {
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          dni: true,
+        },
+      },
+      profesional: {
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          especialidad: true,
+        },
+      },
+    },
+    orderBy: {
+      fecha: 'asc',
+    },
+  });
+}
+
+
+export async function getTurnosFiltrados({
+  from,
+  to,
+  profesionalId,
+  especialidad,
+}: {
+  from: Date;
+  to: Date;
+  profesionalId?: DBId | null;
+  especialidad?: string | null;
+}) {
+  return prisma.turno.findMany({
+    where: {
+      fecha: {
+        gte: from,
+        lte: to,
+      },
+      ...(profesionalId ? { id_profesional: profesionalId } : {}),
+      ...(especialidad
+        ? {
+            profesional: {
+              especialidad,
+            },
+          }
+        : {}),
+    },
+    include: {
+      paciente: {
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          dni: true,
+          telefono: true,
+        },
+      },
+      profesional: {
+        select: {
+          id: true,
+          nombre: true,
+          apellido: true,
+          especialidad: true,
+        },
+      },
+    },
+    orderBy: {
+      fecha: 'asc',
+    },
+  });
+}
+
+export async function getTurnosPorEspecialidad(from: Date, to: Date) {
+  const turnos = await prisma.turno.findMany({
+    where: {
+      fecha: {
+        gte: from,
+        lte: to,
+      },
+    },
+    select: {
+      estado: true,
+      profesional: {
+        select: {
+          especialidad: true,
+        },
+      },
+    },
+  });
+
+  const agregados = new Map<
+    string,
+    {
+      total: number;
+      programados: number;
+      enSalaEspera: number;
+      asistidos: number;
+      noAsistidos: number;
+      cancelados: number;
+    }
+  >();
+
+  for (const turno of turnos) {
+    const especialidad = turno.profesional?.especialidad ?? 'Sin especialidad';
+    const registro =
+      agregados.get(especialidad) ?? {
+        total: 0,
+        programados: 0,
+        enSalaEspera: 0,
+        asistidos: 0,
+        noAsistidos: 0,
+        cancelados: 0,
+      };
+
+    registro.total += 1;
+
+    switch (turno.estado) {
+      case EstadoTurno.PROGRAMADO:
+        registro.programados += 1;
+        break;
+      case EstadoTurno.EN_SALA_ESPERA:
+        registro.enSalaEspera += 1;
+        break;
+      case EstadoTurno.ASISTIO:
+        registro.asistidos += 1;
+        break;
+      case EstadoTurno.NO_ASISTIO:
+        registro.noAsistidos += 1;
+        break;
+      case EstadoTurno.CANCELADO:
+        registro.cancelados += 1;
+        break;
+      default:
+        break;
+    }
+
+    agregados.set(especialidad, registro);
+  }
+
+  return Array.from(agregados.entries()).map(([especialidad, valores]) => ({
+    especialidad,
+    ...valores,
+  }));
+}
+
+export async function profesionalTieneConflictoDeTurno(
+  id_profesional: DBId,
+  fecha: Date,
+  duracionMinutos: number,
+): Promise<boolean> {
+  const inicio = new Date(fecha);
+  const fin = new Date(inicio.getTime() + duracionMinutos * 60 * 1000);
+
+  const diaInicio = new Date(inicio);
+  diaInicio.setHours(0, 0, 0, 0);
+  const diaFin = new Date(inicio);
+  diaFin.setHours(23, 59, 59, 999);
+
+  const turnos = await prisma.turno.findMany({
+    where: {
+      id_profesional,
+      fecha: {
+        gte: diaInicio,
+        lte: diaFin,
+      },
+    },
+    select: {
+      fecha: true,
+      duracion_minutos: true,
+    },
+  });
+
+  return turnos.some((turno) => {
+    const turnoInicio = new Date(turno.fecha);
+    const turnoFin = new Date(
+      turnoInicio.getTime() + turno.duracion_minutos * 60 * 1000,
+    );
+    return inicio < turnoFin && fin > turnoInicio;
+  });
 }
 
 export class TurnoData {
   id_paciente: DBId;
   id_profesional: DBId;
   fecha: Date;
+  duracion: number;
   estado: EstadoTurno;
   motivo: string;
   detalle: string;
@@ -107,6 +293,7 @@ export class TurnoData {
     id_paciente: DBId,
     id_profesional: DBId,
     fecha: Date,
+    duracion: number,
     estado: EstadoTurno,
     motivo: string,
     detalle: string
@@ -114,6 +301,7 @@ export class TurnoData {
     this.id_paciente = id_paciente;
     this.id_profesional = id_profesional;
     this.fecha = fecha;
+    this.duracion = duracion;
     this.estado = estado;
     this.motivo = motivo;
     this.detalle = detalle;
@@ -128,6 +316,9 @@ export class TurnoData {
   getFecha(): Date {
     return this.fecha;
   }
+  getDuracion(): number {
+    return this.duracion;
+  }
   getEstado(): EstadoTurno {
     return this.estado;
   }
@@ -140,12 +331,13 @@ export class TurnoData {
 }
 
 export async function registerTurno(data: TurnoData) {
-  let id_paciente = data.getPaciente();
-  let id_profesional = data.getProfesional();
-  let fecha = data.getFecha();
-  let estado = data.getEstado();
-  let motivo = data.getMotivo();
-  let detalle = data.getDetalle();
+  const id_paciente = data.getPaciente();
+  const id_profesional = data.getProfesional();
+  const fecha = data.getFecha();
+  const duracion_minutos = data.getDuracion();
+  const estado = data.getEstado();
+  const motivo = data.getMotivo();
+  const detalle = data.getDetalle();
 
   return await prisma.$transaction([
     prisma.turno.create({
@@ -153,6 +345,7 @@ export async function registerTurno(data: TurnoData) {
         id_paciente,
         id_profesional,
         fecha,
+        duracion_minutos,
         estado,
       },
     }),

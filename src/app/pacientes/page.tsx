@@ -231,8 +231,8 @@ export default function PacientesPage() {
       return
     }
 
-    console.log("[v0] Navigating to historia clinica for patient:", paciente.id, paciente.nombre)
-    router.push(`/historias-clinicas?paciente=${paciente.id}`)
+    setPacienteSeleccionado(paciente)
+    setShowHistoriaClinica(true)
   }
 
   const handleVerPaciente = (paciente: any) => {

@@ -6,8 +6,23 @@ import { PatientSearch } from "@/components/PatientSearch";
 import { RegisterPatientModal } from "@/components/RegisterPatientModal";
 import { HistoriaClinicaModal } from "@/components/HistoriaClinicaModal";
 
-type PacienteWithObraSocial = Paciente & {
+type PacienteWithObraSocial = Omit<Paciente, 'fecha_nacimiento'> & {
+  fecha_nacimiento: string;
   obra_social: ObraSocial | null;
+};
+
+const formatFechaNacimiento = (fechaIso: string) => {
+  try {
+    return new Intl.DateTimeFormat('es-AR', {
+      timeZone: 'UTC',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(fechaIso));
+  } catch (error) {
+    console.error('Error al formatear fecha de nacimiento:', error);
+    return fechaIso;
+  }
 };
 
 export function PacientesClient({
@@ -172,7 +187,7 @@ export function PacientesClient({
                     {paciente.direccion}
                   </td>
                   <td className="px-6 py-4 text-gray-900">
-                    {new Date(paciente.fecha_nacimiento).toLocaleDateString()}
+                    {formatFechaNacimiento(paciente.fecha_nacimiento)}
                   </td>
                   <td className="px-6 py-4">
                     {paciente.obra_social?.nombre ? (

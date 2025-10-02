@@ -13,6 +13,7 @@ interface RegistrarTurnoProps {
     paciente: string;
     profesional: string;
     estado: string;
+    duracion: number;
   }) => void;
   onCloseModal?: () => void;
 }
@@ -22,6 +23,8 @@ interface ProfesionalOption {
   nombre: string;
   apellido: string;
 }
+
+const DURACIONES_MINUTOS = [15, 30, 45, 60];
 
 export function RegistrarTurnoClient({
   pacientes,
@@ -35,6 +38,7 @@ export function RegistrarTurnoClient({
   const [especialidad, setEspecialidad] = useState<string>("");
   const [profesionalId, setProfesionalId] = useState<string>("");
   const [fecha, setFecha] = useState<string>("");
+  const [duracion, setDuracion] = useState<string>("30");
   const [horario, setHorario] = useState<string>("");
   const [motivo, setMotivo] = useState<string>("");
   const [detalle, setDetalle] = useState<string>("");
@@ -89,6 +93,7 @@ export function RegistrarTurnoClient({
     setHorario("");
     setProfesionales([]);
     setHorarios([]);
+    setDuracion("30");
 
     if (!nuevaEspecialidad) {
       return;
@@ -172,7 +177,7 @@ export function RegistrarTurnoClient({
         throw new Error(error || "Error al registrar el turno.");
       }
 
-      const turnoCreado: { id: number; fecha: string; estado: string } =
+      const turnoCreado: { id: number; fecha: string; estado: string; duracion: number } =
         await response.json();
 
       const pacienteSeleccionado = pacientes.find(
@@ -196,6 +201,7 @@ export function RegistrarTurnoClient({
         paciente: pacienteNombre,
         profesional: profesionalNombre,
         estado: turnoCreado.estado,
+        duracion: turnoCreado.duracion,
       });
 
       setSuccessMessage("Turno registrado con éxito.");
@@ -261,7 +267,7 @@ export function RegistrarTurnoClient({
 
       try {
         const response = await fetch(
-          `/api/v1/turnos/disponibles?profesionalId=${profesionalId}&fecha=${fecha}&timezoneOffset=${timezoneOffsetMinutes}`,
+          `/api/v1/turnos/disponibles?profesionalId=${profesionalId}&fecha=${fecha}&timezoneOffset=${timezoneOffsetMinutes}&durationMinutes=${duracion}`,
           { cache: "no-store" }
         );
 
@@ -301,7 +307,7 @@ export function RegistrarTurnoClient({
     return () => {
       cancelado = true;
     };
-  }, [profesionalId, fecha]);
+  }, [profesionalId, fecha, duracion, timezoneOffsetMinutes]);
 
   const normalizedQuery = pacienteBusqueda.trim().toLowerCase();
   const filteredPacientes = normalizedQuery
@@ -529,6 +535,32 @@ export function RegistrarTurnoClient({
               disabled={!profesionalId}
               required
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="duracion"
+              className="block text-sm font-bold text-gray-700 mb-1"
+            >
+              Duración (minutos)
+            </label>
+            <select
+              id="duracion"
+              value={duracion}
+              onChange={(event) => {
+                setDuracion(event.target.value);
+                setHorario("");
+              }}
+              className="w-full p-3 border border-gray-300 rounded-lg text-gray-900"
+              disabled={!profesionalId || !fecha}
+              required
+            >
+              {DURACIONES_MINUTOS.map((value) => (
+                <option key={value} value={value.toString()}>
+                  {value} minutos
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

@@ -31,7 +31,7 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
@@ -48,13 +48,13 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
                 Datos Personales
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+            <CardContent className="space-y-6">
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-xl font-semibold">
+                  <h3 className="text-2xl font-semibold">
                     {paciente.apellido}, {paciente.nombre}
                   </h3>
-                  <p className="text-muted-foreground">{calcularEdad(paciente.fechaNacimiento)} años</p>
+                  <p className="text-base text-muted-foreground mt-1">{calcularEdad(paciente.fechaNacimiento)} años</p>
                 </div>
                 <Badge
                   variant={paciente.estado === "activo" ? "secondary" : "outline"}
@@ -64,34 +64,43 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">DNI:</span>
-                  <span>{paciente.dni}</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block">DNI</span>
+                    <span className="text-base">{paciente.dni}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Nacimiento:</span>
-                  <span>{formatearFecha(paciente.fechaNacimiento)}</span>
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block">Nacimiento</span>
+                    <span className="text-base">{formatearFecha(paciente.fechaNacimiento)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Teléfono:</span>
-                  <span>{paciente.telefono}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Email:</span>
-                  <span>{paciente.email}</span>
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block">Teléfono</span>
+                    <span className="text-base">{paciente.telefono}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
+              <div className="flex items-center gap-3 pt-2 border-t">
+                <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <span className="text-sm font-medium text-muted-foreground block">Email</span>
+                  <span className="text-base">{paciente.email}</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 pt-2 border-t">
+                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-medium">Dirección:</span>
-                  <p className="text-muted-foreground">{paciente.direccion}</p>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Dirección</span>
+                  <p className="text-base">{paciente.direccion}</p>
                 </div>
               </div>
             </CardContent>
@@ -105,25 +114,29 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
                 Información Médica
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <span className="font-medium">Obra Social:</span>
-                  <p className="text-muted-foreground">{paciente.obraSocial}</p>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Obra Social</span>
+                  <p className="text-base">{paciente.obraSocial}</p>
                 </div>
                 <div>
-                  <span className="font-medium">Número de Afiliado:</span>
-                  <p className="text-muted-foreground">{paciente.numeroAfiliado}</p>
+                  <span className="text-sm font-medium text-muted-foreground block mb-1">Número de Afiliado</span>
+                  <p className="text-base">{paciente.numeroAfiliado}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Última Consulta:</span>
-                  <span>{formatearFecha(paciente.ultimaConsulta)}</span>
+                <div className="flex items-center gap-3">
+                  <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block">Última Consulta</span>
+                    <span className="text-base">{formatearFecha(paciente.ultimaConsulta)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Fecha de Registro:</span>
-                  <span>{formatearFecha(paciente.fechaRegistro)}</span>
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground block">Fecha de Registro</span>
+                    <span className="text-base">{formatearFecha(paciente.fechaRegistro)}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
