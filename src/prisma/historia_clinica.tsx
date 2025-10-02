@@ -1,5 +1,127 @@
-import { prisma } from "@/prisma/instance"
-import type { Prisma } from "@prisma/client"
+import { JsonArray } from "@/generated/prisma/runtime/library";
+import { Result } from "@/lib/error_monads"
+import { prisma, DBId, DBData } from "@/prisma/instance"
+
+type SignoVitalDBData = {
+  presion: string,
+  frecuencia: string,
+  temperatura: string,
+  peso: string
+  altura: string,
+};
+
+type MedicamentoDBData = {
+  nombre: string,
+  dosis: string,
+  frecuencia: string,
+  duracion: string,
+};
+
+type EstudioDBData = {
+  tipo: string,
+  resultado: string,
+  fecha: string,
+};
+
+export type HistoriaDBData = {
+  paciente: { id: DBId, nombre: string, apellido: string },
+  profesional: { id: DBId, nombre: string, apellido: string, especialidad: string, },
+  fecha: Date,
+  motivo: string,
+  detalle: string,
+  examen_fisico: string | null,
+  diagnostico: string,
+  tratamiento: string | null,
+  indicaciones: string | null,
+  observaciones: string | null,
+  proximo_control: Date | null,
+  signos_vitales: SignoVitalDBData | null; 
+  medicamentos: Array<MedicamentoDBData>,
+  estudios: Array<EstudioDBData>,
+};
+
+function histFromDbData(hist: any): HistoriaDBData {
+  return {
+    paciente: {
+      id: hist.paciente.id,
+      nombre: hist.paciente.nombre,
+      apellido: hist.paciente.apellido,
+    },
+    profesional: {
+      id: hist.profesional.id,
+      nombre: hist.profesional.nombre,
+      apellido: hist.profesional.apellido,
+      especialidad: hist.profesional.especialidad,
+    },
+    fecha: hist.fecha,
+    detalle: hist.detalle,
+    motivo: hist.motivo,
+    examen_fisico: hist.examen_fisico,
+    signos_vitales: hist.signos_vitales ? (hist.signos_vitales as SignoVitalDBData) : null,
+    medicamentos: hist.medicamentos ? (hist.medicamentos as JsonArray).map((med) => {
+      return med as MedicamentoDBData;
+    }) : [],
+    estudios: hist.estudios ? (hist.estudios as JsonArray).map((est) => {
+      return est as EstudioDBData;
+    }) : [],
+    diagnostico: hist.diagnostico,
+    tratamiento: hist.tratamiento,
+    indicaciones: hist.indicaciones,
+    observaciones: hist.observaciones,
+    proximo_control: hist.proximo_control,
+  }
+}
+
+export async function retrieveHistoriaClinica(id: DBId): Promise<Result<DBData<HistoriaDBData>>> {
+  try {
+    return Result.Some(await prisma.historiaClinica.findUniqueOrThrow({
+      where: { id },
+      include: { paciente: true, profesional: true }
+    })
+    .then((hist) => {
+      return {
+        id: hist.id,
+        data: histFromDbData(hist)
+      }
+    }));
+  } catch (err) {
+    return Result.None(new Error(`${err}`));
+  }
+}
+
+export async function retrieveHistoriasClinicas(): Promise<Result<Array<DBData<HistoriaDBData>>>> {
+  try {
+    return Result.Some(await prisma.historiaClinica.findMany({
+      include: { paciente: true, profesional: true }
+    })
+    .then((hists) => hists.map((hist) => {
+      return {
+        id: hist.id,
+        data: histFromDbData(hist)
+      }
+    })));
+  } catch (err) {
+    return Result.None(new Error(`${err}`));
+  }
+}
+
+export async function retrieveHistoriasFromProfesional(id_prof: DBId): Promise<Result<Array<DBData<HistoriaDBData>>>> {
+  try {
+    return Result.Some(await prisma.historiaClinica.findMany({
+      where: { id_profesional: id_prof },
+      include: { paciente: true, profesional: true }
+    })
+    .then((hists) => hists.map((hist) => {
+      return {
+        id: hist.id,
+        data: histFromDbData(hist)
+      }
+    })));
+  } catch (err) {
+    return Result.None(new Error(`${err}`));
+  }
+}
+
 
 export async function getHistoriaClinica(pacienteId: number) {
   try {
