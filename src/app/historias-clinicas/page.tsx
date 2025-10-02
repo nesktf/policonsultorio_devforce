@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/context/auth-context"
 import { NuevaConsultaDialog } from "@/components/pacientes/nueva-consulta-dialog"
+import { AntecedentesFamiliaresCard } from "@/components/pacientes/antecedentes-familiares-card"
 import {
   FileText,
   Calendar,
@@ -564,7 +565,8 @@ export default function HistoriasClinicasPage() {
             </div>
           </CardContent>
         </Card>
-
+        {/* Antecedentes Familiares */}
+        <AntecedentesFamiliaresCard pacienteId={paciente.id} editable={user.role === "profesional"} compact={false} />
         {/* Resumen de la historia clínica */}
         <Card>
           <CardHeader>
