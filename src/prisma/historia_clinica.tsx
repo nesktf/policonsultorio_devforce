@@ -201,6 +201,71 @@ export async function updateHistoriaClinica(id: DBId, hist: HistoriaClinicaDBInp
   }
 }
 
+export type HistoriaPacienteDBData = {
+  id: DBId,
+  nombre: string,
+  apellido: string,
+  dni: string,
+  fecha_nacimiento: Date,
+  obra_social: string | null,
+  numero_afiliado: string | null,
+  profesionales: Array<DBId>,
+};
+
+export async function retrieveHistoriaPaciente(id: DBId): Promise<Result<HistoriaPacienteDBData>> {
+  try {
+    const entry = await prisma.paciente.findUniqueOrThrow({
+      where: { id },
+      include: { historias: true, obra_social: true, }
+    });
+    let prof_set = new Set<DBId>();
+    entry.historias.map((hist) => {
+      prof_set.add(hist.id_profesional);
+    });
+
+    return Result.Some({
+      id: entry.id,
+      nombre: entry.nombre,
+      apellido: entry.apellido,
+      dni: entry.dni,
+      fecha_nacimiento: entry.fecha_nacimiento,
+      obra_social: entry.obra_social ? entry.obra_social.nombre : null,
+      numero_afiliado: entry.num_obra_social ? entry.num_obra_social : null,
+      profesionales: Array.from(prof_set),
+    });
+  } catch (err) {
+    return Result.None(new Error(`${err}`));
+  }
+}
+
+export async function retrieveHistoriasPacientes(): Promise<Result<Array<HistoriaPacienteDBData>>> {
+  try {
+    const data = await prisma.paciente.findMany({
+      include: { historias: true, obra_social: true, }
+    })
+    .then((entries) => entries.map((entry) => {
+      let prof_set = new Set<DBId>();
+      entry.historias.map((hist) => {
+        prof_set.add(hist.id_profesional);
+      });
+
+      return { 
+        id: entry.id,
+        nombre: entry.nombre,
+        apellido: entry.apellido,
+        dni: entry.dni,
+        fecha_nacimiento: entry.fecha_nacimiento,
+        obra_social: entry.obra_social ? entry.obra_social.nombre : null,
+        numero_afiliado: entry.num_obra_social ? entry.num_obra_social : null,
+        profesionales: Array.from(prof_set),
+      };
+    }));
+    return Result.Some(data);
+  } catch (err) {
+    return Result.None(new Error(`${err}`));
+  }
+}
+
 
 // export async function getHistoriaClinica(pacienteId: number) {
 //   try {

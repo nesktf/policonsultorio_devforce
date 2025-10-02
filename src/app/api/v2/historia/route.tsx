@@ -152,7 +152,7 @@ export async function GET(req: NextRequest) {
 
       const historias = await retrieveHistoriaClinica(id_historia.unwrap())
       return NextResponse.json(
-        { historias: historias.transform(toApiData).unwrap() }
+        { historias: [historias.transform(toApiData).unwrap()] }
       );
     } else if (raw_id_profesional) {
       // Entries for id_profesional
@@ -371,7 +371,7 @@ export async function PUT(req: NextRequest) {
       { historiaId: ret.unwrap() }
     );
   } catch (error) {
-    console.log(`ERROR: api/v2/historia @ POST: ${error}`);
+    console.log(`ERROR: api/v2/historia @ PUT: ${error}`);
     return NextResponse.json(
       { error },
       { status: 500 }
