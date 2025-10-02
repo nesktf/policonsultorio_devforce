@@ -11,18 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuth } from "@/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
-import {
-  Calendar,
-  Stethoscope,
-  FileText,
-  Heart,
-  Activity,
-  Thermometer,
-  Weight,
-  Ruler,
-  Plus,
-  Trash2,
-} from "lucide-react"
+import { Calendar, Stethoscope, FileText, Heart, Activity, Thermometer, Weight, Ruler } from "lucide-react"
 
 interface Paciente {
   id: string
@@ -47,14 +36,12 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
     fecha: new Date().toISOString().split("T")[0],
     hora: new Date().toTimeString().slice(0, 5),
     motivoConsulta: "",
-    anamnesis: "",
+    historiaEnfermedadActual: "",
     examenFisico: "",
     diagnostico: "",
-    tratamiento: "",
     indicaciones: "",
     observaciones: "",
     proximoControl: "",
-    estudiosComplementarios: [""],
     signosVitales: {
       presionArterial: "",
       frecuenciaCardiaca: "",
@@ -63,14 +50,6 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
       altura: "",
       saturacionOxigeno: "",
     },
-    medicamentos: [
-      {
-        nombre: "",
-        dosis: "",
-        frecuencia: "",
-        duracion: "",
-      },
-    ],
   })
 
   const handleInputChange = (field: string, value: string) => {
@@ -87,48 +66,6 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
         ...prev.signosVitales,
         [field]: value,
       },
-    }))
-  }
-
-  const handleMedicamentoChange = (index: number, field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      medicamentos: prev.medicamentos.map((med, i) => (i === index ? { ...med, [field]: value } : med)),
-    }))
-  }
-
-  const agregarMedicamento = () => {
-    setFormData((prev) => ({
-      ...prev,
-      medicamentos: [...prev.medicamentos, { nombre: "", dosis: "", frecuencia: "", duracion: "" }],
-    }))
-  }
-
-  const eliminarMedicamento = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      medicamentos: prev.medicamentos.filter((_, i) => i !== index),
-    }))
-  }
-
-  const handleEstudioChange = (index: number, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      estudiosComplementarios: prev.estudiosComplementarios.map((estudio, i) => (i === index ? value : estudio)),
-    }))
-  }
-
-  const agregarEstudio = () => {
-    setFormData((prev) => ({
-      ...prev,
-      estudiosComplementarios: [...prev.estudiosComplementarios, ""],
-    }))
-  }
-
-  const eliminarEstudio = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      estudiosComplementarios: prev.estudiosComplementarios.filter((_, i) => i !== index),
     }))
   }
 
@@ -166,8 +103,6 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
           altura: Number.parseInt(formData.signosVitales.altura) || 0,
           saturacionOxigeno: Number.parseInt(formData.signosVitales.saturacionOxigeno) || 0,
         },
-        estudiosComplementarios: formData.estudiosComplementarios.filter((e) => e.trim() !== ""),
-        medicamentos: formData.medicamentos.filter((m) => m.nombre.trim() !== ""),
         estado: "completada" as const,
       }
 
@@ -184,14 +119,12 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
         fecha: new Date().toISOString().split("T")[0],
         hora: new Date().toTimeString().slice(0, 5),
         motivoConsulta: "",
-        anamnesis: "",
+        historiaEnfermedadActual: "",
         examenFisico: "",
         diagnostico: "",
-        tratamiento: "",
         indicaciones: "",
         observaciones: "",
         proximoControl: "",
-        estudiosComplementarios: [""],
         signosVitales: {
           presionArterial: "",
           frecuenciaCardiaca: "",
@@ -200,14 +133,6 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
           altura: "",
           saturacionOxigeno: "",
         },
-        medicamentos: [
-          {
-            nombre: "",
-            dosis: "",
-            frecuencia: "",
-            duracion: "",
-          },
-        ],
       })
     } catch (error) {
       toast({
@@ -383,12 +308,12 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="anamnesis">Anamnesis</Label>
+                <Label htmlFor="historiaEnfermedadActual">Historia de la enfermedad actual</Label>
                 <Textarea
-                  id="anamnesis"
-                  value={formData.anamnesis}
-                  onChange={(e) => handleInputChange("anamnesis", e.target.value)}
-                  placeholder="Historia clínica actual, antecedentes relevantes..."
+                  id="historiaEnfermedadActual"
+                  value={formData.historiaEnfermedadActual}
+                  onChange={(e) => handleInputChange("historiaEnfermedadActual", e.target.value)}
+                  placeholder="Historia clínica actual, evolución de los síntomas..."
                   rows={3}
                 />
               </div>
@@ -415,21 +340,12 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
             </CardContent>
           </Card>
 
-          {/* Tratamiento */}
+          {/* Indicaciones y Seguimiento */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Plan de Tratamiento</CardTitle>
+              <CardTitle className="text-lg">Indicaciones y Seguimiento</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="tratamiento">Tratamiento</Label>
-                <Textarea
-                  id="tratamiento"
-                  value={formData.tratamiento}
-                  onChange={(e) => handleInputChange("tratamiento", e.target.value)}
-                  placeholder="Plan terapéutico..."
-                />
-              </div>
               <div>
                 <Label htmlFor="indicaciones">Indicaciones</Label>
                 <Textarea
@@ -448,81 +364,6 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
                   onChange={(e) => handleInputChange("proximoControl", e.target.value)}
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Medicamentos */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Medicamentos</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={agregarMedicamento}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {formData.medicamentos.map((medicamento, index) => (
-                <div key={index} className="grid grid-cols-4 gap-2 p-3 border rounded">
-                  <Input
-                    placeholder="Medicamento"
-                    value={medicamento.nombre}
-                    onChange={(e) => handleMedicamentoChange(index, "nombre", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Dosis"
-                    value={medicamento.dosis}
-                    onChange={(e) => handleMedicamentoChange(index, "dosis", e.target.value)}
-                  />
-                  <Input
-                    placeholder="Frecuencia"
-                    value={medicamento.frecuencia}
-                    onChange={(e) => handleMedicamentoChange(index, "frecuencia", e.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Duración"
-                      value={medicamento.duracion}
-                      onChange={(e) => handleMedicamentoChange(index, "duracion", e.target.value)}
-                    />
-                    {formData.medicamentos.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" onClick={() => eliminarMedicamento(index)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Estudios Complementarios */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Estudios Complementarios</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={agregarEstudio}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {formData.estudiosComplementarios.map((estudio, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    placeholder="Nombre del estudio"
-                    value={estudio}
-                    onChange={(e) => handleEstudioChange(index, e.target.value)}
-                  />
-                  {formData.estudiosComplementarios.length > 1 && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => eliminarEstudio(index)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
             </CardContent>
           </Card>
 

@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
 import { NuevoPacienteDialog } from "@/components/pacientes/nuevo-paciente-dialog"
 import { HistoriaClinicaDialog } from "@/components/pacientes/historia-clinica-dialog"
 import { VerPacienteDialog } from "@/components/pacientes/ver-paciente-dialog"
 import { EditarPacienteDialog } from "@/components/pacientes/editar-paciente-dialog"
+import { AntecedentesFamiliaresCard } from "@/components/pacientes/antecedentes-familiares-card"
 import { hasPermission, filterDataByRole, canPerformAction, getAccessDeniedMessage } from "@/lib/permissions"
-import { Users, Search, Plus, Eye, Edit, Phone, Mail, Calendar, FileText, Filter, AlertCircle } from "lucide-react"
+import { Users, Plus, Eye, Edit, Phone, Mail, Calendar, FileText, AlertCircle, Heart } from "lucide-react"
 
 // Mock data - en producción vendría de la API
 const mockPacientes = [
@@ -138,6 +139,7 @@ export default function PacientesPage() {
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState<any>(null)
   const [showVerPacienteDialog, setShowVerPacienteDialog] = useState(false)
   const [showEditarPacienteDialog, setShowEditarPacienteDialog] = useState(false)
+  const [activeTab, setActiveTab] = useState("lista")
 
   const getPacientesFiltradosPorRol = () => {
     return filterDataByRole(pacientes, user, "pacientes")
@@ -342,160 +344,171 @@ export default function PacientesPage() {
           </Card>
         </div>
 
-        {/* Filtros y búsqueda */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nombre, apellido, DNI o email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <select
-                  value={filtroEstado}
-                  onChange={(e) => setFiltroEstado(e.target.value)}
-                  className="px-3 py-2 border border-border rounded-md bg-background text-foreground"
-                >
-                  <option value="todos">Todos los estados</option>
-                  <option value="activo">Activos</option>
-                  <option value="inactivo">Inactivos</option>
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Antecedentes Familiares */}
+        {pacienteSeleccionado && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-red-600" />
+                Antecedentes Familiares
+              </CardTitle>
+              <CardDescription>
+                Antecedentes familiares de {pacienteSeleccionado.apellido}, {pacienteSeleccionado.nombre}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AntecedentesFamiliaresCard
+                pacienteId={pacienteSeleccionado.id}
+                editable={canPerformAction(user, "edit", "paciente", pacienteSeleccionado)}
+                compact={false}
+              />
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Lista de pacientes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              {user.role === "profesional" ? "Mis Pacientes" : "Lista de Pacientes"} ({pacientesOrdenados.length})
-            </CardTitle>
-            <CardDescription>
-              {user.role === "profesional"
-                ? "Pacientes que has atendido o tienen turnos contigo"
-                : "Pacientes ordenados alfabéticamente por apellido"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pacientesOrdenados.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  {user.role === "profesional" ? "No tienes pacientes asignados" : "No se encontraron pacientes"}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {pacientesOrdenados.map((paciente) => (
-                  <div
-                    key={paciente.id}
-                    className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-primary">
-                          {paciente.nombre[0]}
-                          {paciente.apellido[0]}
-                        </span>
-                      </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="lista">
+              <Users className="h-4 w-4 mr-2" />
+              Lista de Pacientes
+            </TabsTrigger>
+          </TabsList>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-foreground">
-                            {paciente.apellido}, {paciente.nombre}
-                          </h3>
-                          <Badge
-                            variant={paciente.estado === "activo" ? "secondary" : "outline"}
-                            className={paciente.estado === "activo" ? "text-green-700 bg-green-100" : ""}
-                          >
-                            {paciente.estado === "activo" ? "Activo" : "Inactivo"}
-                          </Badge>
+          <TabsContent value="lista" className="space-y-4 mt-4">
+            {/* Lista de pacientes */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  {user.role === "profesional" ? "Mis Pacientes" : "Lista de Pacientes"} ({pacientesOrdenados.length})
+                </CardTitle>
+                <CardDescription>
+                  {user.role === "profesional"
+                    ? "Pacientes que has atendido o tienen turnos contigo"
+                    : "Pacientes ordenados alfabéticamente por apellido"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pacientesOrdenados.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">
+                      {user.role === "profesional" ? "No tienes pacientes asignados" : "No se encontraron pacientes"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {pacientesOrdenados.map((paciente) => (
+                      <div
+                        key={paciente.id}
+                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">
+                              {paciente.nombre[0]}
+                              {paciente.apellido[0]}
+                            </span>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-medium text-foreground">
+                                {paciente.apellido}, {paciente.nombre}
+                              </h3>
+                              <Badge
+                                variant={paciente.estado === "activo" ? "secondary" : "outline"}
+                                className={paciente.estado === "activo" ? "text-green-700 bg-green-100" : ""}
+                              >
+                                {paciente.estado === "activo" ? "Activo" : "Inactivo"}
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">DNI:</span> {paciente.dni}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">Edad:</span> {calcularEdad(paciente.fechaNacimiento)} años
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {paciente.telefono}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {paciente.email}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-medium">Obra Social:</span> {paciente.obraSocial}
+                              </div>
+                              {user.role === "profesional" ? (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {paciente.consultasRealizadas?.some((c) => c.profesionalId === user.id)
+                                    ? `Última consulta: ${formatearFecha(paciente.ultimaConsulta)}`
+                                    : paciente.turnosReservados.some((t) => t.profesionalId === user.id)
+                                      ? "Turno programado"
+                                      : "Sin consultas previas"}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  Última consulta: {formatearFecha(paciente.ultimaConsulta)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">DNI:</span> {paciente.dni}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">Edad:</span> {calcularEdad(paciente.fechaNacimiento)} años
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {paciente.telefono}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {paciente.email}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">Obra Social:</span> {paciente.obraSocial}
-                          </div>
-                          {user.role === "profesional" ? (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {paciente.consultasRealizadas?.some((c) => c.profesionalId === user.id)
-                                ? `Última consulta: ${formatearFecha(paciente.ultimaConsulta)}`
-                                : paciente.turnosReservados.some((t) => t.profesionalId === user.id)
-                                  ? "Turno programado"
-                                  : "Sin consultas previas"}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              Última consulta: {formatearFecha(paciente.ultimaConsulta)}
-                            </div>
+
+                        <div className="flex items-center gap-2">
+                          {hasPermission(user.role, "canViewHistoriasClinicas") &&
+                            canPerformAction(user, "view", "historia", paciente) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1"
+                                onClick={() => handleVerHistoria(paciente)}
+                              >
+                                <FileText className="h-4 w-4" />
+                                Historia
+                              </Button>
+                            )}
+
+                          {canPerformAction(user, "view", "paciente", paciente) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1"
+                              onClick={() => handleVerPaciente(paciente)}
+                            >
+                              <Eye className="h-4 w-4" />
+                              Ver
+                            </Button>
+                          )}
+
+                          {canPerformAction(user, "edit", "paciente", paciente) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1"
+                              onClick={() => handleEditarPaciente(paciente)}
+                            >
+                              <Edit className="h-4 w-4" />
+                              Editar
+                            </Button>
                           )}
                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {hasPermission(user.role, "canViewHistoriasClinicas") &&
-                        canPerformAction(user, "view", "historia", paciente) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-1"
-                            onClick={() => handleVerHistoria(paciente)}
-                          >
-                            <FileText className="h-4 w-4" />
-                            Historia
-                          </Button>
-                        )}
-
-                      {canPerformAction(user, "view", "paciente", paciente) && (
-                        <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleVerPaciente(paciente)}>
-                          <Eye className="h-4 w-4" />
-                          Ver
-                        </Button>
-                      )}
-
-                      {canPerformAction(user, "edit", "paciente", paciente) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="gap-1"
-                          onClick={() => handleEditarPaciente(paciente)}
-                        >
-                          <Edit className="h-4 w-4" />
-                          Editar
-                        </Button>
-                      )}
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
+        {/* Dialogs */}
         {hasPermission(user.role, "canCreatePacientes") && (
           <NuevoPacienteDialog
             open={showNuevoPacienteDialog}
@@ -504,7 +517,6 @@ export default function PacientesPage() {
           />
         )}
 
-        {/* Dialog para ver paciente */}
         {pacienteSeleccionado && (
           <VerPacienteDialog
             open={showVerPacienteDialog}
@@ -513,7 +525,6 @@ export default function PacientesPage() {
           />
         )}
 
-        {/* Dialog para editar paciente */}
         {pacienteSeleccionado && (
           <EditarPacienteDialog
             open={showEditarPacienteDialog}
@@ -523,7 +534,6 @@ export default function PacientesPage() {
           />
         )}
 
-        {/* Dialog para historia clínica */}
         {pacienteSeleccionado && (
           <HistoriaClinicaDialog
             open={showHistoriaClinica}
