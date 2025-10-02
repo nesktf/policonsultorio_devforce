@@ -502,7 +502,7 @@ export default function NuevosPacientesPage() {
                             <div className="w-24 text-sm font-medium truncate">{mes.label}</div>
                             <div className="flex-1 h-10 bg-gray-100 rounded-full overflow-hidden">
                               <div 
-                                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-end pr-3 text-xs text-white font-medium transition-all"
+                                className="h-full bg-blue-400 flex items-center justify-end pr-3 text-xs text-white font-medium transition-all"
                                 style={{ width: `${anchoBarra}%` }}
                               >
                                 {mes.cantidad > 0 && `${mes.cantidad}`}
