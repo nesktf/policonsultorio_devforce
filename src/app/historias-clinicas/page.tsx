@@ -598,7 +598,12 @@ export default function HistoriasClinicasPage() {
           </CardContent>
         </Card>
         {/* Antecedentes Familiares */}
-        <AntecedentesFamiliaresCard pacienteId={paciente.id} editable={user.role === "profesional"} compact={false} />
+        <AntecedentesFamiliaresCard 
+          pacienteId={paciente.id}
+          antecedentesInitial={paciente.antecedentes}
+          editable={user.role === "profesional"}
+          compact={false}
+          />
         {/* Resumen de la historia clínica */}
         <Card>
           <CardHeader>

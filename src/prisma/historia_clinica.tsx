@@ -210,6 +210,7 @@ export type HistoriaPacienteDBData = {
   obra_social: string | null,
   numero_afiliado: string | null,
   profesionales: Array<DBId>,
+  antecedentes: string | null,
 };
 
 export async function retrieveHistoriaPaciente(id: DBId): Promise<Result<HistoriaPacienteDBData>> {
@@ -232,6 +233,7 @@ export async function retrieveHistoriaPaciente(id: DBId): Promise<Result<Histori
       obra_social: entry.obra_social ? entry.obra_social.nombre : null,
       numero_afiliado: entry.num_obra_social ? entry.num_obra_social : null,
       profesionales: Array.from(prof_set),
+      antecedentes: entry.antecedentes,
     });
   } catch (err) {
     return Result.None(new Error(`${err}`));
@@ -258,6 +260,7 @@ export async function retrieveHistoriasPacientes(): Promise<Result<Array<Histori
         obra_social: entry.obra_social ? entry.obra_social.nombre : null,
         numero_afiliado: entry.num_obra_social ? entry.num_obra_social : null,
         profesionales: Array.from(prof_set),
+        antecedentes: entry.antecedentes,
       };
     }));
     return Result.Some(data);
@@ -266,80 +269,14 @@ export async function retrieveHistoriasPacientes(): Promise<Result<Array<Histori
   }
 }
 
-
-// export async function getHistoriaClinica(pacienteId: number) {
-//   try {
-//     return await prisma.historiaClinica.findMany({
-//       where: {
-//         id_paciente: pacienteId,
-//       },
-//       include: {
-//         profesional: true,
-//       },
-//       orderBy: {
-//         fecha: "desc",
-//       },
-//     })
-//   } catch (error) {
-//     console.error("Error al obtener historia clínica:", error)
-//     throw error
-//   }
-// }
-//
-// export type SignosVitalesPayload = {
-//   presionArterial?: string | null
-//   frecuenciaCardiaca?: number | null
-//   temperatura?: number | null
-//   peso?: number | null
-// }
-//
-// export type CrearHistoriaClinicaInput = {
-//   pacienteId: number
-//   profesionalId: number
-//   motivo: string
-//   detalle: string
-//   examenFisico?: string | null
-//   signosVitales?: SignosVitalesPayload | null
-//   fecha?: Date
-// }
-//
-// export async function crearHistoriaClinicaRegistro(data: CrearHistoriaClinicaInput) {
-//   const {
-//     pacienteId,
-//     profesionalId,
-//     motivo,
-//     detalle,
-//     examenFisico,
-//     signosVitales,
-//     fecha,
-//   } = data
-//
-//   const payload: Prisma.HistoriaClinicaCreateInput = {
-//     motivo,
-//     detalle,
-//     examen_fisico: examenFisico ?? null,
-//     signos_vitales: signosVitales ? (signosVitales as Prisma.InputJsonValue) : null,
-//     paciente: {
-//       connect: { id: pacienteId },
-//     },
-//     profesional: {
-//       connect: { id: profesionalId },
-//     },
-//   }
-//
-//   if (fecha) {
-//     payload.fecha = fecha
-//   }
-//
-//   try {
-//     return await prisma.historiaClinica.create({
-//       data: payload,
-//       include: {
-//         profesional: true,
-//       },
-//     })
-//   } catch (error) {
-//     console.error("Error al registrar historia clínica:", error)
-//     throw error
-//   }
-// }
+export async function setAntecedentePaciente(id: DBId, data: string | null): Promise<Result<DBId>> {
+  try {
+    const entry = await prisma.paciente.update({
+      where: { id },
+      data: { antecedentes: data }
+    });
+    return Result.Some(entry.id);
+  } catch (err) {
+    return Result.None(new Error(`${err}`));
+  }
+}

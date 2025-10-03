@@ -23,6 +23,7 @@ type PacienteAPIData = {
   fechaNacimiento: string, // YYYY-MM-DD
   obraSocial: string,
   numeroAfiliado: string,
+  antecedentes: string,
   profesionalesAsignados: Array<string>, // ints
 };
 
@@ -64,6 +65,7 @@ export async function GET(req: NextRequest) {
       obraSocial: data.obra_social ? data.obra_social : "",
       numeroAfiliado: data.numero_afiliado ? data.numero_afiliado : "",
       profesionalesAsignados: data.profesionales.map((id) => id.toString()),
+      antecedentes: data.antecedentes ? data.antecedentes : "",
     };
   };
 

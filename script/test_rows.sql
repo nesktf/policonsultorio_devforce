@@ -82,6 +82,20 @@ VALUES
     'Mantener dieta baja en sodio. Continuar con ejercicio regular. Control en 6 meses.',
     'Paciente colaborador, cumple bien con el tratamiento',
     '2024-07-15 09:00:00.000'
+  ),
+  (2, 2, 2,
+    '2023-12-10 09:00:00.000',
+    'Seguimiento hipertension',
+    'Paciente con antecedentes de hipertensión arterial. Refiere adherencia al tratamiento.',
+    'Buen estado general. Auscultación cardiopulmonar normal.',
+    '{ "presion": "125/85", "frecuencia": "75", "temperatura": "36.3", "peso": "69", "altura": "165" }',
+    'Hipertensión arterial controlada',
+    'Ajuste de medicación',
+    '[{ "nombre": "Enalapril", "dosis": "10mg", "frecuencia": "1 vez al día", "duracion": "3 meses" }]',
+    NULL,
+    'Dieta hiposódica. Control de peso. Ejercicio moderado.',
+    'Buen control de la presión arterial.',
+    '2024-01-15 09:00:00.000'
   );
 ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 2;
 
