@@ -9,7 +9,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { User, Stethoscope, Clock, MoreVertical, CheckCircle, XCircle, Calendar, UserCheck, UserX } from "lucide-react"
+import { User, Stethoscope, Clock, MoreVertical, CheckCircle, XCircle, Calendar, UserX } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Turno {
@@ -17,11 +17,13 @@ interface Turno {
   hora: string
   paciente: {
     nombre: string
+    apellido: string
     dni: string
     telefono: string
   }
   profesional: {
     nombre: string
+    apellido: string
     especialidad: string
   }
   estado: "PROGRAMADO" | "EN_SALA_ESPERA" | "ASISTIO" | "NO_ASISTIO" | "CANCELADO"
@@ -151,7 +153,9 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
           <div className="flex items-start gap-2">
             <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-sm truncate">{turno.paciente.nombre}</p>
+              <p className="font-semibold text-sm truncate">
+                {turno.paciente.apellido}, {turno.paciente.nombre}
+              </p>
               <p className="text-xs text-muted-foreground">DNI: {turno.paciente.dni}</p>
             </div>
           </div>
@@ -162,7 +166,9 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
           <div className="flex items-start gap-2">
             <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{turno.profesional.nombre}</p>
+              <p className="text-sm font-medium truncate">
+                {turno.profesional.apellido}, {turno.profesional.nombre}
+              </p>
               <p className="text-xs text-muted-foreground">{turno.profesional.especialidad}</p>
             </div>
           </div>

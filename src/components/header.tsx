@@ -1,7 +1,6 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -11,10 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Search, Moon, Sun, LogOut, User } from "lucide-react"
+import { Moon, Sun, LogOut } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "@/context/auth-context"
-import { NotificationsPanel } from "./notifications-panel"
 import { Role } from "@/generated/prisma"
 
 export function Header() {
@@ -80,14 +78,6 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar pacientes, profesionales..." className="pl-10 w-80" />
-          </div>
-
-          <NotificationsPanel />
-
           <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={toggleDarkMode}>
             {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -111,11 +101,6 @@ export function Header() {
                   </p>
                 </div>
               </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />

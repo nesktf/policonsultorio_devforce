@@ -31,7 +31,7 @@ export interface Turno {
     | "ASISTIO"
     | "NO_ASISTIO"
     | "CANCELADO";
-  motivo: string; // también obligatorio para evitar undefined
+  motivo: string;
   duracion: number; // minutos
   notas?: string;
 }
@@ -88,7 +88,6 @@ export function CalendarioMesaView({
 
   const puedeModificar = user?.rol === "MESA_ENTRADA";
 
-  // Fechas para rango completo del día
   const from = new Date(selectedDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(selectedDate);
@@ -115,14 +114,20 @@ export function CalendarioMesaView({
 
         const data = await res.json();
 
-        const turnosConHora = (data.turnos || []).map((turno: Turno) => ({
-          ...turno,
-          hora: new Date(turno.fecha).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          motivo: turno.motivo || "", // para evitar undefined en motivo
-        }));
+        const turnosConHora = (data.turnos || []).map((turno: Turno) => {
+          // Extraer hora directamente de la fecha ISO sin conversión de timezone
+          // porque la fecha ya viene en el formato correcto desde el servidor
+          const fechaISO = new Date(turno.fecha);
+          const hora = fechaISO.getUTCHours().toString().padStart(2, '0');
+          const minutos = fechaISO.getUTCMinutes().toString().padStart(2, '0');
+          const horaFormateada = `${hora}:${minutos}`;
+
+          return {
+            ...turno,
+            hora: horaFormateada,
+            motivo: turno.motivo || "",
+          };
+        });
 
         setTurnos(turnosConHora);
       } catch (err: any) {
@@ -135,25 +140,13 @@ export function CalendarioMesaView({
 
     fetchTurnos();
   }, [profesionalId, selectedDate]);
-  console.log("Turnos recibidos:", turnos);
-  console.log("Selected date:", selectedDate.toISOString());
-  // Filtrar solo turnos del día seleccionado por si vienen fuera del rango
+
   const turnosFiltrados = turnos.filter((t) =>
     esMismaFecha(new Date(t.fecha), selectedDate)
   );
-  console.log("Turnos filtrados:", turnosFiltrados);
 
   const getTurnosEnHorario = (hora: string) => {
-    return turnosFiltrados.filter((t) => {
-      const date = new Date(t.fecha);
-      const h = date.getUTCHours().toString().padStart(2, "0");
-      const m = date.getUTCMinutes().toString().padStart(2, "0");
-      const turnoHora = `${h}:${m}`;
-
-      console.log(`Turno ${t.id} -> Hora: ${turnoHora}`); // para debug
-
-      return turnoHora === hora;
-    });
+    return turnosFiltrados.filter((t) => t.hora === hora);
   };
 
   if (loading) return <p>Cargando turnos...</p>;

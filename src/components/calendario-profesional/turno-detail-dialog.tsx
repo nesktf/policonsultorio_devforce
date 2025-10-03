@@ -15,11 +15,13 @@ interface Turno {
   hora: string;
   paciente: {
     nombre: string;
+    apellido: string;
     dni: string;
     telefono: string;
   };
   profesional: {
     nombre: string;
+    apellido: string;
     especialidad: string;
   };
   estado:
@@ -79,7 +81,9 @@ export function TurnoDetailDialog({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground" />
-              <p className="font-semibold">{turno.paciente.nombre}</p>
+              <p className="font-semibold">
+                {turno.paciente.apellido}, {turno.paciente.nombre}
+              </p>
             </div>
             <p className="text-sm text-muted-foreground">
               DNI: {turno.paciente.dni}
@@ -96,7 +100,9 @@ export function TurnoDetailDialog({
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Stethoscope className="h-4 w-4 text-muted-foreground" />
-              <p className="font-medium">{turno.profesional.nombre}</p>
+              <p className="font-medium">
+                {turno.profesional.apellido}, {turno.profesional.nombre}
+              </p>
             </div>
             <p className="text-sm text-muted-foreground">
               {turno.profesional.especialidad}

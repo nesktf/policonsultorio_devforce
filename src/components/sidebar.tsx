@@ -6,6 +6,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/auth-context"
+import Image from "next/image"
 import {
   Users,
   CalendarDays,
@@ -13,11 +14,9 @@ import {
   Calendar,
   FileText,
   BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
   Activity,
-  Stethoscope,
 } from "lucide-react"
 
 export function Sidebar() {
@@ -41,7 +40,7 @@ export function Sidebar() {
       return [
         ...baseItems,
         { icon: Calendar, label: "Mi Agenda", href: "/calendario-profesional" },
-        { icon: Users, label: "Pacientes", href: "/pacientes" }, // Solo verán sus pacientes
+        { icon: Users, label: "Pacientes", href: "/pacientes" },
         { icon: FileText, label: "Historias Clínicas", href: "/historias-clinicas" },
       ]
     }
@@ -74,12 +73,26 @@ export function Sidebar() {
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Stethoscope className="w-5 h-5 text-primary-foreground" />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+                {/* Opción 1: Usando Next.js Image */}
+                <Image 
+                  src="/logo.png" 
+                  alt="DevForce Logo" 
+                  width={32} 
+                  height={32}
+                  className="object-contain"
+                />
+                
+                {/* Opción 2: Usando img normal si no usas Next.js Image
+                <img 
+                  src="/logo.png" 
+                  alt="DevForce Logo" 
+                  className="w-full h-full object-contain"
+                />
+                */}
               </div>
               <div>
-                <h2 className="font-semibold text-sm text-foreground">MediAdmin</h2>
-                <p className="text-xs text-muted-foreground">Policonsultorio</p>
+                <h2 className="font-semibold text-sm text-foreground">DevForce</h2>
               </div>
             </div>
           )}
