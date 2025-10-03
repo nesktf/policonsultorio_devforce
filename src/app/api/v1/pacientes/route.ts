@@ -1,8 +1,10 @@
+// app/api/v1/pacientes/route.ts
 import { NextResponse } from 'next/server';
 import {
   createPatient,
   getPacienteByDni,
   searchPacientes,
+  getPacientes,
 } from '@/prisma/pacientes';
 
 export const dynamic = 'force-dynamic';
@@ -35,43 +37,69 @@ const parseOptionalNumber = (value: unknown): number | null => {
   return null;
 };
 
+// GET - Buscar o listar todos los pacientes
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const searchTerm = searchParams.get('search');
 
-  if (!searchTerm || searchTerm.trim().length === 0) {
-    return NextResponse.json(
-      { error: 'Debes indicar el parámetro "search".' },
-      { status: 400 },
-    );
-  }
-
   try {
-    const pacientes = await searchPacientes(searchTerm.trim());
-    const resultados = pacientes.map((paciente) => ({
-      id: paciente.id,
-      nombre: paciente.nombre,
-      apellido: paciente.apellido,
-      dni: paciente.dni,
-      telefono: paciente.telefono,
-    }));
+    // Si hay término de búsqueda, buscar pacientes
+    if (searchTerm && searchTerm.trim().length > 0) {
+      const pacientes = await searchPacientes(searchTerm.trim());
+      const resultados = pacientes.map((paciente) => ({
+        id: paciente.id,
+        nombre: paciente.nombre,
+        apellido: paciente.apellido,
+        dni: paciente.dni,
+        telefono: paciente.telefono,
+        direccion: paciente.direccion,
+        fecha_nacimiento: paciente.fecha_nacimiento,
+        num_obra_social: paciente.num_obra_social,
+        obra_social: paciente.obra_social,
+        fecha_registro: paciente.fecha_registro,
+      }));
 
+      return NextResponse.json(
+        {
+          total: resultados.length,
+          pacientes: resultados,
+        },
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
+
+    // Si no hay búsqueda, devolver todos los pacientes
+    const { pacientes, obrasSociales } = await getPacientes();
+    
     return NextResponse.json(
       {
-        total: resultados.length,
-        pacientes: resultados,
+        total: pacientes.length,
+        pacientes: pacientes.map(p => ({
+          id: p.id,
+          nombre: p.nombre,
+          apellido: p.apellido,
+          dni: p.dni,
+          telefono: p.telefono,
+          direccion: p.direccion,
+          fecha_nacimiento: p.fecha_nacimiento,
+          num_obra_social: p.num_obra_social,
+          obra_social: p.obra_social,
+          fecha_registro: p.fecha_registro,
+        })),
+        obrasSociales,
       },
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
-    console.error('Error al buscar pacientes:', error);
+    console.error('Error al obtener pacientes:', error);
     return NextResponse.json(
-      { error: 'Error interno del servidor al buscar pacientes.' },
+      { error: 'Error interno del servidor al obtener pacientes.' },
       { status: 500 },
     );
   }
 }
 
+// POST - Crear nuevo paciente
 export async function POST(request: Request) {
   let payload: CreatePacientePayload;
 
@@ -95,52 +123,53 @@ export async function POST(request: Request) {
     num_obra_social,
   } = payload;
 
+  // Validaciones
   if (!isNonEmptyString(nombre)) {
     return NextResponse.json(
-      { error: 'nombre es requerido y debe ser un string no vacío.' },
+      { error: 'Nombre es requerido y debe ser un string no vacío.' },
       { status: 400 },
     );
   }
 
   if (!isNonEmptyString(apellido)) {
     return NextResponse.json(
-      { error: 'apellido es requerido y debe ser un string no vacío.' },
+      { error: 'Apellido es requerido y debe ser un string no vacío.' },
       { status: 400 },
     );
   }
 
   if (!isNonEmptyString(dni) || !/^\d{7,9}$/.test(dni.trim())) {
     return NextResponse.json(
-      { error: 'dni es requerido y debe contener solo números (7 a 9 dígitos).' },
+      { error: 'DNI es requerido y debe contener solo números (7 a 9 dígitos).' },
       { status: 400 },
     );
   }
 
   if (!isNonEmptyString(telefono)) {
     return NextResponse.json(
-      { error: 'telefono es requerido y debe ser un string no vacío.' },
+      { error: 'Teléfono es requerido y debe ser un string no vacío.' },
       { status: 400 },
     );
   }
 
   if (!isNonEmptyString(direccion)) {
     return NextResponse.json(
-      { error: 'direccion es requerida y debe ser un string no vacío.' },
+      { error: 'Dirección es requerida y debe ser un string no vacío.' },
       { status: 400 },
     );
   }
 
   if (typeof fecha_nacimiento !== 'string' || fecha_nacimiento.trim().length === 0) {
     return NextResponse.json(
-      { error: 'fecha_nacimiento es requerida y debe ser un string con formato YYYY-MM-DD.' },
+      { error: 'Fecha de nacimiento es requerida y debe ser un string con formato YYYY-MM-DD.' },
       { status: 400 },
     );
   }
 
-  const fechaNacimientoDate = new Date(`${fecha_nacimiento}T00:00:00`);
+  const fechaNacimientoDate = new Date(`${fecha_nacimiento}T00:00:00Z`);
   if (Number.isNaN(fechaNacimientoDate.getTime())) {
     return NextResponse.json(
-      { error: 'fecha_nacimiento inválida. Utilice el formato YYYY-MM-DD.' },
+      { error: 'Fecha de nacimiento inválida. Utilice el formato YYYY-MM-DD.' },
       { status: 400 },
     );
   }
@@ -149,11 +178,12 @@ export async function POST(request: Request) {
 
   if (obraSocialId !== null && !isNonEmptyString(num_obra_social)) {
     return NextResponse.json(
-      { error: 'num_obra_social es requerido cuando se indica una obra social.' },
+      { error: 'Número de obra social es requerido cuando se indica una obra social.' },
       { status: 400 },
     );
   }
 
+  // Verificar si el paciente ya existe
   const existingPaciente = await getPacienteByDni(dni.trim());
   if (existingPaciente) {
     return NextResponse.json(

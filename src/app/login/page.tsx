@@ -3,89 +3,115 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Stethoscope, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const res = await fetch("/api/v1/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const res = await fetch("/api/v1/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      alert(data.error || "Error al iniciar sesión");
-      return;
+      if (!res.ok) {
+        setError(data.error || "Error al iniciar sesión");
+        setLoading(false);
+        return;
+      }
+
+      // Guardar usuario en localStorage
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Redirigir a la página principal
+      router.push("/");
+    } catch (err) {
+      setError("Error de conexión. Por favor, intenta nuevamente.");
+      setLoading(false);
     }
-
-    // Guardar usuario en localStorage
-    localStorage.setItem("user", JSON.stringify(data.user));
-
-    router.push("/sist/pacientes");
-
-    /*// Redirigir por rol
-    switch (data.user.rol) {
-      case "GERENTE":
-        router.push("secciones/roles/gerente/pacientes");
-        break;
-      case "MESA_ENTRADA":
-        router.push("secciones/roles/mesa_entrada/pacientes");
-        break;
-      case "PROFESIONAL":
-        router.push("secciones/roles/profesional/pacientes");
-        break;
-      default:
-        alert("Rol no válido");
-    }*/
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-600 to-indigo-700">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-sm">
-        <div className="flex justify-center mb-6">
-          <Image
-            src="/logo.png"
-            alt="Logo de la empresa"
-            width={400}
-            height={250}
-            className="rounded-md"
-          />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
-          Iniciar sesión
-        </h2>
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="text-black border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="text-black border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-md shadow-md transition"
-          >
-            Iniciar sesión
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Stethoscope className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl font-bold text-primary">
+            MediAdmin
+          </CardTitle>
+          <CardDescription>
+            Sistema de Gestión de Policonsultorio
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="usuario@policonsultorio.com"
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={loading}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

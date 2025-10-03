@@ -4,9 +4,18 @@ BEGIN;
 INSERT INTO "User" ("id", "nombre", "email", "password", "rol") VALUES
   (1, 'admin', 'admin@admin.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'GERENTE'),
   (2, 'profesional', 'profesional@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
-  (3, 'mesa', 'mesa@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'MESA_ENTRADA');
-
--- ALTER SEQUENCE "User_id_seq" RESTART WITH 1;
+  (3, 'mesa', 'mesa@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'MESA_ENTRADA'),
+  (4, 'profesional', 'profesional2@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (5, 'profesional', 'profesional3@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (6, 'profesional', 'profesional4@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (7, 'profesional', 'profesional5@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (8, 'profesional', 'profesional6@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (9, 'profesional', 'profesional7@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (10, 'profesional', 'profesional8@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (11, 'profesional', 'profesional9@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (12, 'profesional', 'profesional10@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL'),
+  (13, 'profesional', 'profesional11@gmail.com', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 'PROFESIONAL');
+ALTER SEQUENCE "User_id_seq" RESTART WITH 14;
 
 INSERT INTO "ObraSocial" ("id", "nombre", "estado") VALUES
   (1, 'IPSS', 'ACTIVA'),
@@ -178,6 +187,7 @@ INSERT INTO "Paciente" ("id", "nombre", "apellido", "dni", "direccion", "fecha_n
   (119, 'Luca', 'Molina', '28516348', 'Av. La Rioja 890', '1992-11-14 16:00:00', '2025-09-14 16:15:00', '+543879012356', 3, '24123456'),
   (120, 'Regina', 'Suárez', '44871620', 'Calle San Luis 123', '1987-05-03 10:25:00', '2025-09-24 10:20:00', '+543870123467', NULL, NULL);
 
+ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 121;
 -- Pacientes históricos 2023-2025 (200 pacientes adicionales)
 INSERT INTO "Paciente" ("nombre", "apellido", "dni", "direccion", "fecha_nacimiento", "fecha_registro", "telefono", "id_obra_social", "num_obra_social") VALUES
 ('Roberto', 'Álvarez', '20456789', 'Calle España 234', '1980-03-15 10:00:00', '2023-01-12 09:30:00', '+543871234580', 1, '20456789'),
@@ -541,5 +551,15 @@ INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "duracion_m
 
 ALTER SEQUENCE "Turno_id_seq" RESTART WITH 168;
 
+UPDATE "Profesional" SET "userId" = 4 WHERE id = 1;  -- profesional@gmail.com -> Eirin Yagokoro
+UPDATE "Profesional" SET "userId" = 5 WHERE id = 2;  -- profesional2@gmail.com -> Reimu Hakurei
+UPDATE "Profesional" SET "userId" = 6 WHERE id = 3;  -- profesional3@gmail.com -> Marisa Kirisame
+UPDATE "Profesional" SET "userId" = 7 WHERE id = 4;  -- profesional4@gmail.com -> Sakuya Izayoi
+UPDATE "Profesional" SET "userId" = 8 WHERE id = 5;  -- profesional5@gmail.com -> Remilia Scarlet
+UPDATE "Profesional" SET "userId" = 9 WHERE id = 6;  -- profesional6@gmail.com -> Youmu Konpaku
+UPDATE "Profesional" SET "userId" = 10 WHERE id = 7; -- profesional7@gmail.com -> Flandre Scarlet
+UPDATE "Profesional" SET "userId" = 11 WHERE id = 8; -- profesional8@gmail.com -> Yuyuko Saigyouji
+UPDATE "Profesional" SET "userId" = 12 WHERE id = 9; -- profesional9@gmail.com -> Yukari Yakumo
+UPDATE "Profesional" SET "userId" = 13 WHERE id = 10; -- profesional10@gmail.com -> Ran Yakumo
 
 COMMIT;

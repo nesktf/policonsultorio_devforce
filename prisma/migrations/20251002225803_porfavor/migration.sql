@@ -5,11 +5,11 @@ CREATE TYPE "public"."Role" AS ENUM ('MESA_ENTRADA', 'PROFESIONAL', 'GERENTE');
 CREATE TYPE "public"."EstadoObraSocial" AS ENUM ('ACTIVA', 'INACTIVA');
 
 -- CreateEnum
-CREATE TYPE "public"."EstadoTurno" AS ENUM ('CANCELADO', 'CONFIRMADO');
+CREATE TYPE "public"."EstadoTurno" AS ENUM ('PROGRAMADO', 'EN_SALA_ESPERA', 'ASISTIO', 'NO_ASISTIO', 'CANCELADO');
 
 -- CreateTable
 CREATE TABLE "public"."User" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "nombre" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
@@ -36,6 +36,7 @@ CREATE TABLE "public"."Profesional" (
     "dni" VARCHAR(9) NOT NULL,
     "especialidad" TEXT NOT NULL,
     "telefono" VARCHAR(14) NOT NULL,
+    "userId" INTEGER,
 
     CONSTRAINT "Profesional_pkey" PRIMARY KEY ("id")
 );
@@ -57,6 +58,7 @@ CREATE TABLE "public"."Paciente" (
     "dni" VARCHAR(9) NOT NULL,
     "direccion" TEXT NOT NULL,
     "fecha_nacimiento" TIMESTAMP(3) NOT NULL,
+    "fecha_registro" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "telefono" VARCHAR(14) NOT NULL,
     "id_obra_social" INTEGER,
     "num_obra_social" TEXT,
@@ -70,6 +72,10 @@ CREATE TABLE "public"."HistoriaClinica" (
     "id_paciente" INTEGER NOT NULL,
     "motivo" TEXT NOT NULL,
     "detalle" TEXT NOT NULL,
+    "examen_fisico" TEXT,
+    "signos_vitales" JSONB,
+    "fecha" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "id_profesional" INTEGER NOT NULL,
 
     CONSTRAINT "HistoriaClinica_pkey" PRIMARY KEY ("id")
 );
@@ -79,6 +85,7 @@ CREATE TABLE "public"."Turno" (
     "id" SERIAL NOT NULL,
     "id_profesional" INTEGER NOT NULL,
     "id_paciente" INTEGER NOT NULL,
+    "duracion_minutos" INTEGER NOT NULL DEFAULT 30,
     "fecha" TIMESTAMP(3) NOT NULL,
     "estado" "public"."EstadoTurno" NOT NULL,
 
@@ -88,17 +95,32 @@ CREATE TABLE "public"."Turno" (
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Profesional_dni_key" ON "public"."Profesional"("dni");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Profesional_userId_key" ON "public"."Profesional"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Paciente_dni_key" ON "public"."Paciente"("dni");
+
 -- AddForeignKey
-ALTER TABLE "public"."ProfesionalObraSocial" ADD CONSTRAINT "ProfesionalObraSocial_id_profesional_fkey" FOREIGN KEY ("id_profesional") REFERENCES "public"."Profesional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "public"."Profesional" ADD CONSTRAINT "Profesional_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."ProfesionalObraSocial" ADD CONSTRAINT "ProfesionalObraSocial_id_obra_social_fkey" FOREIGN KEY ("id_obra_social") REFERENCES "public"."ObraSocial"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."ProfesionalObraSocial" ADD CONSTRAINT "ProfesionalObraSocial_id_profesional_fkey" FOREIGN KEY ("id_profesional") REFERENCES "public"."Profesional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Paciente" ADD CONSTRAINT "Paciente_id_obra_social_fkey" FOREIGN KEY ("id_obra_social") REFERENCES "public"."ObraSocial"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."HistoriaClinica" ADD CONSTRAINT "HistoriaClinica_id_paciente_fkey" FOREIGN KEY ("id_paciente") REFERENCES "public"."Paciente"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."HistoriaClinica" ADD CONSTRAINT "HistoriaClinica_id_profesional_fkey" FOREIGN KEY ("id_profesional") REFERENCES "public"."Profesional"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."Turno" ADD CONSTRAINT "Turno_id_paciente_fkey" FOREIGN KEY ("id_paciente") REFERENCES "public"."Paciente"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

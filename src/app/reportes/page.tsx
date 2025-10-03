@@ -39,7 +39,7 @@ export default function ReportesPage() {
     )
   }
 
-  if (user.role !== "gerente") {
+  if (user.rol !== "GERENTE") {
     return (
       <MainLayout>
         <div className="p-6">

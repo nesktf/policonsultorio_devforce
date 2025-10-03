@@ -42,7 +42,7 @@ export default function CalendarioMesaClient({
     )
   }
 
-  if (user.role === "profesional") {
+  if (user.rol === "PROFESIONAL") {
     return (
       <MainLayout>
         <div className="p-6">
@@ -91,7 +91,7 @@ export default function CalendarioMesaClient({
             <h1 className="text-3xl font-bold text-foreground">Calendario de Turnos</h1>
             <p className="text-muted-foreground">
               Gestión de turnos
-              {user.role === "gerente" && (
+              {user.rol === "GERENTE" && (
                 <span className="text-xs ml-2 text-yellow-600">(Solo visualización)</span>
               )}
             </p>

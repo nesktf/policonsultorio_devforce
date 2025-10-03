@@ -1,21 +1,20 @@
 import { DBId, prisma } from "@/prisma/instance";
-import type { DatosProfesionalFormulario } from '@/components/RegistrarProfesionalModal';
-
+import type { DatosProfesionalFormulario } from "@/components/RegistrarProfesionalModal";
 
 export async function obtenerEspecialidadesUnicas() {
   try {
     const especialidades = await prisma.profesional.findMany({
       select: {
-        especialidad: true
+        especialidad: true,
       },
-      distinct: ['especialidad'],
+      distinct: ["especialidad"],
       orderBy: {
-        especialidad: 'asc'
-      }
+        especialidad: "asc",
+      },
     });
-    return especialidades.map(prof => prof.especialidad);
+    return especialidades.map((prof) => prof.especialidad);
   } catch (error) {
-    console.error('Error al obtener especialidades:', error);
+    console.error("Error al obtener especialidades:", error);
     return [];
   }
 }
@@ -24,15 +23,15 @@ export async function obtenerObrasSocialesActivas() {
   try {
     const obrasSociales = await prisma.obraSocial.findMany({
       where: {
-        estado: 'ACTIVA'
+        estado: "ACTIVA",
       },
       orderBy: {
-        nombre: 'asc'
-      }
+        nombre: "asc",
+      },
     });
     return obrasSociales;
   } catch (error) {
-    console.error('Error al obtener obras sociales activas:', error);
+    console.error("Error al obtener obras sociales activas:", error);
     return [];
   }
 }
@@ -42,12 +41,12 @@ export async function verificarDNIExistente(dni: string): Promise<boolean> {
   try {
     const profesionalExistente = await prisma.profesional.findFirst({
       where: {
-        dni: dni
-      }
+        dni: dni,
+      },
     });
     return profesionalExistente !== null;
   } catch (error) {
-    console.error('Error al verificar DNI:', error);
+    console.error("Error al verificar DNI:", error);
     return false;
   }
 }
@@ -56,9 +55,25 @@ export async function crearProfesional(datos: DatosProfesionalFormulario) {
   try {
     const dniExiste = await verificarDNIExistente(datos.dni);
     if (dniExiste) {
-      throw new Error(`Ya existe un profesional registrado con el DNI ${datos.dni}`);
+      throw new Error(
+        `Ya existe un profesional registrado con el DNI ${datos.dni}`
+      );
     }
 
+    // ✅ Crear el usuario asociado al profesional (si se proporcionan credenciales)
+    let nuevoUsuario;
+    if (datos.nombreUsuario && datos.email && datos.password) {
+      nuevoUsuario = await prisma.user.create({
+        data: {
+          nombre: datos.nombreUsuario,
+          email: datos.email,
+          password: datos.password,
+          rol: datos.rol || "PROFESIONAL",
+        },
+      });
+    }
+
+    // ✅ Crear profesional (con o sin userId según si se creó el usuario)
     const nuevoProfesional = await prisma.profesional.create({
       data: {
         nombre: datos.nombre,
@@ -67,38 +82,39 @@ export async function crearProfesional(datos: DatosProfesionalFormulario) {
         especialidad: datos.especialidad,
         telefono: datos.telefono,
         direccion: datos.direccion,
+        ...(nuevoUsuario ? { userId: nuevoUsuario.id } : {}),
         obras_sociales: {
-          create: datos.obras_sociales_ids.map(obraSocialId => ({
-            id_obra_social: obraSocialId
-          }))
-        }
+          create: datos.obras_sociales_ids.map((obraSocialId) => ({
+            id_obra_social: obraSocialId,
+          })),
+        },
       },
       include: {
         obras_sociales: {
           include: {
-            obra_social: true
-          }
+            obra_social: true,
+          },
         },
         _count: {
           select: {
             turnos: true,
-            historias: true
-          }
-        }
-      }
+            historias: true,
+          },
+        },
+      },
     });
 
     return nuevoProfesional;
   } catch (error) {
-    console.error('Error al crear profesional:', error);
-    
+    console.error("Error al crear profesional:", error);
+
     // Muestra el mensaje de error por DNI
-    if (error instanceof Error && error.message.includes('DNI')) {
+    if (error instanceof Error && error.message.includes("DNI")) {
       throw error;
     }
-    
+
     // Sino muestra un mensaje de error general
-    throw new Error('Error al registrar el profesional');
+    throw new Error("Error al registrar el profesional");
   }
 }
 
@@ -108,20 +124,20 @@ export async function obtenerProfesionales() {
       include: {
         obras_sociales: {
           include: {
-            obra_social: true
-          }
+            obra_social: true,
+          },
         },
         _count: {
           select: {
             turnos: true,
-            historias: true
-          }
-        }
-      }
+            historias: true,
+          },
+        },
+      },
     });
     return profesionales;
   } catch (error) {
-    console.error('Error al obtener profesionales:', error);
+    console.error("Error al obtener profesionales:", error);
     return [];
   }
 }
@@ -130,12 +146,12 @@ export async function obtenerObrasSociales() {
   try {
     const obrasSociales = await prisma.obraSocial.findMany({
       where: {
-        estado: 'ACTIVA'
-      }
+        estado: "ACTIVA",
+      },
     });
     return obrasSociales;
   } catch (error) {
-    console.error('Error al obtener obras sociales:', error);
+    console.error("Error al obtener obras sociales:", error);
     return [];
   }
 }
@@ -151,11 +167,24 @@ export async function getProfesionalesEspecialidad(especialidad: string) {
       apellido: true,
     },
     orderBy: {
-      apellido: 'asc',
+      apellido: "asc",
     },
   });
 }
 
 export async function getProfesional(id: DBId) {
   return await prisma.profesional.findUnique({ where: { id } });
+}
+
+// ✅ NUEVA FUNCIÓN - Para obtener profesional por userId
+export async function getProfesionalPorUserId(userId: number) {
+  return await prisma.profesional.findUnique({
+    where: { userId },
+    select: {
+      nombre: true,
+      apellido: true,
+      id: true,
+      especialidad: true,
+    },
+  });
 }

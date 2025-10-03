@@ -2,15 +2,13 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-
-export type UserRole = "mesa-entrada" | "profesional" | "gerente"
+import { Role } from "@/generated/prisma"
 
 export interface User {
-  id: string
-  name: string
-  role: UserRole
-  especialidad?: string
+  id: number
+  nombre: string
   email: string
+  rol: Role
 }
 
 interface AuthContextType {
@@ -22,35 +20,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock users for demonstration
-const mockUsers: User[] = [
-  { id: "1", name: "Ana García", role: "mesa-entrada", email: "mesa@policonsultorio.com" },
-  {
-    id: "2",
-    name: "Dr. Carlos Mendez",
-    role: "profesional",
-    especialidad: "Cardiología",
-    email: "carlos@policonsultorio.com",
-  },
-  {
-    id: "3",
-    name: "Dra. María López",
-    role: "profesional",
-    especialidad: "Pediatría",
-    email: "maria@policonsultorio.com",
-  },
-  { id: "4", name: "Roberto Silva", role: "gerente", email: "gerente@policonsultorio.com" },
-]
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // Check for stored user session
-    const storedUser = localStorage.getItem("mediadmin-user")
+    const storedUser = localStorage.getItem("user")
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      try {
+        setUser(JSON.parse(storedUser))
+      } catch (error) {
+        console.error("Error parsing stored user:", error)
+        localStorage.removeItem("user")
+      }
     }
     setIsLoading(false)
   }, [])
@@ -58,27 +41,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
 
-    // Mock authentication - in real app, this would be an API call
-    const foundUser = mockUsers.find((u) => u.email === email)
+    try {
+      const response = await fetch("/api/v1/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    if (foundUser && password === "123456") {
-      // Mock password
-      setUser(foundUser)
-      localStorage.setItem("mediadmin-user", JSON.stringify(foundUser))
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.error("Login failed:", data.error)
+        setIsLoading(false)
+        return false
+      }
+
+      // Limpiar localStorage antes de guardar nuevo usuario
+      localStorage.clear()
+      localStorage.setItem("user", JSON.stringify(data.user))
+      setUser(data.user)
       setIsLoading(false)
       return true
+    } catch (error) {
+      console.error("Login error:", error)
+      setIsLoading(false)
+      return false
     }
-
-    setIsLoading(false)
-    return false
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem("mediadmin-user")
+    localStorage.removeItem("user")
   }
 
-  return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

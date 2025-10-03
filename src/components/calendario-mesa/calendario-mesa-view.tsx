@@ -56,7 +56,7 @@ export function CalendarioMesaView({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const puedeModificar = user?.role === "mesa-entrada"
+  const puedeModificar = user?.rol === "MESA_ENTRADA"
 
   useEffect(() => {
     async function fetchTurnos() {

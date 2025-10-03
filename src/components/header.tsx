@@ -15,6 +15,7 @@ import { Search, Moon, Sun, LogOut, User } from "lucide-react"
 import { useState } from "react"
 import { useAuth } from "@/context/auth-context"
 import { NotificationsPanel } from "./notifications-panel"
+import { Role } from "@/generated/prisma"
 
 export function Header() {
   const [darkMode, setDarkMode] = useState(false)
@@ -25,21 +26,36 @@ export function Header() {
     document.documentElement.classList.toggle("dark")
   }
 
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case "mesa-entrada":
+  const getRoleDisplayName = (rol: Role) => {
+    switch (rol) {
+      case "MESA_ENTRADA":
         return "Mesa de Entrada"
-      case "profesional":
+      case "PROFESIONAL":
         return "Profesional"
-      case "gerente":
+      case "GERENTE":
         return "Gerente"
       default:
-        return role
+        return "Usuario"
     }
   }
 
-  const getUserInitials = (name: string) => {
-    return name
+  const getHeaderTitle = () => {
+    if (!user) return "Dashboard"
+    
+    switch (user.rol) {
+      case "MESA_ENTRADA":
+        return "Mesa de Entrada"
+      case "PROFESIONAL":
+        return "Panel Profesional"
+      case "GERENTE":
+        return "Panel de Gestión"
+      default:
+        return "Dashboard"
+    }
+  }
+
+  const getUserInitials = (nombre: string) => {
+    return nombre
       .split(" ")
       .map((n) => n[0])
       .join("")
@@ -51,13 +67,7 @@ export function Header() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-semibold text-foreground">
-            {user?.role === "mesa-entrada"
-              ? "Mesa de Entrada"
-              : user?.role === "profesional"
-                ? "Panel Profesional"
-                : user?.role === "gerente"
-                  ? "Panel de Gestión"
-                  : "Dashboard"}
+            {getHeaderTitle()}
           </h1>
           <div className="text-sm text-muted-foreground">
             {new Date().toLocaleDateString("es-ES", {
@@ -87,7 +97,7 @@ export function Header() {
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
                   <AvatarFallback className="bg-primary/10 text-primary">
-                    {user ? getUserInitials(user.name) : "U"}
+                    {user ? getUserInitials(user.nombre) : "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -95,11 +105,10 @@ export function Header() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user?.name}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{getRoleDisplayName(user?.role || "")}</p>
-                  {user?.especialidad && (
-                    <p className="text-xs leading-none text-muted-foreground">{user.especialidad}</p>
-                  )}
+                  <p className="text-sm font-medium leading-none">{user?.nombre}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.rol ? getRoleDisplayName(user.rol) : "Usuario"}
+                  </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

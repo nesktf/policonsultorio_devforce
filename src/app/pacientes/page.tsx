@@ -1,6 +1,7 @@
+// app/pacientes/page.tsx
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,136 +13,85 @@ import { NuevoPacienteDialog } from "@/components/pacientes/nuevo-paciente-dialo
 import { HistoriaClinicaDialog } from "@/components/pacientes/historia-clinica-dialog"
 import { VerPacienteDialog } from "@/components/pacientes/ver-paciente-dialog"
 import { EditarPacienteDialog } from "@/components/pacientes/editar-paciente-dialog"
-import { hasPermission, filterDataByRole, canPerformAction, getAccessDeniedMessage } from "@/lib/permissions"
-import { Users, Search, Plus, Eye, Edit, Phone, Mail, Calendar, FileText, Filter, AlertCircle } from "lucide-react"
+import { Users, Search, Plus, Eye, Edit, Phone, Mail, Calendar, FileText, Filter, AlertCircle, Loader2 } from "lucide-react"
 
-// Mock data - en producción vendría de la API
-const mockPacientes = [
-  {
-    id: "1",
-    nombre: "María",
-    apellido: "González",
-    dni: "12345678",
-    telefono: "11-1234-5678",
-    email: "maria.gonzalez@email.com",
-    fechaNacimiento: "1985-03-15",
-    direccion: "Av. Corrientes 1234, CABA",
-    obraSocial: "OSDE",
-    numeroAfiliado: "123456789",
-    estado: "activo",
-    fechaRegistro: "2024-01-10",
-    ultimaConsulta: "2024-01-15",
-    profesionalesAsignados: ["2"], // Dr. Carlos Mendez (Cardiología)
-    turnosReservados: [{ profesionalId: "2", fecha: "2024-02-15", estado: "confirmado" }],
-    consultasRealizadas: [{ profesionalId: "2", fecha: "2024-01-15", motivo: "Control rutinario" }],
-  },
-  {
-    id: "2",
-    nombre: "Juan Carlos",
-    apellido: "Pérez",
-    dni: "87654321",
-    telefono: "11-8765-4321",
-    email: "juan.perez@email.com",
-    fechaNacimiento: "1978-07-22",
-    direccion: "Rivadavia 5678, CABA",
-    obraSocial: "Swiss Medical",
-    numeroAfiliado: "987654321",
-    estado: "activo",
-    fechaRegistro: "2024-01-08",
-    ultimaConsulta: "2024-01-14",
-    profesionalesAsignados: ["3"], // Dra. María López (Dermatología)
-    turnosReservados: [{ profesionalId: "3", fecha: "2024-02-20", estado: "confirmado" }],
-    consultasRealizadas: [{ profesionalId: "3", fecha: "2024-01-14", motivo: "Consulta por dolor en el pecho" }],
-  },
-  {
-    id: "3",
-    nombre: "Ana María",
-    apellido: "Martín",
-    dni: "11223344",
-    telefono: "11-1122-3344",
-    email: "ana.martin@email.com",
-    fechaNacimiento: "1992-11-08",
-    direccion: "Santa Fe 9876, CABA",
-    obraSocial: "Galeno",
-    numeroAfiliado: "456789123",
-    estado: "activo",
-    fechaRegistro: "2024-01-05",
-    ultimaConsulta: "2024-01-20",
-    profesionalesAsignados: ["3"], // Dra. María López (Dermatología)
-    turnosReservados: [],
-    consultasRealizadas: [{ profesionalId: "3", fecha: "2024-01-20", motivo: "Revisión de lunares" }],
-  },
-  {
-    id: "4",
-    nombre: "Carlos Alberto",
-    apellido: "Ruiz",
-    dni: "44332211",
-    telefono: "11-4433-2211",
-    email: "carlos.ruiz@email.com",
-    fechaNacimiento: "1965-05-30",
-    direccion: "Callao 2468, CABA",
-    obraSocial: "IOMA",
-    numeroAfiliado: "789123456",
-    estado: "activo",
-    fechaRegistro: "2024-01-03",
-    ultimaConsulta: "2024-01-12",
-    profesionalesAsignados: ["4"], // Dr. Martínez (Traumatología)
-    turnosReservados: [{ profesionalId: "4", fecha: "2024-02-10", estado: "pendiente" }],
-    consultasRealizadas: [],
-  },
-  {
-    id: "5",
-    nombre: "Laura",
-    apellido: "Fernández",
-    dni: "99887766",
-    telefono: "11-9988-7766",
-    email: "laura.fernandez@email.com",
-    fechaNacimiento: "1988-09-12",
-    direccion: "Belgrano 3456, CABA",
-    obraSocial: "Medicus",
-    numeroAfiliado: "654321987",
-    estado: "activo",
-    fechaRegistro: "2024-01-01",
-    ultimaConsulta: "2024-01-18",
-    profesionalesAsignados: ["3"], // Dra. María López (Dermatología)
-    turnosReservados: [],
-    consultasRealizadas: [{ profesionalId: "3", fecha: "2024-01-18", motivo: "Control post-operatorio" }],
-  },
-  {
-    id: "6",
-    nombre: "Pedro",
-    apellido: "Sánchez",
-    dni: "55667788",
-    telefono: "11-5566-7788",
-    email: "pedro.sanchez@email.com",
-    fechaNacimiento: "1975-04-03",
-    direccion: "Pueyrredón 7890, CABA",
-    obraSocial: "OSECAC",
-    numeroAfiliado: "321654987",
-    estado: "activo",
-    fechaRegistro: "2024-01-02",
-    ultimaConsulta: "2024-01-16",
-    profesionalesAsignados: ["4"], // Dr. Martínez (Traumatología)
-    turnosReservados: [{ profesionalId: "4", fecha: "2024-02-12", estado: "programado" }],
-    consultasRealizadas: [{ profesionalId: "4", fecha: "2024-01-16", motivo: "Dolor de espalda" }],
-  },
-]
+interface Paciente {
+  id: string
+  nombre: string
+  apellido: string
+  dni: string
+  telefono: string
+  email?: string
+  fechaNacimiento?: string
+  direccion: string
+  obraSocial?: string
+  numeroAfiliado?: string
+  estado: "activo" | "inactivo"
+  fechaRegistro: string
+  ultimaConsulta?: string
+  profesionalesAsignados?: string[]
+  turnosReservados?: any[]
+  consultasRealizadas?: any[]
+}
 
 export default function PacientesPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [pacientes, setPacientes] = useState(mockPacientes)
+  const [pacientes, setPacientes] = useState<Paciente[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filtroEstado, setFiltroEstado] = useState("todos")
   const [showNuevoPacienteDialog, setShowNuevoPacienteDialog] = useState(false)
   const [showHistoriaClinica, setShowHistoriaClinica] = useState(false)
-  const [pacienteSeleccionado, setPacienteSeleccionado] = useState<any>(null)
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState<Paciente | null>(null)
   const [showVerPacienteDialog, setShowVerPacienteDialog] = useState(false)
   const [showEditarPacienteDialog, setShowEditarPacienteDialog] = useState(false)
 
-  const getPacientesFiltradosPorRol = () => {
-    return filterDataByRole(pacientes, user, "pacientes")
-  }
+  // Cargar pacientes desde la API
+  useEffect(() => {
+    const fetchPacientes = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/v1/pacientes')
+        
+        if (!response.ok) {
+          throw new Error('Error al cargar pacientes')
+        }
+
+        const data = await response.json()
+        
+        // Transformar los datos de la API al formato del componente
+        const pacientesTransformados = data.pacientes.map((p: any) => ({
+          id: p.id.toString(),
+          nombre: p.nombre,
+          apellido: p.apellido,
+          dni: p.dni,
+          telefono: p.telefono,
+          email: `${p.nombre.toLowerCase()}.${p.apellido.toLowerCase()}@email.com`,
+          fechaNacimiento: p.fecha_nacimiento ? new Date(p.fecha_nacimiento).toISOString().split('T')[0] : undefined,
+          direccion: p.direccion,
+          obraSocial: p.obra_social?.nombre || 'Sin obra social',
+          numeroAfiliado: p.num_obra_social || 'N/A',
+          estado: 'activo' as const,
+          fechaRegistro: p.fecha_registro ? new Date(p.fecha_registro).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          ultimaConsulta: undefined,
+          profesionalesAsignados: [],
+          turnosReservados: [],
+          consultasRealizadas: [],
+        }))
+
+        setPacientes(pacientesTransformados)
+      } catch (error) {
+        console.error('Error al cargar pacientes:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (user) {
+      fetchPacientes()
+    }
+  }, [user])
 
   if (!user) {
     return (
@@ -157,8 +107,10 @@ export default function PacientesPage() {
     )
   }
 
-  const canViewPacientes =
-    hasPermission(user.role, "canViewAllPacientes") || hasPermission(user.role, "canViewOwnPacientes")
+  const canViewPacientes = user.rol === "GERENTE" || user.rol === "MESA_ENTRADA" || user.rol === "PROFESIONAL"
+  const canCreatePacientes = user.rol === "GERENTE" || user.rol === "MESA_ENTRADA"
+  const canEditPacientes = user.rol === "GERENTE" || user.rol === "MESA_ENTRADA"
+  const canViewHistorias = user.rol === "PROFESIONAL" || user.rol === "GERENTE"
 
   if (!canViewPacientes) {
     return (
@@ -167,7 +119,7 @@ export default function PacientesPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
-              <p className="text-muted-foreground text-center">{getAccessDeniedMessage(user.role, "default")}</p>
+              <p className="text-muted-foreground text-center">No tienes permisos para ver esta sección.</p>
             </CardContent>
           </Card>
         </div>
@@ -175,13 +127,12 @@ export default function PacientesPage() {
     )
   }
 
-  const pacientesPorRol = getPacientesFiltradosPorRol()
-  const pacientesFiltrados = pacientesPorRol.filter((paciente) => {
+  const pacientesFiltrados = pacientes.filter((paciente) => {
     const matchesSearch =
       paciente.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
       paciente.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
       paciente.dni.includes(searchTerm) ||
-      paciente.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (paciente.email && paciente.email.toLowerCase().includes(searchTerm.toLowerCase()))
 
     const matchesEstado = filtroEstado === "todos" || paciente.estado === filtroEstado
 
@@ -190,7 +141,8 @@ export default function PacientesPage() {
 
   const pacientesOrdenados = pacientesFiltrados.sort((a, b) => a.apellido.localeCompare(b.apellido))
 
-  const calcularEdad = (fechaNacimiento: string) => {
+  const calcularEdad = (fechaNacimiento?: string) => {
+    if (!fechaNacimiento) return "N/A"
     const hoy = new Date()
     const nacimiento = new Date(fechaNacimiento)
     let edad = hoy.getFullYear() - nacimiento.getFullYear()
@@ -203,31 +155,67 @@ export default function PacientesPage() {
     return edad
   }
 
-  const formatearFecha = (fecha: string) => {
+  const formatearFecha = (fecha?: string) => {
+    if (!fecha) return "N/A"
     return new Date(fecha).toLocaleDateString("es-AR")
   }
 
-  const handleNuevoPaciente = (nuevoPaciente: any) => {
-    const pacienteConId = {
-      ...nuevoPaciente,
-      id: (pacientes.length + 1).toString(),
-      fechaRegistro: new Date().toISOString().split("T")[0],
-      estado: "activo",
-      profesionalesAsignados: user?.role === "profesional" ? [user.id] : [],
-      turnosReservados: [],
-      consultasRealizadas: [],
+  const handleNuevoPaciente = async (nuevoPaciente: any) => {
+    try {
+      const response = await fetch('/api/v1/pacientes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: nuevoPaciente.nombre,
+          apellido: nuevoPaciente.apellido,
+          dni: nuevoPaciente.dni,
+          telefono: nuevoPaciente.telefono,
+          direccion: nuevoPaciente.direccion,
+          fecha_nacimiento: nuevoPaciente.fechaNacimiento,
+          id_obra_social: nuevoPaciente.obraSocialId || null,
+          num_obra_social: nuevoPaciente.numeroAfiliado || null,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Error al crear paciente')
+      }
+
+      const data = await response.json()
+      
+      // Agregar el nuevo paciente a la lista
+      const pacienteTransformado = {
+        id: data.id.toString(),
+        nombre: data.nombre,
+        apellido: data.apellido,
+        dni: data.dni,
+        telefono: data.telefono,
+        email: `${data.nombre.toLowerCase()}.${data.apellido.toLowerCase()}@email.com`,
+        fechaNacimiento: data.fecha_nacimiento ? new Date(data.fecha_nacimiento).toISOString().split('T')[0] : undefined,
+        direccion: data.direccion,
+        obraSocial: data.obra_social?.nombre || 'Sin obra social',
+        numeroAfiliado: data.num_obra_social || 'N/A',
+        estado: 'activo' as const,
+        fechaRegistro: new Date().toISOString().split('T')[0],
+        ultimaConsulta: undefined,
+        profesionalesAsignados: [],
+        turnosReservados: [],
+        consultasRealizadas: [],
+      }
+
+      setPacientes([pacienteTransformado, ...pacientes])
+    } catch (error) {
+      console.error('Error al crear paciente:', error)
+      throw error
     }
-    setPacientes([...pacientes, pacienteConId])
   }
 
-  const handleVerHistoria = (paciente: any) => {
-    if (!hasPermission(user.role, "canViewHistoriasClinicas")) {
-      alert(getAccessDeniedMessage(user.role, "historias-clinicas"))
-      return
-    }
-
-    if (!canPerformAction(user, "view", "historia", paciente)) {
-      alert("No tienes permisos para ver la historia clínica de este paciente.")
+  const handleVerHistoria = (paciente: Paciente) => {
+    if (!canViewHistorias) {
+      alert("No tienes permisos para ver historias clínicas.")
       return
     }
 
@@ -235,20 +223,14 @@ export default function PacientesPage() {
     setShowHistoriaClinica(true)
   }
 
-  const handleVerPaciente = (paciente: any) => {
-    // Verificar permisos para ver detalles del paciente
-    if (!canPerformAction(user, "view", "paciente", paciente)) {
-      alert("No tienes permisos para ver este paciente.")
-      return
-    }
-
+  const handleVerPaciente = (paciente: Paciente) => {
     setPacienteSeleccionado(paciente)
     setShowVerPacienteDialog(true)
   }
 
-  const handleEditarPaciente = (paciente: any) => {
-    if (!canPerformAction(user, "edit", "paciente", paciente)) {
-      alert("No tienes permisos para editar este paciente.")
+  const handleEditarPaciente = (paciente: Paciente) => {
+    if (!canEditPacientes) {
+      alert("No tienes permisos para editar pacientes.")
       return
     }
 
@@ -256,10 +238,23 @@ export default function PacientesPage() {
     setShowEditarPacienteDialog(true)
   }
 
-  const handleActualizarPaciente = (pacienteActualizado: any) => {
+  const handleActualizarPaciente = (pacienteActualizado: Paciente) => {
     setPacientes(pacientes.map((p) => (p.id === pacienteActualizado.id ? pacienteActualizado : p)))
     setShowEditarPacienteDialog(false)
     setPacienteSeleccionado(null)
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="p-6 flex items-center justify-center h-[50vh]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <p className="text-muted-foreground">Cargando pacientes...</p>
+          </div>
+        </div>
+      </MainLayout>
+    )
   }
 
   return (
@@ -269,15 +264,15 @@ export default function PacientesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              {user.role === "profesional" ? "Mis Pacientes" : "Gestión de Pacientes"}
+              {user.rol === "PROFESIONAL" ? "Mis Pacientes" : "Gestión de Pacientes"}
             </h1>
             <p className="text-muted-foreground">
-              {user.role === "profesional"
+              {user.rol === "PROFESIONAL"
                 ? "Pacientes asignados y con turnos reservados contigo"
                 : "Administra la información de todos los pacientes del policonsultorio"}
             </p>
           </div>
-          {hasPermission(user.role, "canCreatePacientes") && (
+          {canCreatePacientes && (
             <Button onClick={() => setShowNuevoPacienteDialog(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Nuevo Paciente
@@ -291,11 +286,9 @@ export default function PacientesPage() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-blue-600" />
-                <span className="text-sm font-medium">
-                  {user.role === "profesional" ? "Mis Pacientes" : "Total Pacientes"}
-                </span>
+                <span className="text-sm font-medium">Total Pacientes</span>
               </div>
-              <p className="text-2xl font-bold text-blue-600">{pacientesPorRol.length}</p>
+              <p className="text-2xl font-bold text-blue-600">{pacientes.length}</p>
             </CardContent>
           </Card>
           <Card>
@@ -305,7 +298,7 @@ export default function PacientesPage() {
                 <span className="text-sm font-medium">Activos</span>
               </div>
               <p className="text-2xl font-bold text-green-600">
-                {pacientesPorRol.filter((p) => p.estado === "activo").length}
+                {pacientes.filter((p) => p.estado === "activo").length}
               </p>
             </CardContent>
           </Card>
@@ -316,7 +309,7 @@ export default function PacientesPage() {
                 <span className="text-sm font-medium">Inactivos</span>
               </div>
               <p className="text-2xl font-bold text-gray-600">
-                {pacientesPorRol.filter((p) => p.estado === "inactivo").length}
+                {pacientes.filter((p) => p.estado === "inactivo").length}
               </p>
             </CardContent>
           </Card>
@@ -324,19 +317,14 @@ export default function PacientesPage() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-purple-600" />
-                <span className="text-sm font-medium">
-                  {user.role === "profesional" ? "Atendidos" : "Nuevos este mes"}
-                </span>
+                <span className="text-sm font-medium">Nuevos este mes</span>
               </div>
               <p className="text-2xl font-bold text-purple-600">
-                {user.role === "profesional"
-                  ? pacientesPorRol.filter((p) => p.consultasRealizadas?.some((c) => c.profesionalId === user.id))
-                      .length
-                  : pacientesPorRol.filter((p) => {
-                      const registro = new Date(p.fechaRegistro)
-                      const hoy = new Date()
-                      return registro.getMonth() === hoy.getMonth() && registro.getFullYear() === hoy.getFullYear()
-                    }).length}
+                {pacientes.filter((p) => {
+                  const registro = new Date(p.fechaRegistro)
+                  const hoy = new Date()
+                  return registro.getMonth() === hoy.getMonth() && registro.getFullYear() === hoy.getFullYear()
+                }).length}
               </p>
             </CardContent>
           </Card>
@@ -376,21 +364,15 @@ export default function PacientesPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              {user.role === "profesional" ? "Mis Pacientes" : "Lista de Pacientes"} ({pacientesOrdenados.length})
+              Lista de Pacientes ({pacientesOrdenados.length})
             </CardTitle>
-            <CardDescription>
-              {user.role === "profesional"
-                ? "Pacientes que has atendido o tienen turnos contigo"
-                : "Pacientes ordenados alfabéticamente por apellido"}
-            </CardDescription>
+            <CardDescription>Pacientes ordenados alfabéticamente por apellido</CardDescription>
           </CardHeader>
           <CardContent>
             {pacientesOrdenados.length === 0 ? (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  {user.role === "profesional" ? "No tienes pacientes asignados" : "No se encontraron pacientes"}
-                </p>
+                <p className="text-muted-foreground">No se encontraron pacientes</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -430,54 +412,42 @@ export default function PacientesPage() {
                             <Phone className="h-3 w-3" />
                             {paciente.telefono}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            {paciente.email}
-                          </div>
+                          {paciente.email && (
+                            <div className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {paciente.email}
+                            </div>
+                          )}
                           <div className="flex items-center gap-1">
                             <span className="font-medium">Obra Social:</span> {paciente.obraSocial}
                           </div>
-                          {user.role === "profesional" ? (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {paciente.consultasRealizadas?.some((c) => c.profesionalId === user.id)
-                                ? `Última consulta: ${formatearFecha(paciente.ultimaConsulta)}`
-                                : paciente.turnosReservados.some((t) => t.profesionalId === user.id)
-                                  ? "Turno programado"
-                                  : "Sin consultas previas"}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              Última consulta: {formatearFecha(paciente.ultimaConsulta)}
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Registro: {formatearFecha(paciente.fechaRegistro)}
+                          </div>
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {hasPermission(user.role, "canViewHistoriasClinicas") &&
-                        canPerformAction(user, "view", "historia", paciente) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-1"
-                            onClick={() => handleVerHistoria(paciente)}
-                          >
-                            <FileText className="h-4 w-4" />
-                            Historia
-                          </Button>
-                        )}
-
-                      {canPerformAction(user, "view", "paciente", paciente) && (
-                        <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleVerPaciente(paciente)}>
-                          <Eye className="h-4 w-4" />
-                          Ver
+                      {canViewHistorias && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => handleVerHistoria(paciente)}
+                        >
+                          <FileText className="h-4 w-4" />
+                          Historia
                         </Button>
                       )}
 
-                      {canPerformAction(user, "edit", "paciente", paciente) && (
+                      <Button variant="ghost" size="sm" className="gap-1" onClick={() => handleVerPaciente(paciente)}>
+                        <Eye className="h-4 w-4" />
+                        Ver
+                      </Button>
+
+                      {canEditPacientes && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -496,7 +466,7 @@ export default function PacientesPage() {
           </CardContent>
         </Card>
 
-        {hasPermission(user.role, "canCreatePacientes") && (
+        {canCreatePacientes && (
           <NuevoPacienteDialog
             open={showNuevoPacienteDialog}
             onOpenChange={setShowNuevoPacienteDialog}
@@ -504,32 +474,27 @@ export default function PacientesPage() {
           />
         )}
 
-        {/* Dialog para ver paciente */}
         {pacienteSeleccionado && (
-          <VerPacienteDialog
-            open={showVerPacienteDialog}
-            onOpenChange={setShowVerPacienteDialog}
-            paciente={pacienteSeleccionado}
-          />
-        )}
+          <>
+            <VerPacienteDialog
+              open={showVerPacienteDialog}
+              onOpenChange={setShowVerPacienteDialog}
+              paciente={pacienteSeleccionado}
+            />
 
-        {/* Dialog para editar paciente */}
-        {pacienteSeleccionado && (
-          <EditarPacienteDialog
-            open={showEditarPacienteDialog}
-            onOpenChange={setShowEditarPacienteDialog}
-            paciente={pacienteSeleccionado}
-            onPacienteActualizado={handleActualizarPaciente}
-          />
-        )}
+            <EditarPacienteDialog
+              open={showEditarPacienteDialog}
+              onOpenChange={setShowEditarPacienteDialog}
+              paciente={pacienteSeleccionado}
+              onPacienteActualizado={handleActualizarPaciente}
+            />
 
-        {/* Dialog para historia clínica */}
-        {pacienteSeleccionado && (
-          <HistoriaClinicaDialog
-            open={showHistoriaClinica}
-            onOpenChange={setShowHistoriaClinica}
-            paciente={pacienteSeleccionado}
-          />
+            <HistoriaClinicaDialog
+              open={showHistoriaClinica}
+              onOpenChange={setShowHistoriaClinica}
+              paciente={pacienteSeleccionado}
+            />
+          </>
         )}
       </div>
     </MainLayout>

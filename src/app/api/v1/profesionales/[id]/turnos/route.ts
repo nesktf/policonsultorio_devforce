@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import { getTurnosCalendarioProfesional } from '@/prisma/turnos';
-import { EstadoTurno } from '@/generated/prisma';
-import { getProfesional } from '@/prisma/profesional';
+import { NextResponse } from "next/server";
+import { getTurnosCalendarioProfesional } from "@/prisma/turnos";
+import { EstadoTurno } from "@/generated/prisma";
+import { getProfesional } from "@/prisma/profesional";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type EventoCalendario = {
@@ -20,7 +20,10 @@ type EventoCalendario = {
   };
 };
 
-function parseDateParam(value: string | null, fallback: Date | null): Date | null {
+function parseDateParam(
+  value: string | null,
+  fallback: Date | null
+): Date | null {
   if (!value) {
     return fallback;
   }
@@ -33,37 +36,69 @@ function parseDateParam(value: string | null, fallback: Date | null): Date | nul
 }
 
 function startOfDay(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      0,
+      0,
+      0,
+      0
+    )
+  );
 }
 
 function endOfDay(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      23,
+      59,
+      59,
+      999
+    )
+  );
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
   const profesionalId = Number(params.id);
   if (!Number.isInteger(profesionalId) || profesionalId <= 0) {
     return NextResponse.json(
-      { error: 'El identificador de profesional es inválido.' },
-      { status: 400 },
+      { error: "El identificador de profesional es inválido." },
+      { status: 400 }
     );
   }
 
   const { searchParams } = new URL(request.url);
-  const timezoneOffsetMinutes = Number(searchParams.get('timezoneOffset') ?? '0');
-  const effectiveOffset = Number.isFinite(timezoneOffsetMinutes) ? timezoneOffsetMinutes : 0;
+  const timezoneOffsetMinutes = Number(
+    searchParams.get("timezoneOffset") ?? "0"
+  );
+  const effectiveOffset = Number.isFinite(timezoneOffsetMinutes)
+    ? timezoneOffsetMinutes
+    : 0;
 
   const nowUtc = new Date();
   const defaultFrom = startOfDay(nowUtc);
-  const defaultTo = endOfDay(new Date(nowUtc.getTime() + 7 * 24 * 60 * 60 * 1000));
+  const defaultTo = endOfDay(
+    new Date(nowUtc.getTime() + 7 * 24 * 60 * 60 * 1000)
+  );
 
-  const fromParam = parseDateParam(searchParams.get('from'), defaultFrom);
-  const toParam = parseDateParam(searchParams.get('to'), defaultTo);
+  const fromParam = parseDateParam(searchParams.get("from"), defaultFrom);
+  const toParam = parseDateParam(searchParams.get("to"), defaultTo);
 
   if (!fromParam || !toParam) {
     return NextResponse.json(
-      { error: 'Parámetros de fecha inválidos. Usa el formato YYYY-MM-DD o ISO 8601.' },
-      { status: 400 },
+      {
+        error:
+          "Parámetros de fecha inválidos. Usa el formato YYYY-MM-DD o ISO 8601.",
+      },
+      { status: 400 }
     );
   }
 
@@ -73,26 +108,32 @@ export async function GET(request: Request, { params }: { params: { id: string }
   if (from > to) {
     return NextResponse.json(
       { error: 'El parámetro "from" debe ser menor o igual que "to".' },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
   const profesional = await getProfesional(profesionalId);
   if (!profesional) {
     return NextResponse.json(
-      { error: 'Profesional no encontrado.' },
-      { status: 404 },
+      { error: "Profesional no encontrado." },
+      { status: 404 }
     );
   }
 
   try {
-    const turnos = await getTurnosCalendarioProfesional(profesionalId, from, to);
+    const turnos = await getTurnosCalendarioProfesional(
+      profesionalId,
+      from,
+      to
+    );
 
     const agrupados = new Map<string, EventoCalendario[]>();
 
     for (const turno of turnos) {
       const utcDate = turno.fecha;
-      const localDate = new Date(utcDate.getTime() - effectiveOffset * 60 * 1000);
+      const localDate = new Date(
+        utcDate.getTime() - effectiveOffset * 60 * 1000
+      );
       const fechaClave = localDate.toISOString().slice(0, 10);
       const hora = localDate.toISOString().slice(11, 16);
 
@@ -136,13 +177,16 @@ export async function GET(request: Request, { params }: { params: { id: string }
         totalTurnos: turnos.length,
         turnosPorDia,
       },
-      { headers: { 'Cache-Control': 'no-store' } },
+      { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
-    console.error('Error al obtener turnos del profesional:', error);
+    console.error("Error al obtener turnos del profesional:", error);
     return NextResponse.json(
-      { error: 'Error interno del servidor al obtener el calendario del profesional.' },
-      { status: 500 },
+      {
+        error:
+          "Error interno del servidor al obtener el calendario del profesional.",
+      },
+      { status: 500 }
     );
   }
 }

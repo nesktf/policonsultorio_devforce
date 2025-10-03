@@ -86,7 +86,7 @@ export default function NuevosPacientesPage() {
   }
 
   useEffect(() => {
-    if (user && (user.role === "gerente")) {
+    if (user && (user.rol === "GERENTE")) {
       cargarReporte()
     }
   }, [year, user])
@@ -106,7 +106,7 @@ export default function NuevosPacientesPage() {
     )
   }
 
-  if (user.role !== "gerente") {
+  if (user.rol !== "GERENTE") {
     return (
       <MainLayout>
         <div className="p-6">
