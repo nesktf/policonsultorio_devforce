@@ -24,10 +24,11 @@ interface NuevaConsultaDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   paciente: Paciente
+  profesionalId: number,
   onConsultaCreada: (consulta: any) => void
 }
 
-export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCreada }: NuevaConsultaDialogProps) {
+export function NuevaConsultaDialog({ open, onOpenChange, paciente, profesionalId, onConsultaCreada }: NuevaConsultaDialogProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -51,6 +52,7 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
       saturacionOxigeno: "",
     },
   })
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({
@@ -84,26 +86,66 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
         return
       }
 
-      // Simular llamada a API
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
+      // const nuevaConsulta = {
+      //   ...formData,
+      //   profesional: {
+      //     nombre: user?.name || "Dr. Usuario",
+      //     apellido: "Profesional",
+      //     especialidad: user?.role === "profesional" ? "Medicina General" : "Especialista",
+      //     matricula: "MN 00000",
+      //   },
+      //   signosVitales: {
+      //     presionArterial: formData.signosVitales.presionArterial,
+      //     frecuenciaCardiaca: Number.parseInt(formData.signosVitales.frecuenciaCardiaca) || 0,
+      //     temperatura: Number.parseFloat(formData.signosVitales.temperatura) || 0,
+      //     peso: Number.parseFloat(formData.signosVitales.peso) || 0,
+      //     altura: Number.parseInt(formData.signosVitales.altura) || 0,
+      //     saturacionOxigeno: Number.parseInt(formData.signosVitales.saturacionOxigeno) || 0,
+      //   },
+      //   estado: "completada" as const,
+      // }
       const nuevaConsulta = {
-        ...formData,
-        profesional: {
-          nombre: user?.name || "Dr. Usuario",
-          apellido: "Profesional",
-          especialidad: user?.role === "profesional" ? "Medicina General" : "Especialista",
-          matricula: "MN 00000",
-        },
+        pacienteId: paciente.id,
+        profesionalId,
+        fecha: new Date(formData.fecha.toString()),
+        motivo: formData.motivoConsulta,
+        detalle: formData.historiaEnfermedadActual.length > 0 ?
+          formData.historiaEnfermedadActual : undefined,
+        examenFisico: formData.examenFisico.length > 0 ?
+          formData.examenFisico : undefined,
         signosVitales: {
-          presionArterial: formData.signosVitales.presionArterial,
-          frecuenciaCardiaca: Number.parseInt(formData.signosVitales.frecuenciaCardiaca) || 0,
-          temperatura: Number.parseFloat(formData.signosVitales.temperatura) || 0,
-          peso: Number.parseFloat(formData.signosVitales.peso) || 0,
-          altura: Number.parseInt(formData.signosVitales.altura) || 0,
-          saturacionOxigeno: Number.parseInt(formData.signosVitales.saturacionOxigeno) || 0,
+          presionArterial: formData.signosVitales.presionArterial.length > 0 ?
+            formData.signosVitales.presionArterial : undefined,
+          frecuenciaCardiaca: formData.signosVitales.frecuenciaCardiaca.length > 0 ? 
+            formData.signosVitales.frecuenciaCardiaca : undefined,
+          temperatura: formData.signosVitales.temperatura.length > 0 ? 
+            formData.signosVitales.temperatura : undefined,
+          peso: formData.signosVitales.peso.length > 0 ?
+            formData.signosVitales.peso : undefined,
+          altura: formData.signosVitales.altura.length > 0 ?
+            formData.signosVitales.altura : undefined,
+          oxigenacion: formData.signosVitales.saturacionOxigeno.length > 0 ?
+            formData.signosVitales.saturacionOxigeno : undefined,
         },
-        estado: "completada" as const,
+        diagnostico: formData.diagnostico,
+        indicaciones: formData.indicaciones.length > 0 ?
+          formData.indicaciones : undefined,
+        proximoControl: formData.proximoControl.length > 0 ?
+          new Date(formData.proximoControl).toString() : undefined,
+        observaciones: formData.observaciones.length > 0 ?
+          formData.observaciones : undefined,
+      }
+
+      console.log(nuevaConsulta);
+      const ret = await fetch('api/v2/historia', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({historia: nuevaConsulta})
+      })
+      .then(async (body) => await body.json());
+      if (ret.error) {
+        console.log(ret.error);
+        return;
       }
 
       onConsultaCreada(nuevaConsulta)
@@ -223,6 +265,7 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
                     value={formData.signosVitales.presionArterial}
                     onChange={(e) => handleSignosVitalesChange("presionArterial", e.target.value)}
                     placeholder="120/80"
+                    required
                   />
                 </div>
                 <div>
@@ -236,6 +279,7 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
                     value={formData.signosVitales.frecuenciaCardiaca}
                     onChange={(e) => handleSignosVitalesChange("frecuenciaCardiaca", e.target.value)}
                     placeholder="72"
+                    required
                   />
                 </div>
                 <div>
@@ -250,6 +294,7 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
                     value={formData.signosVitales.temperatura}
                     onChange={(e) => handleSignosVitalesChange("temperatura", e.target.value)}
                     placeholder="36.5"
+                    required
                   />
                 </div>
                 <div>
@@ -264,6 +309,7 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
                     value={formData.signosVitales.peso}
                     onChange={(e) => handleSignosVitalesChange("peso", e.target.value)}
                     placeholder="70.5"
+                    required
                   />
                 </div>
                 <div>
@@ -277,6 +323,7 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
                     value={formData.signosVitales.altura}
                     onChange={(e) => handleSignosVitalesChange("altura", e.target.value)}
                     placeholder="175"
+                    required
                   />
                 </div>
                 <div>
@@ -292,6 +339,7 @@ export function NuevaConsultaDialog({ open, onOpenChange, paciente, onConsultaCr
                     value={formData.signosVitales.saturacionOxigeno}
                     onChange={(e) => handleSignosVitalesChange("saturacionOxigeno", e.target.value)}
                     placeholder="98"
+                    required
                   />
                 </div>
               </div>

@@ -792,6 +792,7 @@ export default function HistoriasClinicasPage() {
             open={showNuevaConsulta}
             onOpenChange={setShowNuevaConsulta}
             paciente={paciente}
+            profesionalId={2}
             onConsultaCreada={handleNuevaConsulta}
           />
         )}

@@ -9,6 +9,7 @@ export type SignoVitalDBData = {
   temperatura: string,
   peso: string
   altura: string,
+  oxigenacion: string,
 };
 
 export type MedicamentoDBData = {

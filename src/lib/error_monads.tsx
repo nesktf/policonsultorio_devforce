@@ -9,7 +9,7 @@ export class Result<T, E = Error> {
   }
 
   andThen<U>(f: (val: T) => Result<U, E>): Result<U, E> {
-    if (this._value) {
+    if (this._value != null) {
       return f(this._value);
     } else {
       return new Result<U, E>(null, this._error);
@@ -17,7 +17,7 @@ export class Result<T, E = Error> {
   }
 
   catch<U>(f: (err: E) => Result<T, U>): Result<T, U> {
-    if (this._error) {
+    if (this._error != null) {
       return f(this._error);
     } else {
       return new Result<T, U>(this._value, null);
@@ -25,7 +25,7 @@ export class Result<T, E = Error> {
   }
 
   transform<U>(f: (val: T) => U): Result<U, E> {
-    if (this._value) {
+    if (this._value != null) {
       return new Result<U, E>(f(this._value), null);
     } else {
       return new Result<U, E>(null, this._error);
@@ -33,7 +33,7 @@ export class Result<T, E = Error> {
   }
 
   transformError<U>(f: (err: E) => U): Result<T, U> {
-    if (this._error) {
+    if (this._error != null) {
       return new Result<T, U>(null, f(this._error));
     } else {
       return new Result<T, U>(this._value, null);
@@ -44,14 +44,14 @@ export class Result<T, E = Error> {
   hasError(): boolean { return this._error != null; }
 
   unwrap(): T {
-    if (!this._value) {
+    if (this._value == null) {
       throw this._error;
     }
     return this._value;
   }
 
   unwrapOr(def_val: T) {
-    if (this._value) {
+    if (this._value != null) {
       return this._value;
     } else {
       return def_val;
@@ -59,14 +59,14 @@ export class Result<T, E = Error> {
   }
 
   error(): E {
-    if (!this._error) {
+    if (this._error == null) {
       throw new Error("No error in Result<T, E>")
     }
     return this._error;
   }
 
   errorOr(def_err: E): E {
-    if (this._error) {
+    if (this._error != null) {
       return this._error;
     } else {
       return def_err;
@@ -96,7 +96,7 @@ export class Maybe<T> {
   }
 
   andThen<U>(f: (value: T) => Maybe<U>): Maybe<U> {
-    if (this._value) {
+    if (this._value != null) {
       return f(this._value);
     } else {
       return new Maybe<U>(null);
@@ -104,7 +104,7 @@ export class Maybe<T> {
   }
 
   catch(f: () => Maybe<T>): Maybe<T> {
-    if (!this._value) {
+    if (!this._value != null) {
       return f();
     } else {
       return new Maybe<T>(this._value);
@@ -112,7 +112,7 @@ export class Maybe<T> {
   }
 
   transform<U>(f: (value: T) => U): Maybe<U> {
-    if (this._value) {
+    if (this._value != null) {
       return new Maybe(f(this._value));
     } else {
       return new Maybe<U>(null);
@@ -122,14 +122,14 @@ export class Maybe<T> {
   hasValue(): boolean { return this._value != null; }
 
   unwrap(): T {
-    if (!this._value) {
+    if (this._value == null) {
       throw new Error("No value in Maybe<T>");
     }
     return this._value;
   }
 
   unwrapOr(def_val: T): T {
-    if (this._value) {
+    if (this._value != null) {
       return this._value;
     } else {
       return def_val;

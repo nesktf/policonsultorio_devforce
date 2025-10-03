@@ -89,6 +89,9 @@ function parseId(maybe_id: string): Maybe<number> {
     if (id <= 0) {
       return Maybe.None();
     }
+    if (Number.isNaN(id)) {
+      return Maybe.None();
+    }
     return Maybe.Some(id);
   } catch (err) {
     return Maybe.None();
@@ -204,12 +207,8 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
   }
   const motivo = data.motivo as string;
 
-  if (!data.detalle) {
-    return onErr("detalle");
-  }
-  const detalle = data.detalle as string;
-
-  const examen_fisico = data.examen_fisico ? data.examenFisico as string : null;
+  const detalle = data.detalle ? data.detalle as string : "";
+  const examen_fisico = data.examenFisico ? data.examenFisico as string : null;
 
   let signos_vitales: SignoVitalDBData | null = null;
   if (data.signosVitales) {
@@ -229,25 +228,29 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
     if (!signos.altura) {
       return onErr("signosVitales.altura");
     }
+    if (!signos.oxigenacion) {
+      return onErr("signosVitales.oxigenacion");
+    }
     signos_vitales = {
       presion: signos.presionArterial as string,
       frecuencia: signos.frecuenciaCardiaca as string,
       temperatura: signos.temperatura as string,
       peso: signos.peso as string,
       altura: signos.altura as string,
+      oxigenacion: signos.oxigenacion as string,
     }
   }
 
   if (!data.diagnostico) {
     return onErr("diagnostico");
   }
+  const diagnostico = data.diagnostico as string;
 
   if (!data.proximoControl) {
-
+    return onErr("proximoControl");
   }
-  const proximo_control = new Date(data.proximoControl as string);
+  const proximo_control = data.proximoControl ? new Date(data.proximoControl as string) : null;
 
-  const diagnostico = data.diagnostico as string;
   const tratamiento = data.tratamiento ? data.tratamiento as string : null;
   const indicaciones = data.indicaciones ? data.indicaciones as string : null;
   const observaciones = data.observaciones ? data.observaciones as string : null;
@@ -335,6 +338,12 @@ export async function POST(req: NextRequest) {
       );
     }
     const ret = await registerHistoriaClinica(parsed);
+    if (!ret.hasValue()) {
+      return NextResponse.json(
+        { error: ret.error() },
+        { status: 500 }
+      );
+    }
     return NextResponse.json(
       { historiaId: ret.unwrap() }
     );
