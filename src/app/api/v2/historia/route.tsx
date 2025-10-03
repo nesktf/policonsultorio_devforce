@@ -4,41 +4,6 @@ import { retrieveHistoriaClinica, retrieveHistoriasFromProfesional, retrieveHist
 import { NextRequest, NextResponse } from "next/server";
 import { JsonArray } from "@/generated/prisma/runtime/library";
 
-/* Sample data
-{
-  id: "1",
-  pacienteId: "1",
-  profesionalId: "2",
-  fecha: "2024-01-15",
-  hora: "10:30",
-  profesional: "Dr. Carlos Mendez",
-  especialidad: "Cardiología",
-  motivo: "Control rutinario",
-  anamnesis:
-    "Paciente refiere sentirse bien en general. Sin síntomas cardiovasculares. Mantiene actividad física regular.",
-  examenFisico: "Paciente en buen estado general. Signos vitales estables.",
-  signosVitales: {
-    presionArterial: "120/80",
-    frecuenciaCardiaca: "72",
-    temperatura: "36.5",
-    peso: "68",
-    altura: "165",
-  },
-  diagnostico: "Control cardiológico normal",
-  tratamiento: "Continuar con medicación actual",
-  medicamentos: [
-    { nombre: "Enalapril", dosis: "10mg", frecuencia: "1 vez al día", duracion: "Continuar" },
-    { nombre: "Aspirina", dosis: "100mg", frecuencia: "1 vez al día", duracion: "Continuar" },
-  ],
-  estudiosComplementarios: [
-    { tipo: "Electrocardiograma", resultado: "Normal", fecha: "2024-01-15" },
-    { tipo: "Análisis de sangre", resultado: "Valores normales", fecha: "2024-01-10" },
-  ],
-  indicaciones: "Mantener dieta baja en sodio. Continuar con ejercicio regular. Control en 6 meses.",
-  proximoControl: "2024-07-15",
-  observaciones: "Paciente colaborador, cumple bien con el tratamiento.",
-}
-*/
 
 type MedicamentoAPIData = {
   nombre: string,

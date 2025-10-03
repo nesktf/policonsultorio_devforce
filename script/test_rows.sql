@@ -362,7 +362,7 @@ ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 321;
 
 INSERT INTO "HistoriaClinica" (id, id_paciente, id_profesional, fecha, motivo, detalle, examen_fisico, signos_vitales, diagnostico, tratamiento, medicamentos, estudios, indicaciones, observaciones, proximo_control)
 VALUES
-  (1, 1, 1,
+  (1, 1, 5,
     '2024-01-15 09:00:00.000',
     'Control rutinario',
     'Paciente refiere sentirse bien en general. Sin síntomas cardiovasculares. Mantiene actividad física regular.',
@@ -376,7 +376,63 @@ VALUES
     'Paciente colaborador, cumple bien con el tratamiento',
     '2024-07-15 09:00:00.000'
   ),
-  (2, 2, 2,
+  (2, 2, 6,
+    '2023-12-10 09:00:00.000',
+    'Seguimiento hipertension',
+    'Paciente con antecedentes de hipertensión arterial. Refiere adherencia al tratamiento.',
+    'Buen estado general. Auscultación cardiopulmonar normal.',
+    '{ "presion": "125/85", "frecuencia": "75", "temperatura": "36.3", "peso": "69", "altura": "165", "oxigenacion": "98" }',
+    'Hipertensión arterial controlada',
+    'Ajuste de medicación',
+    '[{ "nombre": "Enalapril", "dosis": "10mg", "frecuencia": "1 vez al día", "duracion": "3 meses" }]',
+    NULL,
+    'Dieta hiposódica. Control de peso. Ejercicio moderado.',
+    'Buen control de la presión arterial.',
+    '2024-01-15 09:00:00.000'
+  ),
+  (3, 3, 7,
+    '2024-01-15 09:00:00.000',
+    'Control rutinario',
+    'Paciente refiere sentirse bien en general. Sin síntomas cardiovasculares. Mantiene actividad física regular.',
+    'Paciente en buen estado general. Signos vitales estables.',
+    '{ "presion": "120/80", "frecuencia": "72", "temperatura": "30.5", "peso": "68", "altura": "165", "oxigenacion": "98" }',
+    'Control cardiológico normal',
+    'Continuar con medicación actual',
+    '[{ "nombre": "Enalapril", "dosis": "10mg", "frecuencia": "1 vez al dia", "duracion": "Continuar"}, { "nombre": "Aspirina", "dosis": "100mg", "frecuencia": "1 vez al dia", "duracion": "Continuar"}]',
+    '[{ "tipo": "Electrocardiograma", "resultado": "Normal", "fecha": "2024-01-15"}, {"tipo": "Analisis de sangre", "resultado": "Valores normales", "fecha": "2024-01-10"}]',
+    'Mantener dieta baja en sodio. Continuar con ejercicio regular. Control en 6 meses.',
+    'Paciente colaborador, cumple bien con el tratamiento',
+    '2024-07-15 09:00:00.000'
+  ),
+  (4, 4, 8,
+    '2023-12-10 09:00:00.000',
+    'Seguimiento hipertension',
+    'Paciente con antecedentes de hipertensión arterial. Refiere adherencia al tratamiento.',
+    'Buen estado general. Auscultación cardiopulmonar normal.',
+    '{ "presion": "125/85", "frecuencia": "75", "temperatura": "36.3", "peso": "69", "altura": "165", "oxigenacion": "98" }',
+    'Hipertensión arterial controlada',
+    'Ajuste de medicación',
+    '[{ "nombre": "Enalapril", "dosis": "10mg", "frecuencia": "1 vez al día", "duracion": "3 meses" }]',
+    NULL,
+    'Dieta hiposódica. Control de peso. Ejercicio moderado.',
+    'Buen control de la presión arterial.',
+    '2024-01-15 09:00:00.000'
+  ),
+  (5, 5, 9,
+    '2024-01-15 09:00:00.000',
+    'Control rutinario',
+    'Paciente refiere sentirse bien en general. Sin síntomas cardiovasculares. Mantiene actividad física regular.',
+    'Paciente en buen estado general. Signos vitales estables.',
+    '{ "presion": "120/80", "frecuencia": "72", "temperatura": "30.5", "peso": "68", "altura": "165", "oxigenacion": "98" }',
+    'Control cardiológico normal',
+    'Continuar con medicación actual',
+    '[{ "nombre": "Enalapril", "dosis": "10mg", "frecuencia": "1 vez al dia", "duracion": "Continuar"}, { "nombre": "Aspirina", "dosis": "100mg", "frecuencia": "1 vez al dia", "duracion": "Continuar"}]',
+    '[{ "tipo": "Electrocardiograma", "resultado": "Normal", "fecha": "2024-01-15"}, {"tipo": "Analisis de sangre", "resultado": "Valores normales", "fecha": "2024-01-10"}]',
+    'Mantener dieta baja en sodio. Continuar con ejercicio regular. Control en 6 meses.',
+    'Paciente colaborador, cumple bien con el tratamiento',
+    '2024-07-15 09:00:00.000'
+  ),
+  (6, 6, 9,
     '2023-12-10 09:00:00.000',
     'Seguimiento hipertension',
     'Paciente con antecedentes de hipertensión arterial. Refiere adherencia al tratamiento.',
@@ -390,7 +446,7 @@ VALUES
     'Buen control de la presión arterial.',
     '2024-01-15 09:00:00.000'
   );
-ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 2;
+ALTER SEQUENCE "HistoriaClinica_id_seq" RESTART WITH 7;
 
 INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "estado") VALUES
   (1, 1,  1, '2025-09-21 11:00:00.00', 'PROGRAMADO'),
@@ -574,15 +630,121 @@ INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "duracion_m
 
 ALTER SEQUENCE "Turno_id_seq" RESTART WITH 168;
 
-UPDATE "Profesional" SET "userId" = 4 WHERE id = 1;  -- profesional@gmail.com -> Eirin Yagokoro
-UPDATE "Profesional" SET "userId" = 5 WHERE id = 2;  -- profesional2@gmail.com -> Reimu Hakurei
-UPDATE "Profesional" SET "userId" = 6 WHERE id = 3;  -- profesional3@gmail.com -> Marisa Kirisame
-UPDATE "Profesional" SET "userId" = 7 WHERE id = 4;  -- profesional4@gmail.com -> Sakuya Izayoi
-UPDATE "Profesional" SET "userId" = 8 WHERE id = 5;  -- profesional5@gmail.com -> Remilia Scarlet
-UPDATE "Profesional" SET "userId" = 9 WHERE id = 6;  -- profesional6@gmail.com -> Youmu Konpaku
-UPDATE "Profesional" SET "userId" = 10 WHERE id = 7; -- profesional7@gmail.com -> Flandre Scarlet
-UPDATE "Profesional" SET "userId" = 11 WHERE id = 8; -- profesional8@gmail.com -> Yuyuko Saigyouji
-UPDATE "Profesional" SET "userId" = 12 WHERE id = 9; -- profesional9@gmail.com -> Yukari Yakumo
-UPDATE "Profesional" SET "userId" = 13 WHERE id = 10; -- profesional10@gmail.com -> Ran Yakumo
+UPDATE "Profesional" SET "userId" = 1 WHERE id = 1;  -- profesional@gmail.com -> Eirin Yagokoro
+UPDATE "Profesional" SET "userId" = 2 WHERE id = 2;  -- profesional2@gmail.com -> Reimu Hakurei
+UPDATE "Profesional" SET "userId" = 3 WHERE id = 3;  -- profesional3@gmail.com -> Marisa Kirisame
+UPDATE "Profesional" SET "userId" = 4 WHERE id = 4;  -- profesional4@gmail.com -> Sakuya Izayoi
+UPDATE "Profesional" SET "userId" = 5 WHERE id = 5;  -- profesional5@gmail.com -> Remilia Scarlet
+UPDATE "Profesional" SET "userId" = 6 WHERE id = 6;  -- profesional6@gmail.com -> Youmu Konpaku
+UPDATE "Profesional" SET "userId" = 7 WHERE id = 7; -- profesional7@gmail.com -> Flandre Scarlet
+UPDATE "Profesional" SET "userId" = 8 WHERE id = 8; -- profesional8@gmail.com -> Yuyuko Saigyouji
+UPDATE "Profesional" SET "userId" = 9 WHERE id = 9; -- profesional9@gmail.com -> Yukari Yakumo
+UPDATE "Profesional" SET "userId" = 10 WHERE id = 10; -- profesional10@gmail.com -> Ran Yakumo
+
+
+UPDATE "Paciente" SET antecedentes = 'Padre: Hipertensión arterial. Madre: Diabetes tipo 2.' WHERE id = 1;
+UPDATE "Paciente" SET antecedentes = 'Abuela materna: Cáncer de mama. Padre: Enfermedad cardiovascular.' WHERE id = 2;
+UPDATE "Paciente" SET antecedentes = 'Sin antecedentes familiares relevantes.' WHERE id = 3;
+UPDATE "Paciente" SET antecedentes = 'Madre: Hipertensión. Abuelo paterno: Infarto de miocardio a los 60 años.' WHERE id = 4;
+UPDATE "Paciente" SET antecedentes = 'Padre: Diabetes tipo 2. Hermano: Asma bronquial.' WHERE id = 5;
+UPDATE "Paciente" SET antecedentes = 'Madre: Hipotiroidismo. Abuela paterna: Osteoporosis.' WHERE id = 6;
+UPDATE "Paciente" SET antecedentes = 'Padre: Hipertensión arterial. Tío materno: ACV a los 55 años.' WHERE id = 7;
+UPDATE "Paciente" SET antecedentes = 'Sin antecedentes relevantes conocidos.' WHERE id = 8;
+UPDATE "Paciente" SET antecedentes = 'Madre: Cáncer de útero. Padre: Cirrosis hepática.' WHERE id = 9;
+UPDATE "Paciente" SET antecedentes = 'Abuela materna: Diabetes gestacional. Padre: Obesidad mórbida.' WHERE id = 10;
+UPDATE "Paciente" SET antecedentes = 'Madre: Enfermedad renal crónica. Abuelo: Parkinson.' WHERE id = 11;
+UPDATE "Paciente" SET antecedentes = 'Padre: Colesterol alto. Hermana: Anemia ferropénica.' WHERE id = 12;
+UPDATE "Paciente" SET antecedentes = 'Sin antecedentes familiares de importancia.' WHERE id = 13;
+UPDATE "Paciente" SET antecedentes = 'Madre: Artritis reumatoidea. Padre: Gota.' WHERE id = 14;
+UPDATE "Paciente" SET antecedentes = 'Abuela paterna: Demencia senil. Madre: Migraña crónica.' WHERE id = 15;
+UPDATE "Paciente" SET antecedentes = 'Padre: EPOC. Tía materna: Cáncer de colon.' WHERE id = 16;
+UPDATE "Paciente" SET antecedentes = 'Madre: Hipotiroidismo. Padre: Diabetes tipo 2 controlada.' WHERE id = 17;
+UPDATE "Paciente" SET antecedentes = 'Hermano: Asma. Abuela materna: Hipertensión arterial.' WHERE id = 18;
+UPDATE "Paciente" SET antecedentes = 'Padre: Enfermedad cardiovascular. Madre: Obesidad.' WHERE id = 19;
+UPDATE "Paciente" SET antecedentes = 'Sin antecedentes familiares patológicos.' WHERE id = 20;
+
+-- Historias para el profesional ID 2 (Reimu Hakurei)
+INSERT INTO "HistoriaClinica" (id_paciente, id_profesional, fecha, motivo, detalle, diagnostico, tratamiento) VALUES
+(21, 2, '2025-07-05 09:00:00', 'Consulta inicial', 'Paciente refiere dolor de cabeza recurrente.', 'Cefalea tensional', 'Paracetamol 500mg cada 8 horas'),
+(22, 2, '2025-07-08 10:00:00', 'Control de rutina', 'Paciente en buen estado general.', 'Paciente sano', 'Continuar con hábitos saludables');
+
+-- Historias para el profesional ID 3 (Marisa Kirisame)
+INSERT INTO "HistoriaClinica" (id_paciente, id_profesional, fecha, motivo, detalle, diagnostico, tratamiento) VALUES
+(23, 3, '2025-07-12 11:00:00', 'Dolor de rodilla', 'Paciente deportista refiere dolor en rodilla derecha tras entrenamiento.', 'Tendinitis rotuliana', 'Reposo relativo, antiinflamatorios'),
+(33, 3, '2025-07-18 14:00:00', 'Esguince de tobillo', 'Caída jugando fútbol. Tobillo inflamado.', 'Esguince grado I', 'Inmovilización 7 días, hielo local');
+
+-- Historias para el profesional ID 1 (Eirin Yagokoro - Cardiología)
+INSERT INTO "HistoriaClinica" (id_paciente, id_profesional, fecha, motivo, detalle, examen_fisico, signos_vitales, diagnostico, tratamiento, medicamentos) VALUES
+(32, 1, '2025-08-05 11:00:00', 'Control cardiológico', 'Paciente con antecedentes de hipertensión. Asintomático.', 'Auscultación cardíaca normal. Sin soplos.', '{"presion": "130/85", "frecuencia": "75", "temperatura": "36.4", "peso": "72", "altura": "170", "oxigenacion": "98"}', 'Hipertensión arterial controlada', 'Continuar con antihipertensivos', '[{"nombre": "Losartán", "dosis": "50mg", "frecuencia": "1 vez al día", "duracion": "Continuo"}]'),
+(64, 1, '2025-08-12 14:00:00', 'Palpitaciones', 'Refiere episodios de palpitaciones ocasionales.', 'Ritmo cardíaco regular. TA normal.', '{"presion": "120/75", "frecuencia": "82", "temperatura": "36.5", "peso": "68", "altura": "165", "oxigenacion": "99"}', 'Extrasístoles ventriculares aisladas', 'Evitar cafeína y estrés', NULL),
+(32, 2, '2025-08-05 11:00:00', 'Control cardiológico', 'Paciente con antecedentes de hipertensión. Asintomático.', 'Auscultación cardíaca normal. Sin soplos.', '{"presion": "130/85", "frecuencia": "75", "temperatura": "36.4", "peso": "72", "altura": "170", "oxigenacion": "98"}', 'Hipertensión arterial controlada', 'Continuar con antihipertensivos', '[{"nombre": "Losartán", "dosis": "50mg", "frecuencia": "1 vez al día", "duracion": "Continuo"}]'),
+(64, 2, '2025-08-12 14:00:00', 'Palpitaciones', 'Refiere episodios de palpitaciones ocasionales.', 'Ritmo cardíaco regular. TA normal.', '{"presion": "120/75", "frecuencia": "82", "temperatura": "36.5", "peso": "68", "altura": "165", "oxigenacion": "99"}', 'Extrasístoles ventriculares aisladas', 'Evitar cafeína y estrés', NULL);
+
+-- Más historias para diferentes profesionales
+INSERT INTO "HistoriaClinica" (id_paciente, id_profesional, fecha, motivo, detalle, examen_fisico, signos_vitales, diagnostico, tratamiento, medicamentos, indicaciones, observaciones, proximo_control) VALUES
+
+-- Profesional 4 (Sakuya Izayoi - Cirugía)
+(24, 4, '2025-07-15 14:00:00', 'Dolor abdominal', 'Paciente refiere dolor en fosa ilíaca derecha de 24hs de evolución.', 'Abdomen: dolor a la palpación en FID, Blumberg positivo.', '{"presion": "110/70", "frecuencia": "88", "temperatura": "37.8", "peso": "65", "altura": "160", "oxigenacion": "97"}', 'Apendicitis aguda', 'Apendicectomía laparoscópica programada', '[{"nombre": "Ampicilina", "dosis": "1g", "frecuencia": "Cada 6 horas", "duracion": "7 días"}]', 'Ayuno preoperatorio. Hidratación EV.', 'Cirugía realizada sin complicaciones.', '2025-07-22 10:00:00'),
+
+(34, 4, '2025-08-05 14:00:00', 'Control postoperatorio', 'Evolución favorable post apendicectomía.', 'Herida quirúrgica cicatrizando bien. Sin signos de infección.', '{"presion": "115/75", "frecuencia": "72", "temperatura": "36.5", "peso": "64", "altura": "160", "oxigenacion": "98"}', 'Postoperatorio normal', 'Alta médica', NULL, 'Retirar puntos en 7 días. Retomar actividad gradualmente.', 'Paciente satisfecho con evolución.', NULL),
+
+-- Profesional 5 (Remilia Scarlet - Cardiología)
+(25, 5, '2025-07-18 15:00:00', 'Disnea de esfuerzo', 'Refiere falta de aire al subir escaleras desde hace 2 meses.', 'Auscultación: soplo sistólico II/VI en foco mitral.', '{"presion": "140/90", "frecuencia": "92", "temperatura": "36.3", "peso": "78", "altura": "172", "oxigenacion": "95"}', 'Insuficiencia mitral leve. HTA', 'Control con ecocardiograma', '[{"nombre": "Enalapril", "dosis": "10mg", "frecuencia": "Cada 12 horas", "duracion": "Continuo"}]', 'Dieta hiposódica. Ejercicio moderado.', 'Solicitar eco Doppler cardíaco.', '2025-08-18 09:00:00'),
+
+(46, 5, '2025-09-25 14:00:00', 'Control cardiológico', 'Asintomático. Eco Doppler muestra mejoría.', 'TA controlada. Soplo mitral sin cambios.', '{"presion": "125/80", "frecuencia": "76", "temperatura": "36.4", "peso": "76", "altura": "172", "oxigenacion": "97"}', 'HTA controlada. IM estable', 'Mantener tratamiento actual', '[{"nombre": "Enalapril", "dosis": "10mg", "frecuencia": "Cada 12 horas", "duracion": "Continuo"}]', 'Continuar con dieta y ejercicio.', 'Buena adherencia al tratamiento.', '2025-12-25 09:00:00'),
+
+-- Profesional 6 (Youmu Konpaku - Neurología)
+(26, 6, '2025-08-08 09:00:00', 'Cefalea crónica', 'Migrañas de 10 años de evolución, aumentaron en frecuencia.', 'Examen neurológico normal. Sin déficit focal.', '{"presion": "120/75", "frecuencia": "70", "temperatura": "36.2", "peso": "60", "altura": "158", "oxigenacion": "98"}', 'Migraña con aura', 'Profilaxis antimigrañosa', '[{"nombre": "Topiramato", "dosis": "50mg", "frecuencia": "1 vez al día", "duracion": "3 meses"}, {"nombre": "Sumatriptán", "dosis": "50mg", "frecuencia": "En crisis", "duracion": "SOS"}]', 'Evitar desencadenantes. Registro de crisis en diario.', 'Paciente motivada para tratamiento.', '2025-11-08 10:00:00'),
+
+(62, 6, '2025-08-12 10:00:00', 'Parestesias en manos', 'Hormigueo bilateral en manos, predominio nocturno.', 'Signo de Tinel y Phalen positivos bilaterales.', '{"presion": "118/76", "frecuencia": "68", "temperatura": "36.4", "peso": "70", "altura": "165", "oxigenacion": "98"}', 'Síndrome del túnel carpiano bilateral', 'Férulas nocturnas, AINES', '[{"nombre": "Ibuprofeno", "dosis": "400mg", "frecuencia": "Cada 8 horas", "duracion": "10 días"}]', 'Uso de férulas en muñecas durante la noche. Ergonomía laboral.', 'Valorar interconsulta con traumatología si no mejora.', '2025-09-12 10:00:00'),
+
+-- Profesional 7 (Flandre Scarlet - Psiquiatría)
+(27, 7, '2025-08-02 10:00:00', 'Ansiedad generalizada', 'Nerviosismo constante, insomnio, preocupaciones excesivas.', 'Paciente inquieto. Taquicardia leve. Sin signos de psicosis.', '{"presion": "135/88", "frecuencia": "95", "temperatura": "36.5", "peso": "68", "altura": "170", "oxigenacion": "98"}', 'Trastorno de ansiedad generalizada', 'Terapia cognitivo-conductual + farmacoterapia', '[{"nombre": "Sertralina", "dosis": "50mg", "frecuencia": "1 vez al día", "duracion": "6 meses"}, {"nombre": "Alprazolam", "dosis": "0.5mg", "frecuencia": "SOS máx 2 veces/día", "duracion": "1 mes"}]', 'Iniciar psicoterapia. Técnicas de relajación. Ejercicio regular.', 'Derivado a psicólogo. Buen insight.', '2025-09-02 15:00:00'),
+
+(92, 7, '2025-09-15 10:00:00', 'Control psiquiátrico', 'Refiere mejoría en ansiedad. Duerme mejor.', 'Paciente más tranquilo. Eutímico.', '{"presion": "120/80", "frecuencia": "78", "temperatura": "36.3", "peso": "68", "altura": "170", "oxigenacion": "98"}', 'TAG en tratamiento - evolución favorable', 'Continuar sertralina. Suspender alprazolam gradualmente.', '[{"nombre": "Sertralina", "dosis": "50mg", "frecuencia": "1 vez al día", "duracion": "5 meses"}]', 'Continuar psicoterapia. Técnicas aprendidas funcionan bien.', 'Excelente adherencia. Paciente motivado.', '2025-10-15 15:00:00'),
+
+-- Profesional 8 (Yuyuko Saigyouji - Oncología)
+(28, 8, '2025-08-02 11:00:00', 'Nódulo mamario', 'Autodetección de nódulo en mama izquierda.', 'Nódulo de 2cm en CSE mama izquierda, móvil, no doloroso.', '{"presion": "125/82", "frecuencia": "80", "temperatura": "36.4", "peso": "65", "altura": "162", "oxigenacion": "98"}', 'Nódulo mamario a estudio', 'Mamografía + ecografía + biopsia', NULL, 'Estudios complementarios urgentes. Cita con resultados en 7 días.', 'Paciente ansiosa pero colaboradora.', '2025-08-09 14:00:00'),
+
+(38, 8, '2025-09-15 11:00:00', 'Seguimiento oncológico', 'Post tratamiento por Ca mama. Control semestral.', 'Cicatriz quirúrgica bien. Sin adenopatías palpables.', '{"presion": "118/75", "frecuencia": "72", "temperatura": "36.3", "peso": "63", "altura": "162", "oxigenacion": "98"}', 'Ca mama tratado - en remisión', 'Continuar con controles', '[{"nombre": "Tamoxifeno", "dosis": "20mg", "frecuencia": "1 vez al día", "duracion": "Continuo"}]', 'Mamografía anual. Autoexamen mensual.', 'Paciente muy bien. Sin evidencia de enfermedad.', '2026-03-15 14:00:00'),
+
+-- Profesional 9 (Yukari Yakumo - Ginecología)
+(29, 9, '2025-08-02 14:00:00', 'Control ginecológico anual', 'Asintomática. Última menstruación hace 15 días.', 'Examen ginecológico normal. Mamas sin alteraciones.', '{"presion": "115/70", "frecuencia": "68", "temperatura": "36.2", "peso": "58", "altura": "160", "oxigenacion": "98"}', 'Control ginecológico normal', 'Preventivo', NULL, 'PAP y colposcopia. Continuar controles anuales.', 'Paciente sana. Buenos hábitos.', '2026-08-02 09:00:00'),
+
+(39, 9, '2025-08-05 14:00:00', 'Infección urinaria', 'Disuria, polaquiuria, dolor suprapúbico de 2 días.', 'Puño percusión renal negativa. Dolor hipogastrio.', '{"presion": "110/65", "frecuencia": "75", "temperatura": "37.2", "peso": "60", "altura": "163", "oxigenacion": "98"}', 'Cistitis aguda', 'Antibioticoterapia', '[{"nombre": "Ciprofloxacina", "dosis": "500mg", "frecuencia": "Cada 12 horas", "duracion": "7 días"}]', 'Aumentar ingesta de líquidos. Vaciar vejiga completamente.', 'Urocultivo tomado. Control con resultado.', '2025-08-12 09:00:00'),
+
+-- Profesional 10 (Ran Yakumo - Oftalmología)
+(32, 10, '2025-08-02 15:00:00', 'Disminución de agudeza visual', 'Refiere visión borrosa progresiva de lejos.', 'AV 20/40 ambos ojos. Fondo de ojo normal.', '{"presion": "120/78", "frecuencia": "72", "temperatura": "36.4", "peso": "72", "altura": "175", "oxigenacion": "98"}', 'Miopía bilateral leve', 'Corrección óptica', NULL, 'Prescripción de anteojos. Control anual.', 'Primera vez con lentes. Buena adaptación esperada.', '2026-08-02 10:00:00'),
+
+(51, 10, '2025-08-05 09:00:00', 'Ojo rojo', 'Enrojecimiento ocular derecho, lagrimeo, sin secreción.', 'Hiperemia conjuntival. Sin secreción purulenta.', '{"presion": "118/75", "frecuencia": "70", "temperatura": "36.3", "peso": "68", "altura": "168", "oxigenacion": "98"}', 'Conjuntivitis viral OD', 'Tratamiento sintomático', '[{"nombre": "Lágrimas artificiales", "dosis": "1 gota", "frecuencia": "Cada 4 horas", "duracion": "7 días"}]', 'Compresas frías. No compartir toallas. Lavado de manos.', 'Proceso autolimitado. No requiere antibióticos.', '2025-08-12 10:00:00'),
+
+-- Profesional 11 (Chen Yakumo - Dermatología)
+(41, 11, '2025-08-05 10:00:00', 'Lesiones en piel', 'Múltiples lesiones pruriginosas en brazos y tronco.', 'Lesiones eritematosas, algunas vesiculadas. Distribución simétrica.', '{"presion": "115/72", "frecuencia": "70", "temperatura": "36.2", "peso": "65", "altura": "168", "oxigenacion": "98"}', 'Dermatitis atópica', 'Corticoides tópicos + antihistamínicos', '[{"nombre": "Hidrocortisona crema", "dosis": "Aplicar", "frecuencia": "2 veces al día", "duracion": "14 días"}, {"nombre": "Loratadina", "dosis": "10mg", "frecuencia": "1 vez al día", "duracion": "10 días"}]', 'Evitar jabones irritantes. Humectación diaria. Ropa de algodón.', 'Lesiones compatibles con eccema. Mejoría esperada.', '2025-08-19 10:00:00'),
+
+(52, 11, '2025-08-08 10:00:00', 'Lunar sospechoso', 'Lesión pigmentada en espalda, creció últimos meses.', 'Nevus de 8mm, bordes irregulares, dos colores.', '{"presion": "120/75", "frecuencia": "68", "temperatura": "36.3", "peso": "70", "altura": "172", "oxigenacion": "98"}', 'Nevus atípico a estudio', 'Biopsia excisional programada', NULL, 'Cirugía menor ambulatoria. Resultado en 15 días.', 'Criterios ABCDE positivos. Necesita estudio histológico.', '2025-08-22 14:00:00'),
+
+-- Más para Profesional 2 (Reimu Hakurei - Medicina General)
+(32, 2, '2025-08-12 10:00:00', 'Fiebre y tos', 'Cuadro febril de 3 días, tos productiva.', 'Auscultación pulmonar: estertores en base derecha.', '{"presion": "115/70", "frecuencia": "88", "temperatura": "38.5", "peso": "70", "altura": "170", "oxigenacion": "94"}', 'Neumonía basal derecha', 'Antibióticos + antitérmicos', '[{"nombre": "Amoxicilina-clavulánico", "dosis": "875mg", "frecuencia": "Cada 12 horas", "duracion": "10 días"}, {"nombre": "Paracetamol", "dosis": "500mg", "frecuencia": "Cada 8 horas", "duracion": "5 días"}]', 'Reposo. Hidratación. Rx tórax control en 15 días.', 'Rx compatible con neumonía. Paciente en buen estado general.', '2025-08-27 09:00:00'),
+
+(54, 2, '2025-08-08 11:00:00', 'Diabetes descompensada', 'Poliuria, polidipsia, pérdida de peso de 5kg en 1 mes.', 'Deshidratado. Aliento cetónico.', '{"presion": "100/60", "frecuencia": "100", "temperatura": "36.8", "peso": "68", "altura": "175", "oxigenacion": "97"}', 'Diabetes mellitus tipo 2 descompensada', 'Inicio de insulinoterapia', '[{"nombre": "Insulina NPH", "dosis": "10UI", "frecuencia": "2 veces al día", "duracion": "Continuo"}, {"nombre": "Metformina", "dosis": "850mg", "frecuencia": "Cada 12 horas", "duracion": "Continuo"}]', 'Educación diabetológica. Dieta. Control glucémico diario. Derivar a nutrición.', 'Glucemia 350mg/dl. HbA1c 11%. Requiere control estricto.', '2025-08-15 08:00:00'),
+
+-- Más para Profesional 3 (Marisa Kirisame - Traumatología)
+(43, 3, '2025-09-16 15:00:00', 'Fractura de muñeca', 'Caída sobre mano extendida. Dolor e impotencia funcional.', 'Deformidad en dorso de muñeca. Edema importante.', '{"presion": "125/80", "frecuencia": "85", "temperatura": "36.5", "peso": "75", "altura": "178", "oxigenacion": "98"}', 'Fractura de Colles', 'Reducción cerrada + yeso antebraquiopalmar', '[{"nombre": "Ibuprofeno", "dosis": "600mg", "frecuencia": "Cada 8 horas", "duracion": "7 días"}]', 'Reposo elevado. Hielo primeras 48hs. Control Rx en 7 días.', 'Fractura reducida exitosamente. Rx control satisfactoria.', '2025-09-23 09:00:00'),
+
+(55, 3, '2025-08-12 15:00:00', 'Lumbalgia aguda', 'Dolor lumbar intenso tras levantar objeto pesado.', 'Contractura paravertebral. Lasegue negativo bilateral.', '{"presion": "130/85", "frecuencia": "78", "temperatura": "36.4", "peso": "82", "altura": "180", "oxigenacion": "98"}', 'Lumbalgia mecánica aguda', 'Reposo relativo + analgesia', '[{"nombre": "Diclofenac", "dosis": "75mg", "frecuencia": "Cada 12 horas", "duracion": "5 días"}, {"nombre": "Ciclobenzaprina", "dosis": "10mg", "frecuencia": "Cada 8 horas", "duracion": "5 días"}]', 'Reposo relativo 48hs. Calor local. Kinesioterapia si no mejora en 1 semana.', 'Sin signos de alarma. Pronóstico favorable.', '2025-08-19 14:00:00');
+
+INSERT INTO "HistoriaClinica" (id_paciente, id_profesional, fecha, motivo, detalle, examen_fisico, signos_vitales, diagnostico, tratamiento, medicamentos, indicaciones, observaciones, proximo_control) VALUES
+
+(56, 2, '2025-08-15 09:00:00', 'Gastroenteritis aguda', 'Diarrea líquida abundante, vómitos, dolor abdominal tipo cólico desde hace 24hs.', 'Abdomen blando, depresible, dolor difuso a la palpación. Ruidos hidroaéreos aumentados.', '{"presion": "100/65", "frecuencia": "92", "temperatura": "37.8", "peso": "66", "altura": "165", "oxigenacion": "97"}', 'Gastroenteritis aguda probablemente viral', 'Hidratación oral, dieta astringente', '[{"nombre": "Sales de rehidratación oral", "dosis": "1 sobre", "frecuencia": "Después de cada deposición", "duracion": "Hasta mejoría"}, {"nombre": "Loperamida", "dosis": "2mg", "frecuencia": "Después de cada deposición diarreica", "duracion": "Máximo 3 días"}]', 'Dieta líquida primeras 24hs. Agregar alimentos gradualmente. Hidratación abundante.', 'Signos de deshidratación leve. Control si empeora o no mejora en 48hs.', '2025-08-18 09:00:00'),
+
+(87, 2, '2025-08-21 10:00:00', 'Hipertensión arterial nuevo diagnóstico', 'Paciente asintomático. Control de rutina muestra cifras elevadas.', 'Obesidad grado I. Sin otros hallazgos patológicos.', '{"presion": "155/95", "frecuencia": "78", "temperatura": "36.4", "peso": "88", "altura": "170", "oxigenacion": "98"}', 'Hipertensión arterial estadio 2', 'Cambios en estilo de vida + antihipertensivos', '[{"nombre": "Losartán", "dosis": "50mg", "frecuencia": "1 vez al día", "duracion": "Continuo"}, {"nombre": "Hidroclorotiazida", "dosis": "12.5mg", "frecuencia": "1 vez al día", "duracion": "Continuo"}]', 'Dieta hiposódica. Reducir peso 5-10kg. Ejercicio 30min diarios. Control TA domiciliario.', 'Solicitar laboratorio completo, ECG. Fondo de ojo. Educación sobre factores de riesgo.', '2025-09-21 10:00:00'),
+
+(98, 2, '2025-10-02 11:00:00', 'Faringitis aguda', 'Dolor de garganta intenso, odinofagia, fiebre de 38.5°C desde ayer.', 'Faringe eritematosa, amígdalas hipertróficas con exudado purulento bilateral.', '{"presion": "115/75", "frecuencia": "85", "temperatura": "38.3", "peso": "72", "altura": "175", "oxigenacion": "98"}', 'Faringoamigdalitis bacteriana', 'Antibioticoterapia', '[{"nombre": "Amoxicilina", "dosis": "500mg", "frecuencia": "Cada 8 horas", "duracion": "10 días"}, {"nombre": "Ibuprofeno", "dosis": "400mg", "frecuencia": "Cada 8 horas", "duracion": "5 días"}]', 'Reposo. Líquidos abundantes. Gárgaras con agua tibia y sal. Completar tratamiento antibiótico.', 'Test rápido de Streptococcus positivo. Explicar importancia de completar antibiótico.', '2025-10-12 09:00:00'),
+
+(109, 2, '2025-10-08 14:00:00', 'Anemia ferropénica', 'Astenia, palidez, caída de cabello, uñas quebradizas.', 'Palidez mucocutánea. Conjuntivas pálidas. Taquicardia leve.', '{"presion": "110/70", "frecuencia": "92", "temperatura": "36.2", "peso": "58", "altura": "162", "oxigenacion": "97"}', 'Anemia ferropénica moderada', 'Suplementación con hierro', '[{"nombre": "Sulfato ferroso", "dosis": "300mg", "frecuencia": "1 vez al día en ayunas", "duracion": "3 meses"}]', 'Tomar con jugo de naranja. Evitar lácteos simultáneamente. Dieta rica en hierro (carnes rojas, legumbres).', 'Hb: 9.2 g/dl, Ferritina baja. Investigar causa de pérdida. Control hemograma en 1 mes.', '2025-11-08 09:00:00'),
+
+(120, 2, '2025-10-15 15:00:00', 'Urticaria aguda', 'Lesiones pruriginosas generalizadas que aparecieron súbitamente hace 6 horas.', 'Ronchas eritematosas, elevadas, distribuidas en tronco y extremidades. Bien perfundido.', '{"presion": "120/78", "frecuencia": "76", "temperatura": "36.5", "peso": "70", "altura": "168", "oxigenacion": "98"}', 'Urticaria aguda', 'Antihistamínicos', '[{"nombre": "Cetirizina", "dosis": "10mg", "frecuencia": "1 vez al día", "duracion": "7 días"}, {"nombre": "Prednisona", "dosis": "20mg", "frecuencia": "1 vez al día", "duracion": "3 días"}]', 'Identificar y evitar posible alérgeno. Ropa suelta. Baños con agua tibia. Vigilar signos de anafilaxia.', 'Sin compromiso respiratorio ni angioedema. Posible reacción a alimento nuevo. Educar sobre signos de alarma.', '2025-10-22 09:00:00'),
+
+(43, 2, '2025-09-20 10:30:00', 'Control de salud preventivo', 'Sin síntomas. Solicita chequeo general.', 'Buen estado general. Sobrepeso leve. Examen físico normal.', '{"presion": "128/82", "frecuencia": "72", "temperatura": "36.3", "peso": "78", "altura": "172", "oxigenacion": "98"}', 'Paciente sano - Factores de riesgo cardiovascular', 'Medidas preventivas', NULL, 'Solicitar laboratorio: glucemia, perfil lipídico, hemograma. ECG basal. Reducir peso 5kg. Dieta balanceada. Ejercicio aeróbico 150min/semana.', 'Colesterol límite en analítica previa. Padre con IAM a los 58 años. Prevención primaria.', '2026-03-20 09:00:00');
 
 COMMIT;

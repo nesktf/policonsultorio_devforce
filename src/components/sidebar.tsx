@@ -41,7 +41,7 @@ export function Sidebar() {
       return [
         ...baseItems,
         { icon: Calendar, label: "Mi Agenda", href: "/calendario-profesional" },
-        { icon: Users, label: "Pacientes", href: "/pacientes" },
+        { icon: Users, label: "Pacientes", href: "/pacientes" }, // Solo verán sus pacientes
         { icon: FileText, label: "Historias Clínicas", href: "/historias-clinicas" },
       ]
     }
@@ -51,6 +51,7 @@ export function Sidebar() {
         ...baseItems,
         { icon: Users, label: "Pacientes", href: "/pacientes" },
         { icon: UserCheck, label: "Profesionales", href: "/profesionales" },
+        { icon: Calendar, label: "Turnos", href: "/turnos" },
         { icon: CalendarDays, label: "Calendario", href: "/calendario-mesa" },
         { icon: Activity, label: "Reportes", href: "/reportes" },
       ]
@@ -60,30 +61,6 @@ export function Sidebar() {
   }
 
   const menuItems = getMenuItems()
-
-  // Obtener iniciales del nombre
-  const getUserInitials = () => {
-    if (!user?.nombre) return "U"
-    return user.nombre
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-  }
-
-  // Obtener label del rol
-  const getRoleLabel = () => {
-    switch (user?.rol) {
-      case "MESA_ENTRADA":
-        return "Mesa de Entrada"
-      case "PROFESIONAL":
-        return "Profesional"
-      case "GERENTE":
-        return "Gerente"
-      default:
-        return "Usuario"
-    }
-  }
 
   return (
     <div
@@ -133,25 +110,6 @@ export function Sidebar() {
           })}
         </ul>
       </nav>
-
-      {/* User Info */}
-      <div className="p-4 border-t border-border">
-        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-            <span className="text-sm font-medium text-primary">
-              {getUserInitials()}
-            </span>
-          </div>
-          {!collapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{user?.nombre}</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {getRoleLabel()}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

@@ -1,65 +1,50 @@
-"use client";
+"use client"
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react"
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { CalendarIcon } from "lucide-react"
 
 interface EspecialidadOption {
-  id: string;
-  nombre: string;
+  id: string
+  nombre: string
 }
 
 interface ProfesionalOption {
-  id: string;
-  nombre: string;
-  especialidad: string;
+  id: string
+  nombre: string
+  especialidad: string
 }
 
 interface PacienteOption {
-  id: number;
-  nombre: string;
-  apellido: string;
-  dni: string;
-  telefono: string;
+  id: number
+  nombre: string
+  apellido: string
+  dni: string
+  telefono: string
 }
 
 interface NuevoTurnoDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  defaultDate?: Date;
-  especialidades: EspecialidadOption[];
-  profesionales: ProfesionalOption[];
-  onTurnoCreado?: () => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  defaultDate?: Date
+  especialidades: EspecialidadOption[]
+  profesionales: ProfesionalOption[]
+  onTurnoCreado?: () => void
 }
 
-const DURACIONES_MINUTOS = [15, 30, 45, 60];
+const DURACIONES_MINUTOS = [15, 30, 45, 60]
 
 export function NuevoTurnoDialog({
   open,
@@ -69,190 +54,180 @@ export function NuevoTurnoDialog({
   profesionales,
   onTurnoCreado,
 }: NuevoTurnoDialogProps) {
-  const [fecha, setFecha] = useState<Date>(defaultDate || new Date());
-  const [especialidad, setEspecialidad] = useState<string>("none");
-  const [profesionalId, setProfesionalId] = useState<string>("none");
-  const [duracion, setDuracion] = useState<string>("30");
-  const [hora, setHora] = useState<string>("none");
-  const [motivo, setMotivo] = useState<string>("");
-  const [notas, setNotas] = useState<string>("");
-  const [busquedaPaciente, setBusquedaPaciente] = useState<string>("");
-  const [pacienteSeleccionado, setPacienteSeleccionado] =
-    useState<PacienteOption | null>(null);
-  const [pacientesResultados, setPacientesResultados] = useState<
-    PacienteOption[]
-  >([]);
+  const [fecha, setFecha] = useState<Date>(defaultDate || new Date())
+  const [especialidad, setEspecialidad] = useState<string>('none')
+  const [profesionalId, setProfesionalId] = useState<string>('none')
+  const [duracion, setDuracion] = useState<string>("30")
+  const [hora, setHora] = useState<string>('none')
+  const [motivo, setMotivo] = useState<string>("")
+  const [notas, setNotas] = useState<string>("")
+  const [busquedaPaciente, setBusquedaPaciente] = useState<string>("")
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState<PacienteOption | null>(null)
+  const [pacientesResultados, setPacientesResultados] = useState<PacienteOption[]>([])
 
-  const [horariosDisponibles, setHorariosDisponibles] = useState<string[]>([]);
-  const [cargandoHorarios, setCargandoHorarios] = useState(false);
-  const [cargandoPacientes, setCargandoPacientes] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [horariosDisponibles, setHorariosDisponibles] = useState<string[]>([])
+  const [cargandoHorarios, setCargandoHorarios] = useState(false)
+  const [cargandoPacientes, setCargandoPacientes] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitSuccess, setSubmitSuccess] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const fechaIso = useMemo(() => format(fecha, "yyyy-MM-dd"), [fecha]);
+  const fechaIso = useMemo(() => format(fecha, "yyyy-MM-dd"), [fecha])
 
   useEffect(() => {
-    setFecha(defaultDate || new Date());
-  }, [defaultDate]);
+    setFecha(defaultDate || new Date())
+  }, [defaultDate])
 
   useEffect(() => {
     // Reset selection when dialog reabre
     if (!open) {
-      setEspecialidad("none");
-      setProfesionalId("none");
-      setDuracion("30");
-      setHora("none");
-      setMotivo("");
-      setNotas("");
-      setBusquedaPaciente("");
-      setPacienteSeleccionado(null);
-      setPacientesResultados([]);
-      setHorariosDisponibles([]);
-      setSubmitError(null);
-      setSubmitSuccess(null);
+      setEspecialidad('none')
+      setProfesionalId('none')
+      setDuracion("30")
+      setHora('none')
+      setMotivo('')
+      setNotas('')
+      setBusquedaPaciente("")
+      setPacienteSeleccionado(null)
+      setPacientesResultados([])
+      setHorariosDisponibles([])
+      setSubmitError(null)
+      setSubmitSuccess(null)
     }
-  }, [open]);
+  }, [open])
 
   useEffect(() => {
     if (especialidad) {
       const profesionalesEspecialidad = profesionales.filter(
-        (prof) => prof.especialidad === especialidad
-      );
+        (prof) => prof.especialidad === especialidad,
+      )
       if (profesionalesEspecialidad.length > 0) {
-        if (
-          !profesionalesEspecialidad.some((prof) => prof.id === profesionalId)
-        ) {
-          setProfesionalId(profesionalesEspecialidad[0].id);
+        if (!profesionalesEspecialidad.some((prof) => prof.id === profesionalId)) {
+          setProfesionalId(profesionalesEspecialidad[0].id)
         }
       } else {
-        setProfesionalId("none");
+        setProfesionalId('none')
       }
     }
-  }, [especialidad, profesionales, profesionalId]);
+  }, [especialidad, profesionales, profesionalId])
 
   useEffect(() => {
-    if (!profesionalId || profesionalId === "none") return;
-    const prof = profesionales.find((p) => p.id === profesionalId);
+    if (!profesionalId || profesionalId === 'none') return
+    const prof = profesionales.find((p) => p.id === profesionalId)
     if (prof && prof.especialidad && prof.especialidad !== especialidad) {
-      setEspecialidad(prof.especialidad);
+      setEspecialidad(prof.especialidad)
     }
-  }, [profesionales, profesionalId, especialidad]);
+  }, [profesionales, profesionalId, especialidad])
 
   useEffect(() => {
-    if (profesionalId === "none" || !fechaIso || !duracion) {
-      setHorariosDisponibles([]);
-      setHora("none");
-      return;
+    if (profesionalId === 'none' || !fechaIso || !duracion) {
+      setHorariosDisponibles([])
+      setHora('none')
+      return
     }
 
-    let cancelado = false;
+    let cancelado = false
 
     async function cargarHorarios() {
-      setCargandoHorarios(true);
+      setCargandoHorarios(true)
       try {
         const params = new URLSearchParams({
           profesionalId,
           fecha: fechaIso,
           timezoneOffset: String(new Date().getTimezoneOffset()),
           durationMinutes: duracion,
-        });
-        const response = await fetch(
-          `/api/v1/turnos/disponibles?${params.toString()}`,
-          {
-            cache: "no-store",
-          }
-        );
+        })
+        const response = await fetch(`/api/v1/turnos/disponibles?${params.toString()}`, {
+          cache: "no-store",
+        })
         if (!response.ok) {
-          const { error } = await response
-            .json()
-            .catch(() => ({ error: "No se pudieron obtener los horarios" }));
-          throw new Error(error);
+          const { error } = await response.json().catch(() => ({ error: "No se pudieron obtener los horarios" }))
+          throw new Error(error)
         }
-        const data: { slots: string[] } = await response.json();
+        const data: { slots: string[] } = await response.json()
         if (!cancelado) {
-          setHorariosDisponibles(data.slots);
-          setHora("none");
+          setHorariosDisponibles(data.slots)
+          setHora('none')
         }
       } catch (error) {
-        console.error("Error al obtener horarios disponibles:", error);
+        console.error("Error al obtener horarios disponibles:", error)
         if (!cancelado) {
-          setHorariosDisponibles([]);
-          setHora("none");
+          setHorariosDisponibles([])
+          setHora('none')
         }
       } finally {
         if (!cancelado) {
-          setCargandoHorarios(false);
+          setCargandoHorarios(false)
         }
       }
     }
 
-    cargarHorarios();
+    cargarHorarios()
 
     return () => {
-      cancelado = true;
-    };
-  }, [profesionalId, fechaIso, duracion]);
+      cancelado = true
+    }
+  }, [profesionalId, fechaIso, duracion])
 
   useEffect(() => {
     if (busquedaPaciente.trim().length < 3) {
-      setPacientesResultados([]);
-      return;
+      setPacientesResultados([])
+      return
     }
 
-    const controller = new AbortController();
+    const controller = new AbortController()
 
     async function buscar() {
-      setCargandoPacientes(true);
+      setCargandoPacientes(true)
       try {
-        const params = new URLSearchParams({ search: busquedaPaciente.trim() });
+        const params = new URLSearchParams({ search: busquedaPaciente.trim() })
         const response = await fetch(`/api/v1/pacientes?${params.toString()}`, {
           signal: controller.signal,
           cache: "no-store",
-        });
+        })
         if (!response.ok) {
-          throw new Error("No se pudieron buscar pacientes");
+          throw new Error("No se pudieron buscar pacientes")
         }
-        const data: { pacientes: PacienteOption[] } = await response.json();
-        setPacientesResultados(data.pacientes);
+        const data: { pacientes: PacienteOption[] } = await response.json()
+        setPacientesResultados(data.pacientes)
       } catch (error) {
         if (!(error instanceof DOMException && error.name === "AbortError")) {
-          console.error("Error al buscar pacientes:", error);
+          console.error("Error al buscar pacientes:", error)
         }
       } finally {
-        setCargandoPacientes(false);
+        setCargandoPacientes(false)
       }
     }
 
-    buscar();
+    buscar()
 
-    return () => controller.abort();
-  }, [busquedaPaciente]);
+    return () => controller.abort()
+  }, [busquedaPaciente])
 
   const profesionalesFiltrados = useMemo(() => {
-    if (!especialidad || especialidad === "none") {
-      return profesionales;
+    if (!especialidad || especialidad === 'none') {
+      return profesionales
     }
-    return profesionales.filter((prof) => prof.especialidad === especialidad);
-  }, [especialidad, profesionales]);
+    return profesionales.filter((prof) => prof.especialidad === especialidad)
+  }, [especialidad, profesionales])
 
   const pacienteLabel = pacienteSeleccionado
     ? `${pacienteSeleccionado.apellido}, ${pacienteSeleccionado.nombre} (DNI ${pacienteSeleccionado.dni})`
-    : "";
+    : ""
 
   const handleRegistrar = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setSubmitError(null);
-    setSubmitSuccess(null);
+    event.preventDefault()
+    setSubmitError(null)
+    setSubmitSuccess(null)
 
-    if (profesionalId === "none" || hora === "none" || !pacienteSeleccionado) {
-      setSubmitError("Completa todos los campos obligatorios");
-      return;
+    if (profesionalId === 'none' || hora === 'none' || !pacienteSeleccionado) {
+      setSubmitError("Completa todos los campos obligatorios")
+      return
     }
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
     try {
-      const fechaCompleta = new Date(`${fechaIso}T${hora}:00`).toISOString();
+      const fechaCompleta = new Date(`${fechaIso}T${hora}:00`).toISOString()
 
       const response = await fetch("/api/v1/turnos", {
         method: "POST",
@@ -267,32 +242,28 @@ export function NuevoTurnoDialog({
           motivo: motivo.trim(),
           detalle: notas.trim() || motivo.trim(),
         }),
-      });
+      })
 
       if (!response.ok) {
-        const { error } = await response
-          .json()
-          .catch(() => ({ error: "No se pudo registrar el turno" }));
-        throw new Error(error);
+        const { error } = await response.json().catch(() => ({ error: "No se pudo registrar el turno" }))
+        throw new Error(error)
       }
 
-      setSubmitSuccess("Turno registrado con éxito");
-      onTurnoCreado?.();
+      setSubmitSuccess("Turno registrado con éxito")
+      onTurnoCreado?.()
     } catch (error) {
-      console.error("Error al registrar turno:", error);
+      console.error("Error al registrar turno:", error)
       setSubmitError(
-        error instanceof Error
-          ? error.message
-          : "Error al registrar el turno. Intenta nuevamente."
-      );
+        error instanceof Error ? error.message : "Error al registrar el turno. Intenta nuevamente.",
+      )
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   const handleCerrar = () => {
-    onOpenChange(false);
-  };
+    onOpenChange(false)
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleCerrar}>
@@ -323,14 +294,9 @@ export function NuevoTurnoDialog({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !fecha && "text-muted-foreground"
-                    )}
+                    className={cn("w-full justify-start text-left font-normal", !fecha && "text-muted-foreground")}
                   >
-                    {fecha
-                      ? format(fecha, "PPP", { locale: es })
-                      : "Seleccionar fecha"}
+                    {fecha ? format(fecha, "PPP", { locale: es }) : "Seleccionar fecha"}
                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -419,11 +385,7 @@ export function NuevoTurnoDialog({
               >
                 <SelectTrigger>
                   <SelectValue
-                    placeholder={
-                      cargandoHorarios
-                        ? "Buscando horarios..."
-                        : "Seleccionar hora"
-                    }
+                    placeholder={cargandoHorarios ? "Buscando horarios..." : "Seleccionar hora"}
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -469,14 +431,10 @@ export function NuevoTurnoDialog({
             </div>
             <div className="space-y-1">
               {cargandoPacientes ? (
-                <p className="text-sm text-muted-foreground">
-                  Buscando pacientes...
-                </p>
+                <p className="text-sm text-muted-foreground">Buscando pacientes...</p>
               ) : null}
               {pacienteSeleccionado ? (
-                <p className="text-sm text-muted-foreground">
-                  Seleccionado: {pacienteLabel}
-                </p>
+                <p className="text-sm text-muted-foreground">Seleccionado: {pacienteLabel}</p>
               ) : null}
               {pacientesResultados.length > 0 ? (
                 <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
@@ -486,8 +444,8 @@ export function NuevoTurnoDialog({
                       type="button"
                       className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
                       onClick={() => {
-                        setPacienteSeleccionado(pac);
-                        setBusquedaPaciente(`${pac.apellido}, ${pac.nombre}`);
+                        setPacienteSeleccionado(pac)
+                        setBusquedaPaciente(`${pac.apellido}, ${pac.nombre}`)
                       }}
                     >
                       {pac.apellido}, {pac.nombre} (DNI {pac.dni})
@@ -500,11 +458,7 @@ export function NuevoTurnoDialog({
 
           <div className="space-y-2">
             <Label>Motivo de consulta *</Label>
-            <Input
-              value={motivo}
-              onChange={(event) => setMotivo(event.target.value)}
-              required
-            />
+            <Input value={motivo} onChange={(event) => setMotivo(event.target.value)} required />
           </div>
 
           <div className="space-y-2">
@@ -527,5 +481,5 @@ export function NuevoTurnoDialog({
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

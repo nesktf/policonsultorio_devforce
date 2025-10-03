@@ -171,14 +171,14 @@ export default function TurnosPage() {
     )
   }
 
-  if (user.role === "profesional") {
+  if (user.rol === "PROFESIONAL") {
     return (
       <MainLayout>
         <div className="p-6">
           <Card>
             <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
-              <p className="text-muted-foreground text-center">{getAccessDeniedMessage(user.role, "turnos-todos")}</p>
+              <p className="text-muted-foreground text-center">{getAccessDeniedMessage(user.rol, "turnos-todos")}</p>
               <p className="text-sm text-muted-foreground">
                 Puedes acceder a tu agenda personal desde el menú &quot;Mi Agenda&quot;.
               </p>
@@ -194,7 +194,7 @@ export default function TurnosPage() {
     setShowNuevoTurno(false)
   }
 
-  const canCreateTurnos = hasPermission(user.role, "canCreateTurnos")
+  const canCreateTurnos = hasPermission(user.rol, "canCreateTurnos")
 
   const resumenCounts = turnos.reduce(
     (acc, turno) => {
@@ -252,10 +252,10 @@ export default function TurnosPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              {user.role === "gerente" ? "Gestión de Turnos" : "Turnos del Policonsultorio"}
+              {user.rol === "GERENTE" ? "Gestión de Turnos" : "Turnos del Policonsultorio"}
             </h1>
             <p className="text-muted-foreground">
-              {user.role === "gerente"
+              {user.rol === "GERENTE"
                 ? "Administra y programa citas médicas de manera eficiente"
                 : "Visualiza y gestiona los turnos de todos los profesionales"}
             </p>

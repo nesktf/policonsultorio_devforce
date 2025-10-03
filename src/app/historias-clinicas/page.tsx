@@ -25,252 +25,208 @@ import {
   Weight,
   Eye,
   UserCheck,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 import { Role } from "@/generated/prisma"
 
-// Mock data - en producción vendría de la API
-const mockPacientes = [
-  {
-    id: "1",
-    nombre: "María González",
-    apellido: "González",
-    dni: "12345678",
-    fechaNacimiento: "1985-03-15",
-    obraSocial: "OSDE",
-    numeroAfiliado: "123456789",
-    profesionalesAsignados: ["2"], // Dr. Carlos Mendez
-  },
-  {
-    id: "2",
-    nombre: "Juan Carlos",
-    apellido: "Pérez",
-    dni: "87654321",
-    fechaNacimiento: "1978-07-22",
-    obraSocial: "Swiss Medical",
-    numeroAfiliado: "987654321",
-    profesionalesAsignados: ["3"], // Dra. María López
-  },
-  {
-    id: "3",
-    nombre: "Ana María",
-    apellido: "Martín",
-    dni: "11223344",
-    fechaNacimiento: "1992-11-08",
-    obraSocial: "Galeno",
-    numeroAfiliado: "456789123",
-    profesionalesAsignados: ["2", "3"], // Ambos profesionales
-  },
-  {
-    id: "4",
-    nombre: "Carlos Alberto",
-    apellido: "Ruiz",
-    dni: "44332211",
-    fechaNacimiento: "1965-05-30",
-    obraSocial: "IOMA",
-    numeroAfiliado: "789123456",
-    profesionalesAsignados: ["2"], // Dr. Carlos Mendez
-  },
-  {
-    id: "5",
-    nombre: "Laura Beatriz",
-    apellido: "Fernández",
-    dni: "55667788",
-    fechaNacimiento: "1990-12-03",
-    obraSocial: "OSDE",
-    numeroAfiliado: "555666777",
-    profesionalesAsignados: ["3"], // Dra. María López
-  },
-]
+type PacienteData = {
+  id: number,
+  nombre: string,
+  apellido: string,
+  dni: string,
+  fechaNacimiento: string,
+  obraSocial: string,
+  numeroAfiliado: string,
+  antecedentes: string,
+  profesionalesAsignados: string[],
+}
 
-const mockHistoriaClinica = [
-  {
-    id: "1",
-    pacienteId: "1",
-    profesionalId: "2",
-    fecha: "2024-01-15",
-    hora: "10:30",
-    profesional: "Dr. Carlos Mendez",
-    especialidad: "Cardiología",
-    motivo: "Control rutinario",
-    anamnesis:
-      "Paciente refiere sentirse bien en general. Sin síntomas cardiovasculares. Mantiene actividad física regular.",
-    examenFisico: "Paciente en buen estado general. Signos vitales estables.",
-    signosVitales: {
-      presionArterial: "120/80",
-      frecuenciaCardiaca: "72",
-      temperatura: "36.5",
-      peso: "68",
-      altura: "165",
-    },
-    diagnostico: "Control cardiológico normal",
-    tratamiento: "Continuar con medicación actual",
-    medicamentos: [
-      { nombre: "Enalapril", dosis: "10mg", frecuencia: "1 vez al día", duracion: "Continuar" },
-      { nombre: "Aspirina", dosis: "100mg", frecuencia: "1 vez al día", duracion: "Continuar" },
-    ],
-    estudiosComplementarios: [
-      { tipo: "Electrocardiograma", resultado: "Normal", fecha: "2024-01-15" },
-      { tipo: "Análisis de sangre", resultado: "Valores normales", fecha: "2024-01-10" },
-    ],
-    indicaciones: "Mantener dieta baja en sodio. Continuar con ejercicio regular. Control en 6 meses.",
-    proximoControl: "2024-07-15",
-    observaciones: "Paciente colaborador, cumple bien con el tratamiento.",
-  },
-  {
-    id: "2",
-    pacienteId: "1",
-    profesionalId: "2",
-    fecha: "2023-12-10",
-    hora: "14:00",
-    profesional: "Dr. Carlos Mendez",
-    especialidad: "Cardiología",
-    motivo: "Seguimiento hipertensión",
-    anamnesis: "Paciente con antecedentes de hipertensión arterial. Refiere adherencia al tratamiento.",
-    examenFisico: "Buen estado general. Auscultación cardiopulmonar normal.",
-    signosVitales: {
-      presionArterial: "125/85",
-      frecuenciaCardiaca: "75",
-      temperatura: "36.3",
-      peso: "69",
-      altura: "165",
-    },
-    diagnostico: "Hipertensión arterial controlada",
-    tratamiento: "Ajuste de medicación",
-    medicamentos: [{ nombre: "Enalapril", dosis: "10mg", frecuencia: "1 vez al día", duracion: "3 meses" }],
-    estudiosComplementarios: [],
-    indicaciones: "Dieta hiposódica. Control de peso. Ejercicio moderado.",
-    proximoControl: "2024-01-15",
-    observaciones: "Buen control de la presión arterial.",
-  },
-  {
-    id: "3",
-    pacienteId: "2",
-    profesionalId: "3",
-    fecha: "2024-01-14",
-    hora: "09:00",
-    profesional: "Dra. María López",
-    especialidad: "Pediatría",
-    motivo: "Consulta por dolor de espalda",
-    anamnesis:
-      "Paciente refiere dolor lumbar de 3 días de evolución, sin irradiación. Relacionado con esfuerzo físico.",
-    examenFisico: "Contractura muscular paravertebral. Movilidad limitada por dolor.",
-    signosVitales: {
-      presionArterial: "130/85",
-      frecuenciaCardiaca: "78",
-      temperatura: "36.4",
-      peso: "75",
-      altura: "175",
-    },
-    diagnostico: "Lumbalgia mecánica",
-    tratamiento: "Antiinflamatorios y relajantes musculares",
-    medicamentos: [
-      { nombre: "Ibuprofeno", dosis: "600mg", frecuencia: "Cada 8 horas", duracion: "7 días" },
-      { nombre: "Diclofenac gel", dosis: "Aplicar", frecuencia: "3 veces al día", duracion: "10 días" },
-    ],
-    estudiosComplementarios: [],
-    indicaciones: "Reposo relativo. Aplicar calor local. Evitar esfuerzos. Kinesiología si no mejora.",
-    proximoControl: "2024-01-21",
-    observaciones: "Paciente con trabajo de oficina. Recomendar ergonomía.",
-  },
-  {
-    id: "4",
-    pacienteId: "3",
-    profesionalId: "2",
-    fecha: "2024-01-12",
-    hora: "16:30",
-    profesional: "Dr. Carlos Mendez",
-    especialidad: "Cardiología",
-    motivo: "Control ginecológico anual",
-    anamnesis: "Paciente asintomática. Ciclos menstruales regulares. Sin antecedentes familiares relevantes.",
-    examenFisico: "Examen ginecológico normal. Mamas sin alteraciones palpables.",
-    signosVitales: {
-      presionArterial: "110/70",
-      frecuenciaCardiaca: "68",
-      temperatura: "36.2",
-      peso: "58",
-      altura: "160",
-    },
-    diagnostico: "Control ginecológico normal",
-    tratamiento: "Preventivo",
-    medicamentos: [],
-    estudiosComplementarios: [
-      { tipo: "Papanicolaou", resultado: "Pendiente", fecha: "2024-01-12" },
-      { tipo: "Ecografía mamaria", resultado: "Normal", fecha: "2024-01-12" },
-    ],
-    indicaciones: "Continuar con controles anuales. Autoexamen mamario mensual.",
-    proximoControl: "2025-01-12",
-    observaciones: "Paciente joven, sin factores de riesgo.",
-  },
-]
+type HistoriaData = {
+  id: string,
+  pacienteId: string,
+  profesionalId: string,
+  fecha: string,
+  hora: string,
+  profesional: string,
+  especialidad: string,
+  motivo: string | null,
+  anamnesis: string,
+  examenFisico: string,
+  signosVitales: any,
+  diagnostico: string,
+  tratamiento: string,
+  medicamentos: any[],
+  estudiosComplementarios: any[],
+  indicaciones: string,
+  proximoControl: string,
+  observaciones: string,
+}
 
 export default function HistoriasClinicasPage() {
-  const user_id = 2;
   const { user } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pacienteId = searchParams.get("paciente")
 
-  const [pacientes, setPacientes] = useState<Array<any>>([]);
-  const [historias, setHistorias] = useState<Array<any>>([]);
-
-  const [paciente, setPaciente] = useState<any>(null)
-  const [historiaClinica, setHistoriaClinica] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [profesionalId, setProfesionalId] = useState<number | null>(null)
+  const [pacientes, setPacientes] = useState<PacienteData[]>([])
+  const [historias, setHistorias] = useState<HistoriaData[]>([])
+  const [paciente, setPaciente] = useState<PacienteData | null>(null)
+  const [historiaClinica, setHistoriaClinica] = useState<HistoriaData[]>([])
   const [showNuevaConsulta, setShowNuevaConsulta] = useState(false)
-  const [vistaLista, setVistaLista] = useState(!pacienteId) // Si no hay pacienteId, mostrar lista
-  const [pacientesFiltrados, setPacientesFiltrados] = useState<any[]>([])
+  const [vistaLista, setVistaLista] = useState(!pacienteId)
+  const [pacientesFiltrados, setPacientesFiltrados] = useState<PacienteData[]>([])
 
-  const obtenerPacientesPermitidos = (pacientes_data: any) => {
-    if (!user) return []
-
-    if (user.rol === Role.MESA_ENTRADA) {
-      return [] // Mesa de entrada no puede ver historias clínicas
+  // Obtener el ID del profesional del usuario actual
+  const getProfesionalId = async () => {
+    if (!user || user.rol !== Role.PROFESIONAL) return null
+    
+    try {
+      const response = await fetch(`/api/v2/profesional/by-user/${user.id}`)
+      if (!response.ok) return null
+      
+      const data = await response.json()
+      return data.profesionalId
+    } catch (error) {
+      console.error("Error obteniendo ID de profesional:", error)
+      return null
     }
-
-    if (user.rol == Role.GERENTE) {
-      return pacientes_data // Gerente ve todos los pacientes
-    }
-
-    if (user.rol === Role.PROFESIONAL) {
-      return pacientes_data.filter((p: any) => p.profesionalesAsignados.includes(user_id))
-    }
-
-    return []
-  };
-
-  const fetchPacienteData = async () => {
-    const pac_data = await fetch("api/v2/historia/paciente", {
-      method: "GET",
-    })
-    .then(async (body) => await body.json());
-    if (pac_data.error) {
-      console.error(pac_data.error);
-    }
-    const pacientes_fetched = pac_data.pacientes;
-    setPacientes(pacientes_fetched);
-    setPacientesFiltrados(obtenerPacientesPermitidos(pacientes_fetched));
-    console.log(pacientes_fetched);
-  };
-
-  const fetchHistoriaData = async () => {
-    const hist_data = await fetch("api/v2/historia", {
-      method: "GET",
-    })
-    .then(async (body) => await body.json());
-    if (hist_data.error) {
-      console.error(hist_data.error);
-      return;
-    }
-    const historias_fetched = hist_data.historias;
-    setHistorias(historias_fetched);
-    console.log(historias_fetched);
   }
 
-  const obtenerHistorsDePaciente = (data: any, id_paciente: number) => {
-    return data.filter((h: any) => h.pacienteId == id_paciente.toString());
-  };
+  // Obtener pacientes con turnos del profesional
+  const fetchPacientesConTurnos = async (profesionalId: number) => {
+    try {
+      // Obtener turnos del profesional
+      const turnosRes = await fetch(`/api/v2/turnos?id_profesional=${profesionalId}`)
+      if (!turnosRes.ok) throw new Error("Error al obtener turnos")
+      const turnosData = await turnosRes.json()
+      
+      // Obtener IDs únicos de pacientes con turnos
+      const pacientesIds = [...new Set(turnosData.turnos.map((t: any) => t.id_paciente))]
+      
+      // Obtener todos los pacientes
+      const pacientesRes = await fetch("/api/v2/historia/paciente")
+      if (!pacientesRes.ok) throw new Error("Error al obtener pacientes")
+      const pacientesData = await pacientesRes.json()
+      
+      // Filtrar solo los pacientes que tienen turnos con este profesional
+      const pacientesConTurnos = pacientesData.pacientes.filter((p: PacienteData) => 
+        pacientesIds.includes(p.id)
+      )
+      
+      setPacientes(pacientesConTurnos)
+      setPacientesFiltrados(pacientesConTurnos)
+      
+    } catch (error) {
+      console.error("Error fetching pacientes con turnos:", error)
+    }
+  }
 
-  const verHistoriaClinica = (pacienteSeleccionado: any) => {
+  // Obtener todos los pacientes (para gerente)
+  const fetchTodosPacientes = async () => {
+    try {
+      const res = await fetch("/api/v2/historia/paciente")
+      if (!res.ok) throw new Error("Error al obtener pacientes")
+      const data = await res.json()
+      setPacientes(data.pacientes)
+      setPacientesFiltrados(data.pacientes)
+    } catch (error) {
+      console.error("Error fetching pacientes:", error)
+    }
+  }
+
+  // Obtener historias clínicas
+  const fetchHistorias = async (profesionalId?: number) => {
+    try {
+      let url = "/api/v2/historia"
+      if (profesionalId) {
+        url += `?id_profesional=${profesionalId}`
+      }
+      
+      const res = await fetch(url)
+      if (!res.ok) throw new Error("Error al obtener historias")
+      const data = await res.json()
+      setHistorias(data.historias)
+    } catch (error) {
+      console.error("Error fetching historias:", error)
+    }
+  }
+
+  // Inicializar datos
+  useEffect(() => {
+    const initData = async () => {
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      setLoading(true)
+
+      try {
+        if (user.rol === Role.PROFESIONAL) {
+          const profId = await getProfesionalId()
+          if (profId) {
+            setProfesionalId(profId)
+            await Promise.all([
+              fetchPacientesConTurnos(profId),
+              fetchHistorias(profId)
+            ])
+          }
+        } else if (user.rol === Role.GERENTE) {
+          await Promise.all([
+            fetchTodosPacientes(),
+            fetchHistorias()
+          ])
+        }
+      } catch (error) {
+        console.error("Error inicializando datos:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initData()
+  }, [user])
+
+  // Manejar selección de paciente
+  useEffect(() => {
+    if (pacienteId && !vistaLista && pacientes.length > 0) {
+      const parsed = parseInt(pacienteId)
+      const pacienteEncontrado = pacientes.find((p) => p.id === parsed)
+
+      if (!pacienteEncontrado) {
+        setPaciente(null)
+        return
+      }
+
+      setPaciente(pacienteEncontrado)
+
+      // Filtrar historias del paciente
+      let historiasDelPaciente = historias.filter(
+        (h) => h.pacienteId === pacienteId
+      )
+
+      // Si es profesional, filtrar solo sus historias
+      if (user?.rol === Role.PROFESIONAL && profesionalId) {
+        const profesionalIdStr = profesionalId.toString()
+        historiasDelPaciente = historiasDelPaciente.filter(
+          (h) => h.profesionalId === profesionalIdStr
+        )
+      }
+
+      setHistoriaClinica(
+        historiasDelPaciente.sort(
+          (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+        )
+      )
+    } else if (!pacienteId) {
+      setVistaLista(true)
+    }
+  }, [pacienteId, pacientes, historias, user, vistaLista, profesionalId])
+
+  const verHistoriaClinica = (pacienteSeleccionado: PacienteData) => {
     router.push(`/historias-clinicas?paciente=${pacienteSeleccionado.id}`)
     setVistaLista(false)
   }
@@ -281,44 +237,6 @@ export default function HistoriasClinicasPage() {
     setPaciente(null)
     setHistoriaClinica([])
   }
-
-  useEffect(() => {
-    if (vistaLista) {
-      fetchPacienteData();
-    }
-    fetchHistoriaData();
-  }, [vistaLista, user])
-
-  useEffect(() => {
-    if (pacienteId && !vistaLista) {
-      // Buscar paciente
-      const parsed = parseInt(pacienteId);
-      const pacienteEncontrado = pacientes.find((p) => p.id === parsed)
-
-      if (user?.rol === Role.PROFESIONAL && pacienteEncontrado) {
-        const tienePermiso = pacienteEncontrado.profesionalesAsignados.includes(user_id)
-        if (!tienePermiso) {
-          setPaciente(null)
-          return
-        }
-      }
-
-      setPaciente(pacienteEncontrado)
-
-      if (pacienteEncontrado) {
-        // Buscar historia clínica
-        let historia = obtenerHistorsDePaciente(historias, parsed);
-
-        if (user?.rol === Role.PROFESIONAL){
-          historia = historia.filter((h: any) => h.profesionalId === user_id)
-        }
-
-        setHistoriaClinica(historia.sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()))
-      }
-    } else {
-      setVistaLista(true)
-    }
-  }, [pacienteId, user, vistaLista])
 
   const calcularEdad = (fechaNacimiento: string) => {
     const hoy = new Date()
@@ -345,15 +263,27 @@ export default function HistoriasClinicasPage() {
     return new Date(fecha).toLocaleDateString("es-AR")
   }
 
-  const handleNuevaConsulta = (nuevaConsulta: any) => {
-    const consultaConId = {
-      ...nuevaConsulta,
-      id: (historiaClinica.length + 1).toString(),
-      pacienteId: pacienteId,
-      fecha: new Date().toISOString().split("T")[0],
-      hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+  const handleNuevaConsulta = async (nuevaConsulta: any) => {
+    // Recargar historias después de crear la consulta
+    try {
+      if (profesionalId) {
+        await fetchHistorias(profesionalId)
+      } else {
+        await fetchHistorias()
+      }
+    } catch (error) {
+      console.error("Error recargando historias:", error)
     }
-    setHistoriaClinica([consultaConId, ...historiaClinica])
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-screen">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </MainLayout>
+    )
   }
 
   if (!user) {
@@ -395,43 +325,45 @@ export default function HistoriasClinicasPage() {
     return (
       <MainLayout>
         <div className="p-6 space-y-6">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Historias Clínicas</h1>
               <p className="text-muted-foreground">
-                {user.rol === Role.PROFESIONAL ? "Historias clínicas de tus pacientes" : "Gestión de historias clínicas"}
+                {user.rol === Role.PROFESIONAL 
+                  ? "Pacientes con turnos asignados" 
+                  : "Gestión de historias clínicas"}
               </p>
             </div>
           </div>
 
-          {/* Lista de pacientes */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5" />
                 Pacientes ({pacientesFiltrados.length})
               </CardTitle>
-              <CardDescription>Selecciona un paciente para ver su historia clínica completa</CardDescription>
+              <CardDescription>
+                Selecciona un paciente para ver su historia clínica completa
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {pacientesFiltrados.length === 0 ? (
                 <div className="text-center py-8">
                   <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">
-                    {obtenerPacientesPermitidos(pacientes).length === 0
-                      ? "No tienes pacientes asignados"
-                      : "No se encontraron pacientes con los filtros aplicados"}
+                    {user.rol === Role.PROFESIONAL
+                      ? "No tienes pacientes con turnos asignados"
+                      : "No se encontraron pacientes"}
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pacientesFiltrados.map((pacienteItem) => {
-                    const consultasPaciente = obtenerHistorsDePaciente(historias, pacienteItem.id as number);
-                    const ultimaConsulta = consultasPaciente.sort(
-                      (a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
-                    )[0]
-                    const especialidades = [...new Set(consultasPaciente.map((c: any) => c.especialidad))]
+                    const consultasPaciente = historias.filter(
+                      (h) => h.pacienteId === pacienteItem.id.toString()
+                    )
+                    const ultimaConsulta = consultasPaciente[0]
+                    const especialidades = [...new Set(consultasPaciente.map((c) => c.especialidad))]
 
                     return (
                       <Card
@@ -477,7 +409,7 @@ export default function HistoriasClinicasPage() {
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {especialidades.slice(0, 2).map((esp, idx) => (
                                   <Badge key={idx} variant="outline" className="text-xs">
-                                    {esp as string}
+                                    {esp}
                                   </Badge>
                                 ))}
                                 {especialidades.length > 2 && (
@@ -510,7 +442,7 @@ export default function HistoriasClinicasPage() {
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground">
                 {user.rol === Role.PROFESIONAL 
-                  ? "No tienes permisos para ver la historia clínica de este paciente."
+                  ? "No tienes permisos para ver la historia clínica de este paciente o el paciente no tiene turnos contigo."
                   : "No se encontró el paciente especificado."}
               </p>
               <Button variant="outline" className="gap-2 bg-transparent" onClick={volverALista}>
@@ -527,7 +459,6 @@ export default function HistoriasClinicasPage() {
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="sm" className="gap-2" onClick={volverALista}>
@@ -537,7 +468,7 @@ export default function HistoriasClinicasPage() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Historia Clínica</h1>
               <p className="text-muted-foreground">
-                {user.rol ===  Role.PROFESIONAL
+                {user.rol === Role.PROFESIONAL
                   ? "Tus consultas con este paciente"
                   : "Registro médico completo del paciente"}
               </p>
@@ -551,7 +482,6 @@ export default function HistoriasClinicasPage() {
           )}
         </div>
 
-        {/* Información del paciente */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -590,23 +520,23 @@ export default function HistoriasClinicasPage() {
               </div>
               <div className="space-y-2">
                 <div className="text-sm">
-                  <strong>Obra Social:</strong> {paciente.obraSocial}
+                  <strong>Obra Social:</strong> {paciente.obraSocial || "No especificada"}
                 </div>
                 <div className="text-sm">
-                  <strong>N° Afiliado:</strong> {paciente.numeroAfiliado}
+                  <strong>N° Afiliado:</strong> {paciente.numeroAfiliado || "N/A"}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
-        {/* Antecedentes Familiares */}
+
         <AntecedentesFamiliaresCard 
-          pacienteId={paciente.id}
+          pacienteId={paciente.id.toString()}
           antecedentesInitial={paciente.antecedentes}
-          editable={user.rol ===Role.PROFESIONAL}
+          editable={user.rol === Role.PROFESIONAL}
           compact={false}
-          />
-        {/* Resumen de la historia clínica */}
+        />
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -646,7 +576,6 @@ export default function HistoriasClinicasPage() {
           </CardContent>
         </Card>
 
-        {/* Lista de consultas */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -679,7 +608,6 @@ export default function HistoriasClinicasPage() {
               <div className="space-y-6">
                 {historiaClinica.map((consulta, index) => (
                   <div key={consulta.id} className="border border-border rounded-lg p-6 space-y-4">
-                    {/* Header de la consulta */}
                     <div className="flex items-center justify-between pb-4 border-b">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -706,11 +634,8 @@ export default function HistoriasClinicasPage() {
                       <Badge variant="secondary">{consulta.especialidad}</Badge>
                     </div>
 
-                    {/* Contenido de la consulta */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Columna izquierda */}
                       <div className="space-y-4">
-                        {/* HISTORIA DE LA ENFERMEDAD ACTUAL */}
                         <div>
                           <h4 className="font-medium text-sm text-muted-foreground mb-2">
                             HISTORIA DE LA ENFERMEDAD ACTUAL
@@ -718,51 +643,58 @@ export default function HistoriasClinicasPage() {
                           <p className="text-sm">{consulta.anamnesis}</p>
                         </div>
 
-                        {/* Examen físico */}
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">EXAMEN FÍSICO</h4>
-                          <p className="text-sm">{consulta.examenFisico}</p>
-                        </div>
+                        {consulta.examenFisico && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">EXAMEN FÍSICO</h4>
+                            <p className="text-sm">{consulta.examenFisico}</p>
+                          </div>
+                        )}
 
-                        {/* Signos vitales */}
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">SIGNOS VITALES</h4>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-1">
-                              <Heart className="h-3 w-3 text-red-500" />
-                              <span>PA: {consulta.signosVitales.presionArterial} mmHg</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Activity className="h-3 w-3 text-blue-500" />
-                              <span>FC: {consulta.signosVitales.frecuenciaCardiaca} lpm</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Thermometer className="h-3 w-3 text-orange-500" />
-                              <span>T°: {consulta.signosVitales.temperatura}°C</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Weight className="h-3 w-3 text-green-500" />
-                              <span>Peso: {consulta.signosVitales.peso} kg</span>
+                        {consulta.signosVitales && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">SIGNOS VITALES</h4>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center gap-1">
+                                <Heart className="h-3 w-3 text-red-500" />
+                                <span>PA: {consulta.signosVitales.presionArterial} mmHg</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Activity className="h-3 w-3 text-blue-500" />
+                                <span>FC: {consulta.signosVitales.frecuenciaCardiaca} lpm</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Thermometer className="h-3 w-3 text-orange-500" />
+                                <span>T°: {consulta.signosVitales.temperatura}°C</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Weight className="h-3 w-3 text-green-500" />
+                                <span>Peso: {consulta.signosVitales.peso} kg</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
 
-                        {/* Diagnóstico */}
                         <div>
                           <h4 className="font-medium text-sm text-muted-foreground mb-2">DIAGNÓSTICO</h4>
                           <p className="text-sm font-medium">{consulta.diagnostico}</p>
                         </div>
                       </div>
 
-                      {/* Columna derecha */}
                       <div className="space-y-4">
-                        {/* Indicaciones */}
-                        <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">INDICACIONES</h4>
-                          <p className="text-sm">{consulta.indicaciones}</p>
-                        </div>
+                        {consulta.tratamiento && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">TRATAMIENTO</h4>
+                            <p className="text-sm">{consulta.tratamiento}</p>
+                          </div>
+                        )}
 
-                        {/* Próximo control */}
+                        {consulta.indicaciones && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">INDICACIONES</h4>
+                            <p className="text-sm">{consulta.indicaciones}</p>
+                          </div>
+                        )}
+
                         {consulta.proximoControl && (
                           <div>
                             <h4 className="font-medium text-sm text-muted-foreground mb-2">PRÓXIMO CONTROL</h4>
@@ -772,7 +704,6 @@ export default function HistoriasClinicasPage() {
                           </div>
                         )}
 
-                        {/* Observaciones */}
                         {consulta.observaciones && (
                           <div>
                             <h4 className="font-medium text-sm text-muted-foreground mb-2">OBSERVACIONES</h4>
@@ -788,13 +719,18 @@ export default function HistoriasClinicasPage() {
           </CardContent>
         </Card>
 
-        {/* Dialog para nueva consulta */}
-        {user.rol === Role.PROFESIONAL && (
+        {user.rol === Role.PROFESIONAL && paciente && profesionalId && (
           <NuevaConsultaDialog
             open={showNuevaConsulta}
             onOpenChange={setShowNuevaConsulta}
-            paciente={paciente}
-            profesionalId={1}
+            paciente={{
+              id: paciente.id.toString(),
+              nombre: paciente.nombre,
+              apellido: paciente.apellido,
+              dni: paciente.dni,
+              fechaNacimiento: paciente.fechaNacimiento,
+            }}
+            profesionalId={profesionalId}
             onConsultaCreada={handleNuevaConsulta}
           />
         )}

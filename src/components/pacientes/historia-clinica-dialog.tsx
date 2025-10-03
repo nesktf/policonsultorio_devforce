@@ -235,7 +235,7 @@ export function HistoriaClinicaDialog({
     setArchivosAdjuntos(archivosAdjuntos.filter((_, i) => i !== index))
   }
 
-  const puedeAgregarConsulta = user?.role === "profesional" || user?.role === "gerente"
+  const puedeAgregarConsulta = user?.rol === "PROFESIONAL" || user?.rol === "GERENTE"
 
   return (
     <>

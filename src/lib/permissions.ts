@@ -1,11 +1,36 @@
-import type { UserRole, User } from "@/context/auth-context"
+import { Role } from "@/generated/prisma"
+import type { User } from "@/context/auth-context"
 
-// Definición de permisos por rol
-export const ROLE_PERMISSIONS = {
-  "mesa-entrada": {
+// Definir el tipo de permisos primero
+interface RolePermissions {
+  canViewAllTurnos: boolean
+  canViewOwnTurnos: boolean
+  canCreateTurnos: boolean
+  canEditTurnos: boolean
+  canCancelTurnos: boolean
+  canChangeEstadoTurno: boolean
+  canViewAllPacientes: boolean
+  canViewOwnPacientes: boolean
+  canCreatePacientes: boolean
+  canEditPacientes: boolean
+  canViewPacienteDetails: boolean
+  canViewHistoriasClinicas: boolean
+  canViewOwnHistoriasClinicas: boolean
+  canCreateHistoriasClinicas: boolean
+  canEditHistoriasClinicas: boolean
+  canViewDashboard: boolean
+  canViewBasicReports: boolean
+  canViewAdvancedReports: boolean
+  canManageUsers: boolean
+  canManageSettings: boolean
+}
+
+// Definición de permisos por rol usando los valores del enum de Prisma
+export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
+  MESA_ENTRADA: {
     // Gestión de turnos
     canViewAllTurnos: true,
-    canViewOwnTurnos: false, // Agregado para consistencia de tipos - mesa de entrada ve todos los turnos
+    canViewOwnTurnos: false,
     canCreateTurnos: true,
     canEditTurnos: true,
     canCancelTurnos: true,
@@ -20,7 +45,7 @@ export const ROLE_PERMISSIONS = {
 
     // Historias clínicas - RESTRINGIDO
     canViewHistoriasClinicas: false,
-    canViewOwnHistoriasClinicas: false, // Agregado para consistencia de tipos
+    canViewOwnHistoriasClinicas: false,
     canCreateHistoriasClinicas: false,
     canEditHistoriasClinicas: false,
 
@@ -34,7 +59,7 @@ export const ROLE_PERMISSIONS = {
     canManageSettings: false,
   },
 
-  profesional: {
+  PROFESIONAL: {
     // Gestión de turnos - SOLO SUS PACIENTES
     canViewAllTurnos: false,
     canViewOwnTurnos: true,
@@ -66,7 +91,7 @@ export const ROLE_PERMISSIONS = {
     canManageSettings: false,
   },
 
-  gerente: {
+  GERENTE: {
     // Acceso completo a todo
     canViewAllTurnos: true,
     canViewOwnTurnos: true,
@@ -81,10 +106,10 @@ export const ROLE_PERMISSIONS = {
     canEditPacientes: true,
     canViewPacienteDetails: true,
 
-    canViewHistoriasClinicas: true,
-    canViewOwnHistoriasClinicas: true,
-    canCreateHistoriasClinicas: true,
-    canEditHistoriasClinicas: true,
+    canViewHistoriasClinicas: false,
+    canViewOwnHistoriasClinicas: false,
+    canCreateHistoriasClinicas: false,
+    canEditHistoriasClinicas: false,
 
     canViewDashboard: true,
     canViewBasicReports: true,
@@ -95,13 +120,16 @@ export const ROLE_PERMISSIONS = {
   },
 } as const
 
+// Tipo para las claves de permisos
+type PermissionKey = keyof RolePermissions
+
 // Funciones helper para verificar permisos
-export const hasPermission = (userRole: UserRole, permission: keyof (typeof ROLE_PERMISSIONS)[UserRole]): boolean => {
+export const hasPermission = (userRole: Role, permission: PermissionKey): boolean => {
   return ROLE_PERMISSIONS[userRole]?.[permission] || false
 }
 
-export const canAccessRoute = (userRole: UserRole, route: string): boolean => {
-  const routePermissions: Record<string, keyof (typeof ROLE_PERMISSIONS)[UserRole]> = {
+export const canAccessRoute = (userRole: Role, route: string): boolean => {
+  const routePermissions: Record<string, PermissionKey> = {
     "/": "canViewDashboard",
     "/turnos": "canViewAllTurnos",
     "/mi-agenda": "canViewOwnTurnos",
@@ -124,21 +152,22 @@ export const filterDataByRole = <T extends { profesionalId?: string; profesional
 ): T[] => {
   if (!user) return []
 
-  if (user.role === "gerente") {
-    return data // Gerente ve todo
+  if (user.rol === "GERENTE") {
+    return [] // Gerente ve todo
   }
 
-  if (user.role === "mesa-entrada") {
+  if (user.rol === "MESA_ENTRADA") {
     if (type === "historias") {
       return [] // Mesa de entrada no ve historias clínicas
     }
     return data // Mesa de entrada ve todos los turnos y pacientes
   }
 
-  if (user.role === "profesional") {
+  if (user.rol === "PROFESIONAL") {
     return data.filter((item) => {
       // Filtrar por profesional asignado o que tenga relación con el profesional
-      return item.profesionalId === user.id || item.profesionalesAsignados?.includes(user.id)
+      const userId = user.id.toString()
+      return item.profesionalId === userId || item.profesionalesAsignados?.includes(userId)
     })
   }
 
@@ -154,29 +183,31 @@ export const canPerformAction = (
 ): boolean => {
   if (!user) return false
 
-  if (user.role === "gerente") return true
+  if (user.rol === "GERENTE") return true
 
-  if (user.role === "mesa-entrada") {
+  if (user.rol === "MESA_ENTRADA" ) {
     if (resource === "historia") return false // No puede acceder a historias clínicas
     return ["view", "edit", "create"].includes(action) // Puede gestionar turnos y pacientes
   }
 
-  if (user.role === "profesional") {
+  if (user.rol === "PROFESIONAL") {
+    const userId = user.id.toString()
+    
     if (resource === "turno") {
       if (action === "create") return false // No puede crear turnos
       // Solo puede ver/editar sus propios turnos
-      return resourceData?.profesionalId === user.id
+      return resourceData?.profesionalId === userId
     }
 
     if (resource === "paciente") {
       if (["edit", "create"].includes(action)) return false // No puede crear/editar pacientes
       // Solo puede ver sus pacientes
-      return resourceData?.profesionalesAsignados?.includes(user.id) || resourceData?.profesionalId === user.id || false
+      return resourceData?.profesionalesAsignados?.includes(userId) || resourceData?.profesionalId === userId || false
     }
 
     if (resource === "historia") {
       // Puede gestionar historias clínicas solo de sus pacientes
-      return resourceData?.profesionalId === user.id || resourceData?.profesionalesAsignados?.includes(user.id) || false
+      return resourceData?.profesionalId === userId || resourceData?.profesionalesAsignados?.includes(userId) || false
     }
   }
 
@@ -184,20 +215,20 @@ export const canPerformAction = (
 }
 
 // Mensajes de error personalizados por rol
-export const getAccessDeniedMessage = (userRole: UserRole, resource: string): string => {
-  const messages: Record<UserRole, Record<string, string>> = {
-    "mesa-entrada": {
+export const getAccessDeniedMessage = (userRole: Role, resource: string): string => {
+  const messages: Record<string, Record<string, string>> = {
+    MESA_ENTRADA: {
       "historias-clinicas": "Los usuarios de mesa de entrada no tienen acceso a las historias clínicas.",
       configuracion: "No tienes permisos para acceder a la configuración del sistema.",
       default: "No tienes permisos para acceder a esta sección.",
     },
-    profesional: {
+    PROFESIONAL: {
       "turnos-todos": "Solo puedes ver los turnos de tus pacientes asignados.",
       "pacientes-todos": "Solo puedes ver los pacientes que tienes asignados.",
       configuracion: "No tienes permisos para acceder a la configuración del sistema.",
       default: "Solo puedes acceder a información de tus pacientes asignados.",
     },
-    gerente: {
+    GERENTE: {
       default: "Error inesperado de permisos.",
     },
   }
