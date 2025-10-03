@@ -6,10 +6,9 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/context/auth-context"
 import { NuevaConsultaDialog } from "@/components/pacientes/nueva-consulta-dialog"
+import { AntecedentesFamiliaresCard } from "@/components/pacientes/antecedentes-familiares-card"
 import {
   FileText,
   Calendar,
@@ -24,12 +23,11 @@ import {
   Heart,
   Thermometer,
   Weight,
-  Search,
-  Filter,
   Eye,
   UserCheck,
 } from "lucide-react"
 import Link from "next/link"
+import { Role } from "@/generated/prisma"
 
 // Mock data - en producción vendría de la API
 const mockPacientes = [
@@ -207,60 +205,70 @@ const mockHistoriaClinica = [
 ]
 
 export default function HistoriasClinicasPage() {
+  const user_id = 2;
   const { user } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const pacienteId = searchParams.get("paciente")
 
+  const [pacientes, setPacientes] = useState<Array<any>>([]);
+  const [historias, setHistorias] = useState<Array<any>>([]);
+
   const [paciente, setPaciente] = useState<any>(null)
   const [historiaClinica, setHistoriaClinica] = useState<any[]>([])
   const [showNuevaConsulta, setShowNuevaConsulta] = useState(false)
   const [vistaLista, setVistaLista] = useState(!pacienteId) // Si no hay pacienteId, mostrar lista
-  const [filtroNombre, setFiltroNombre] = useState("")
-  const [filtroEspecialidad, setFiltroEspecialidad] = useState("")
   const [pacientesFiltrados, setPacientesFiltrados] = useState<any[]>([])
 
-  const obtenerPacientesPermitidos = () => {
+  const obtenerPacientesPermitidos = (pacientes_data: any) => {
     if (!user) return []
 
-    if (user.role === "mesa-entrada") {
+    if (user.rol === Role.MESA_ENTRADA) {
       return [] // Mesa de entrada no puede ver historias clínicas
     }
 
-    if (user.role === "gerente") {
-      return mockPacientes // Gerente ve todos los pacientes
+    if (user.rol == Role.GERENTE) {
+      return pacientes_data // Gerente ve todos los pacientes
     }
 
-    if (user.role === "profesional") {
-      return mockPacientes.filter((p) => p.profesionalesAsignados.includes(user.id))
+    if (user.rol === Role.PROFESIONAL) {
+      return pacientes_data.filter((p: any) => p.profesionalesAsignados.includes(user_id))
     }
 
     return []
+  };
+
+  const fetchPacienteData = async () => {
+    const pac_data = await fetch("api/v2/historia/paciente", {
+      method: "GET",
+    })
+    .then(async (body) => await body.json());
+    if (pac_data.error) {
+      console.error(pac_data.error);
+    }
+    const pacientes_fetched = pac_data.pacientes;
+    setPacientes(pacientes_fetched);
+    setPacientesFiltrados(obtenerPacientesPermitidos(pacientes_fetched));
+    console.log(pacientes_fetched);
+  };
+
+  const fetchHistoriaData = async () => {
+    const hist_data = await fetch("api/v2/historia", {
+      method: "GET",
+    })
+    .then(async (body) => await body.json());
+    if (hist_data.error) {
+      console.error(hist_data.error);
+      return;
+    }
+    const historias_fetched = hist_data.historias;
+    setHistorias(historias_fetched);
+    console.log(historias_fetched);
   }
 
-  const filtrarPacientes = () => {
-    const pacientesPermitidos = obtenerPacientesPermitidos()
-
-    let filtrados = pacientesPermitidos
-
-    if (filtroNombre) {
-      filtrados = filtrados.filter(
-        (p) =>
-          `${p.nombre} ${p.apellido}`.toLowerCase().includes(filtroNombre.toLowerCase()) ||
-          p.dni.includes(filtroNombre),
-      )
-    }
-
-    if (filtroEspecialidad) {
-      // Filtrar por especialidad basado en las consultas del paciente
-      filtrados = filtrados.filter((p) => {
-        const consultasPaciente = mockHistoriaClinica.filter((h) => h.pacienteId === p.id)
-        return consultasPaciente.some((c) => c.especialidad.toLowerCase().includes(filtroEspecialidad.toLowerCase()))
-      })
-    }
-
-    setPacientesFiltrados(filtrados)
-  }
+  const obtenerHistorsDePaciente = (data: any, id_paciente: number) => {
+    return data.filter((h: any) => h.pacienteId == id_paciente.toString());
+  };
 
   const verHistoriaClinica = (pacienteSeleccionado: any) => {
     router.push(`/historias-clinicas?paciente=${pacienteSeleccionado.id}`)
@@ -276,17 +284,19 @@ export default function HistoriasClinicasPage() {
 
   useEffect(() => {
     if (vistaLista) {
-      filtrarPacientes()
+      fetchPacienteData();
     }
-  }, [filtroNombre, filtroEspecialidad, vistaLista, user])
+    fetchHistoriaData();
+  }, [vistaLista, user])
 
   useEffect(() => {
     if (pacienteId && !vistaLista) {
       // Buscar paciente
-      const pacienteEncontrado = mockPacientes.find((p) => p.id === pacienteId)
+      const parsed = parseInt(pacienteId);
+      const pacienteEncontrado = pacientes.find((p) => p.id === parsed)
 
-      if (user?.role === "profesional" && pacienteEncontrado) {
-        const tienePermiso = pacienteEncontrado.profesionalesAsignados.includes(user.id)
+      if (user?.rol === Role.PROFESIONAL && pacienteEncontrado) {
+        const tienePermiso = pacienteEncontrado.profesionalesAsignados.includes(user_id)
         if (!tienePermiso) {
           setPaciente(null)
           return
@@ -297,13 +307,13 @@ export default function HistoriasClinicasPage() {
 
       if (pacienteEncontrado) {
         // Buscar historia clínica
-        let historia = mockHistoriaClinica.filter((h) => h.pacienteId === pacienteId)
+        let historia = obtenerHistorsDePaciente(historias, parsed);
 
-        if (user?.role === "profesional") {
-          historia = historia.filter((h) => h.profesionalId === user.id)
+        if (user?.rol === Role.PROFESIONAL){
+          historia = historia.filter((h: any) => h.profesionalId === user_id)
         }
 
-        setHistoriaClinica(historia.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()))
+        setHistoriaClinica(historia.sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()))
       }
     } else {
       setVistaLista(true)
@@ -360,7 +370,7 @@ export default function HistoriasClinicasPage() {
     )
   }
 
-  if (user.role === "mesa-entrada") {
+  if (user.rol === Role.MESA_ENTRADA) {
     return (
       <MainLayout>
         <div className="p-6">
@@ -390,45 +400,10 @@ export default function HistoriasClinicasPage() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Historias Clínicas</h1>
               <p className="text-muted-foreground">
-                {user.role === "profesional" ? "Historias clínicas de tus pacientes" : "Gestión de historias clínicas"}
+                {user.rol === Role.PROFESIONAL ? "Historias clínicas de tus pacientes" : "Gestión de historias clínicas"}
               </p>
             </div>
           </div>
-
-          {/* Filtros */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filtros de Búsqueda
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nombre o DNI..."
-                    value={filtroNombre}
-                    onChange={(e) => setFiltroNombre(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={filtroEspecialidad} onValueChange={setFiltroEspecialidad}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filtrar por especialidad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas las especialidades</SelectItem>
-                    <SelectItem value="cardiologia">Cardiología</SelectItem>
-                    <SelectItem value="pediatria">Pediatría</SelectItem>
-                    <SelectItem value="ginecologia">Ginecología</SelectItem>
-                    <SelectItem value="medicina-general">Medicina General</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Lista de pacientes */}
           <Card>
@@ -444,7 +419,7 @@ export default function HistoriasClinicasPage() {
                 <div className="text-center py-8">
                   <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">
-                    {obtenerPacientesPermitidos().length === 0
+                    {obtenerPacientesPermitidos(pacientes).length === 0
                       ? "No tienes pacientes asignados"
                       : "No se encontraron pacientes con los filtros aplicados"}
                   </p>
@@ -452,11 +427,11 @@ export default function HistoriasClinicasPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pacientesFiltrados.map((pacienteItem) => {
-                    const consultasPaciente = mockHistoriaClinica.filter((h) => h.pacienteId === pacienteItem.id)
+                    const consultasPaciente = obtenerHistorsDePaciente(historias, pacienteItem.id as number);
                     const ultimaConsulta = consultasPaciente.sort(
-                      (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+                      (a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
                     )[0]
-                    const especialidades = [...new Set(consultasPaciente.map((c) => c.especialidad))]
+                    const especialidades = [...new Set(consultasPaciente.map((c: any) => c.especialidad))]
 
                     return (
                       <Card
@@ -502,7 +477,7 @@ export default function HistoriasClinicasPage() {
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {especialidades.slice(0, 2).map((esp, idx) => (
                                   <Badge key={idx} variant="outline" className="text-xs">
-                                    {esp}
+                                    {esp as string}
                                   </Badge>
                                 ))}
                                 {especialidades.length > 2 && (
@@ -534,7 +509,7 @@ export default function HistoriasClinicasPage() {
             <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground">
-                {user.role === "profesional"
+                {user.rol === Role.PROFESIONAL 
                   ? "No tienes permisos para ver la historia clínica de este paciente."
                   : "No se encontró el paciente especificado."}
               </p>
@@ -562,13 +537,13 @@ export default function HistoriasClinicasPage() {
             <div>
               <h1 className="text-3xl font-bold text-foreground">Historia Clínica</h1>
               <p className="text-muted-foreground">
-                {user.role === "profesional"
+                {user.rol ===  Role.PROFESIONAL
                   ? "Tus consultas con este paciente"
                   : "Registro médico completo del paciente"}
               </p>
             </div>
           </div>
-          {user.role === "profesional" && (
+          {user.rol === Role.PROFESIONAL && (
             <Button onClick={() => setShowNuevaConsulta(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Nueva Consulta
@@ -624,7 +599,13 @@ export default function HistoriasClinicasPage() {
             </div>
           </CardContent>
         </Card>
-
+        {/* Antecedentes Familiares */}
+        <AntecedentesFamiliaresCard 
+          pacienteId={paciente.id}
+          antecedentesInitial={paciente.antecedentes}
+          editable={user.rol ===Role.PROFESIONAL}
+          compact={false}
+          />
         {/* Resumen de la historia clínica */}
         <Card>
           <CardHeader>
@@ -670,10 +651,10 @@ export default function HistoriasClinicasPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              {user.role === "profesional" ? "Mis Consultas" : "Historial de Consultas"} ({historiaClinica.length})
+              {user.rol === Role.PROFESIONAL ? "Mis Consultas" : "Historial de Consultas"} ({historiaClinica.length})
             </CardTitle>
             <CardDescription>
-              {user.role === "profesional"
+              {user.rol === Role.PROFESIONAL 
                 ? "Consultas que has realizado con este paciente"
                 : "Consultas ordenadas por fecha (más reciente primero)"}
             </CardDescription>
@@ -683,11 +664,11 @@ export default function HistoriasClinicasPage() {
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
-                  {user.role === "profesional"
+                  {user.rol === Role.PROFESIONAL 
                     ? "No has realizado consultas con este paciente"
                     : "No hay consultas registradas"}
                 </p>
-                {user.role === "profesional" && (
+                {user.rol === Role.PROFESIONAL && (
                   <Button onClick={() => setShowNuevaConsulta(true)} className="mt-4 gap-2" variant="outline">
                     <Plus className="h-4 w-4" />
                     Agregar Primera Consulta
@@ -729,9 +710,11 @@ export default function HistoriasClinicasPage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Columna izquierda */}
                       <div className="space-y-4">
-                        {/* Anamnesis */}
+                        {/* HISTORIA DE LA ENFERMEDAD ACTUAL */}
                         <div>
-                          <h4 className="font-medium text-sm text-muted-foreground mb-2">ANAMNESIS</h4>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                            HISTORIA DE LA ENFERMEDAD ACTUAL
+                          </h4>
                           <p className="text-sm">{consulta.anamnesis}</p>
                         </div>
 
@@ -773,42 +756,6 @@ export default function HistoriasClinicasPage() {
 
                       {/* Columna derecha */}
                       <div className="space-y-4">
-                        {/* Medicamentos */}
-                        {consulta.medicamentos && consulta.medicamentos.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-sm text-muted-foreground mb-2">MEDICAMENTOS</h4>
-                            <div className="space-y-2">
-                              {consulta.medicamentos.map((med: any, idx: number) => (
-                                <div key={idx} className="bg-muted/50 p-2 rounded text-xs">
-                                  <div className="font-medium">
-                                    {med.nombre} {med.dosis}
-                                  </div>
-                                  <div className="text-muted-foreground">
-                                    {med.frecuencia} - {med.duracion}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Estudios complementarios */}
-                        {consulta.estudiosComplementarios && consulta.estudiosComplementarios.length > 0 && (
-                          <div>
-                            <h4 className="font-medium text-sm text-muted-foreground mb-2">ESTUDIOS COMPLEMENTARIOS</h4>
-                            <div className="space-y-2">
-                              {consulta.estudiosComplementarios.map((estudio: any, idx: number) => (
-                                <div key={idx} className="bg-muted/50 p-2 rounded text-xs">
-                                  <div className="font-medium">{estudio.tipo}</div>
-                                  <div className="text-muted-foreground">
-                                    {estudio.resultado} ({formatearFechaCorta(estudio.fecha)})
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
                         {/* Indicaciones */}
                         <div>
                           <h4 className="font-medium text-sm text-muted-foreground mb-2">INDICACIONES</h4>
@@ -842,11 +789,12 @@ export default function HistoriasClinicasPage() {
         </Card>
 
         {/* Dialog para nueva consulta */}
-        {user.role === "profesional" && (
+        {user.rol === Role.PROFESIONAL && (
           <NuevaConsultaDialog
             open={showNuevaConsulta}
             onOpenChange={setShowNuevaConsulta}
             paciente={paciente}
+            profesionalId={1}
             onConsultaCreada={handleNuevaConsulta}
           />
         )}

@@ -60,6 +60,7 @@ CREATE TABLE "public"."Paciente" (
     "fecha_nacimiento" TIMESTAMP(3) NOT NULL,
     "fecha_registro" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "telefono" VARCHAR(14) NOT NULL,
+    "antecedentes" TEXT,
     "id_obra_social" INTEGER,
     "num_obra_social" TEXT,
 
@@ -70,12 +71,19 @@ CREATE TABLE "public"."Paciente" (
 CREATE TABLE "public"."HistoriaClinica" (
     "id" SERIAL NOT NULL,
     "id_paciente" INTEGER NOT NULL,
+    "id_profesional" INTEGER NOT NULL,
+    "fecha" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "motivo" TEXT NOT NULL,
     "detalle" TEXT NOT NULL,
     "examen_fisico" TEXT,
     "signos_vitales" JSONB,
-    "fecha" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "id_profesional" INTEGER NOT NULL,
+    "diagnostico" TEXT NOT NULL,
+    "tratamiento" TEXT,
+    "medicamentos" JSONB,
+    "estudios" JSONB,
+    "indicaciones" TEXT,
+    "observaciones" TEXT,
+    "proximo_control" TIMESTAMP(3),
 
     CONSTRAINT "HistoriaClinica_pkey" PRIMARY KEY ("id")
 );

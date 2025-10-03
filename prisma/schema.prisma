@@ -57,6 +57,7 @@ model Paciente {
   fecha_nacimiento DateTime
   fecha_registro   DateTime          @default(now())
   telefono         String            @db.VarChar(14)
+  antecedentes     String?
   id_obra_social   Int?
   num_obra_social  String?
   historias        HistoriaClinica[]
@@ -67,12 +68,20 @@ model Paciente {
 model HistoriaClinica {
   id             Int         @id @default(autoincrement())
   id_paciente    Int
+  id_profesional Int
+  fecha          DateTime    @default(now())
   motivo         String
   detalle        String
   examen_fisico  String?
   signos_vitales Json?
-  fecha          DateTime    @default(now())
-  id_profesional Int
+  diagnostico    String
+  tratamiento    String?
+  medicamentos   Json?
+  estudios       Json?
+  indicaciones   String?
+  observaciones  String?
+  proximo_control DateTime?
+
   paciente       Paciente    @relation(fields: [id_paciente], references: [id])
   profesional    Profesional @relation(fields: [id_profesional], references: [id])
 }

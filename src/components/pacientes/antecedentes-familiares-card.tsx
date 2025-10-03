@@ -7,30 +7,40 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/context/auth-context"
 import { Edit, Save, X, Heart } from "lucide-react"
+import { Role } from "@/generated/prisma"
 
 interface AntecedentesFamiliaresCardProps {
   pacienteId: string
+  antecedentesInitial: string,
   editable?: boolean
   compact?: boolean
 }
 
-const mockAntecedentes =
-  "Padre: Infarto de miocardio a los 55 años. Madre: Diabetes tipo 2. Abuela materna: Hipertensión arterial."
-
 export function AntecedentesFamiliaresCard({
   pacienteId,
+  antecedentesInitial,
   editable = false,
   compact = false,
 }: AntecedentesFamiliaresCardProps) {
   const { user } = useAuth()
-  const [antecedentes, setAntecedentes] = useState<string>(mockAntecedentes)
+  const [antecedentes, setAntecedentes] = useState<string>(antecedentesInitial)
   const [isEditing, setIsEditing] = useState(false)
   const [tempAntecedentes, setTempAntecedentes] = useState<string>(antecedentes)
 
-  const puedeEditar = editable && (user?.role === "profesional" || user?.role === "gerente")
+  const puedeEditar = editable && (user?.rol === Role.PROFESIONAL || user?.rol === Role.GERENTE)
 
-  const handleGuardar = () => {
-    setAntecedentes(tempAntecedentes)
+  const handleGuardar = async () => {
+    const ret = await fetch('api/v2/historia/antecedente', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idPaciente: pacienteId, antecedente: tempAntecedentes })
+    })
+    .then(async (body) => await body.json());
+    if (ret.error) {
+      setAntecedentes(antecedentes)
+    } else {
+      setAntecedentes(tempAntecedentes);
+    }
     setIsEditing(false)
   }
 

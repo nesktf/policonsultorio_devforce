@@ -360,14 +360,37 @@ INSERT INTO "Paciente" ("nombre", "apellido", "dni", "direccion", "fecha_nacimie
 ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 321;
 
 
-INSERT INTO "HistoriaClinica" ("id", "id_paciente", "id_profesional", "motivo", "detalle") VALUES
-  (1, 1, 1, 'Infección Cardíaca', 'Al paciente se le extirpó el corazón por que se veía feo en las tomografías. Fue reemplazado por una bolsa con sangre y una bomba de nafta.'),
-  (2, 2, 2, 'Migrañas', 'El paciente expresa haber empezado a sentir dolores de cabeza luego de comer carne en descomposición. Se le ha recetado un paracetamol y se le ha enviado a casa'),
-  (3, 3, 3, 'Traumatismos Múltiples', 'El paciente se rompió 84 huesos del cuerpo al caer en una máquina para empaquetar pepinos. Se han iniciado tratamientos de recuperación'),
-  (4, 9, 4, 'Extracción de material extraño', 'El paciente se ha quedado atorado misteriosamente dentro de una pared mientras se la construía. Se han llevado a cabo procedimientos para remover los materiales de construcción de su cintura.'),
-  (5, 4, 7, 'Esquizofrenia', 'El paciente ha empezado a experimentar síntomas de esquizofrenia luego de lastimarse un ojo. Se ha iniciado un tratamiento con medicamentos.'),
-  (6, 11, 11, 'Cáncer de pìel', 'El paciente presenta síntomas de cáncer de piel luego de haberse sometido a un experimento con energía misteriosa a manos de una mujer en silla de ruedas. Se ha iniciado quimioterapia.');
-ALTER SEQUENCE "HistoriaClinica_id_seq" RESTART WITH 7;
+INSERT INTO "HistoriaClinica" (id, id_paciente, id_profesional, fecha, motivo, detalle, examen_fisico, signos_vitales, diagnostico, tratamiento, medicamentos, estudios, indicaciones, observaciones, proximo_control)
+VALUES
+  (1, 1, 1,
+    '2024-01-15 09:00:00.000',
+    'Control rutinario',
+    'Paciente refiere sentirse bien en general. Sin síntomas cardiovasculares. Mantiene actividad física regular.',
+    'Paciente en buen estado general. Signos vitales estables.',
+    '{ "presion": "120/80", "frecuencia": "72", "temperatura": "30.5", "peso": "68", "altura": "165", "oxigenacion": "98" }',
+    'Control cardiológico normal',
+    'Continuar con medicación actual',
+    '[{ "nombre": "Enalapril", "dosis": "10mg", "frecuencia": "1 vez al dia", "duracion": "Continuar"}, { "nombre": "Aspirina", "dosis": "100mg", "frecuencia": "1 vez al dia", "duracion": "Continuar"}]',
+    '[{ "tipo": "Electrocardiograma", "resultado": "Normal", "fecha": "2024-01-15"}, {"tipo": "Analisis de sangre", "resultado": "Valores normales", "fecha": "2024-01-10"}]',
+    'Mantener dieta baja en sodio. Continuar con ejercicio regular. Control en 6 meses.',
+    'Paciente colaborador, cumple bien con el tratamiento',
+    '2024-07-15 09:00:00.000'
+  ),
+  (2, 2, 2,
+    '2023-12-10 09:00:00.000',
+    'Seguimiento hipertension',
+    'Paciente con antecedentes de hipertensión arterial. Refiere adherencia al tratamiento.',
+    'Buen estado general. Auscultación cardiopulmonar normal.',
+    '{ "presion": "125/85", "frecuencia": "75", "temperatura": "36.3", "peso": "69", "altura": "165", "oxigenacion": "98" }',
+    'Hipertensión arterial controlada',
+    'Ajuste de medicación',
+    '[{ "nombre": "Enalapril", "dosis": "10mg", "frecuencia": "1 vez al día", "duracion": "3 meses" }]',
+    NULL,
+    'Dieta hiposódica. Control de peso. Ejercicio moderado.',
+    'Buen control de la presión arterial.',
+    '2024-01-15 09:00:00.000'
+  );
+ALTER SEQUENCE "Paciente_id_seq" RESTART WITH 2;
 
 INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "estado") VALUES
   (1, 1,  1, '2025-09-21 11:00:00.00', 'PROGRAMADO'),
