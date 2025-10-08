@@ -1,4 +1,3 @@
-// app/api/v1/turnos/route.ts
 import { prisma } from "@/prisma/instance";
 import { NextResponse } from "next/server";
 

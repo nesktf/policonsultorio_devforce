@@ -256,11 +256,13 @@ export function NuevoTurnoDialog({
 
     setIsSubmitting(true);
     try {
-      const fechaCompletaStr = `${fechaIso} ${hora}:00`;
-
+      const fechaLocal = new Date(`${fechaIso}T${hora}:00`);
+      const fechaUTC = new Date(
+        fechaLocal.getTime() - fechaLocal.getTimezoneOffset() * 60000
+      );
       console.log("fechaIso:", fechaIso);
       console.log("hora:", hora);
-      console.log("fechaCompletaStr:", fechaCompletaStr);
+      console.log("fechaCompletaStr:", fechaUTC);
 
       const response = await fetch("/api/v2/turnos", {
         method: "POST",
@@ -270,7 +272,7 @@ export function NuevoTurnoDialog({
         body: JSON.stringify({
           pacienteId: pacienteSeleccionado.id,
           profesionalId: Number(profesionalId),
-          fecha: fechaCompletaStr,
+          fecha: fechaUTC.toISOString(), // ISO UTC format
           durationMinutes: Number(duracion),
           motivo: motivo.trim(),
           detalle: notas.trim() || motivo.trim(),
