@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getPacientesNuevosPorMes } from '@/prisma/pacientes';
+import { getPacientesNuevosPorPeriodo } from '@/prisma/pacientes';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const YEAR_REGEX = /^\d{4}$/;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseIntOrNull(value: string | null) {
   if (!value) {
@@ -17,19 +17,39 @@ function parseIntOrNull(value: string | null) {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const yearParam = searchParams.get('year');
-  if (!yearParam || !YEAR_REGEX.test(yearParam)) {
+  const fechaInicio = searchParams.get('fechaInicio');
+  const fechaFin = searchParams.get('fechaFin');
+
+  if (!fechaInicio || !DATE_REGEX.test(fechaInicio)) {
     return NextResponse.json(
-      { error: 'Debes indicar el parámetro "year" con un año de cuatro dígitos.' },
+      { error: 'Debes indicar el parámetro "fechaInicio" con formato YYYY-MM-DD.' },
       { status: 400 },
     );
   }
 
-  const year = Number(yearParam);
-  const obraSocialId = parseIntOrNull(searchParams.get('obraSocialId'));
+  if (!fechaFin || !DATE_REGEX.test(fechaFin)) {
+    return NextResponse.json(
+      { error: 'Debes indicar el parámetro "fechaFin" con formato YYYY-MM-DD.' },
+      { status: 400 },
+    );
+  }
+
+  const obraSocialIdParam = searchParams.get('obraSocialId');
+  let id_obra_social: number | null | 'sin-obra-social' = null;
+  
+  if (obraSocialIdParam === 'sin-obra-social') {
+    id_obra_social = 'sin-obra-social';
+  } else if (obraSocialIdParam) {
+    const parsed = parseIntOrNull(obraSocialIdParam);
+    id_obra_social = parsed;
+  }
 
   try {
-    const reporte = await getPacientesNuevosPorMes(year, obraSocialId);
+    const reporte = await getPacientesNuevosPorPeriodo(
+      new Date(fechaInicio),
+      new Date(fechaFin),
+      id_obra_social
+    );
 
     return NextResponse.json(
       {
