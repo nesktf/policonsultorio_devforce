@@ -89,15 +89,15 @@ export default function ReportesPage() {
     },
     {
       id: "turnos-profesional",
-      titulo: "Turnos por Profesional",
-      descripcion: "Distribución y estadísticas de turnos de cada profesional médico",
+      titulo: "Detalles por obra social",
+      descripcion: "Algunas estadisticas y datos asociados a profesionales, pacientes y obras sociales",
       icon: Activity,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       borderColor: "border-purple-200",
-      disponible: false,
-      href: "/reportes/turnos-profesional",
-      stats: ["Carga horaria", "Tasas", "Comparativas"]
+      disponible: true,
+      href: "/reportes/obras-sociales",
+      stats: ["", "Tasas", "Comparativas"]
     },
     {
       id: "turnos-cancelados",
