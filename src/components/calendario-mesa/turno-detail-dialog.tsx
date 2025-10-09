@@ -16,6 +16,8 @@ import {
   UserX
 } from "lucide-react"
 
+type CancelacionOrigen = "PACIENTE" | "PROFESIONAL"
+
 interface Turno {
   id: string
   hora: string
@@ -34,11 +36,19 @@ interface Turno {
   notas?: string
 }
 
+interface EstadoChangeOptions {
+  solicitadoPor?: CancelacionOrigen
+}
+
 interface TurnoDetailDialogProps {
   turno: Turno
   open: boolean
   onOpenChange: (open: boolean) => void
-  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"]) => void
+  onEstadoChange: (
+    turnoId: string,
+    nuevoEstado: Turno["estado"],
+    opciones?: EstadoChangeOptions,
+  ) => void
   puedeModificar?: boolean
 }
 

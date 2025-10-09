@@ -15,7 +15,9 @@ import {
   Activity,
   TrendingUp,
   Calendar,
-  UserPlus
+  UserPlus,
+  CalendarRange,
+  CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -76,7 +78,7 @@ export default function ReportesPage() {
     {
       id: "nuevos-pacientes",
       titulo: "Nuevos Pacientes",
-      descripcion: "Registro de pacientes nuevos por perí­odo y análisis de crecimiento",
+      descripcion: "Registro de pacientes nuevos por período y análisis de crecimiento",
       icon: UserPlus,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -100,14 +102,38 @@ export default function ReportesPage() {
     {
       id: "turnos-cancelados",
       titulo: "Turnos Cancelados",
-      descripcion: "Análisis de turnos cancelados, motivos y patrones de cancelación",
+      descripcion: "Análisis de turnos cancelados y solicitantes de la cancelación",
       icon: XCircle,
       color: "text-red-600",
       bgColor: "bg-red-50",
       borderColor: "border-red-200",
-      disponible: false,
+      disponible: true,
       href: "/reportes/turnos-cancelados",
-      stats: ["Por motivo", "Tasa cancelación", "Profesional"]
+      stats: ["Por solicitante", "Tasa cancelación", "Profesional"]
+    },
+    {
+      id: "pacientes-atendidos",
+      titulo: "Pacientes Atendidos",
+      descripcion: "Seguimiento de pacientes asistidos vs. no asistidos en el período",
+      icon: CheckCircle2,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      disponible: true,
+      href: "/reportes/pacientes-atendidos",
+      stats: ["Asistidos", "No asistidos", "Cancelados"]
+    },
+    {
+      id: "paciente-por-periodo",
+      titulo: "Pacientes por Período",
+      descripcion: "Volumen de pacientes atendidos comparado por períodos seleccionados",
+      icon: CalendarRange,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+      disponible: true,
+      href: "/reportes/paciente-por-periodo",
+      stats: ["Por semana", "Por mes", "Tendencias"]
     },
   ]
 
@@ -116,7 +142,7 @@ export default function ReportesPage() {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Reportes y Estadí­sticas</h1>
+          <h1 className="text-3xl font-bold text-foreground">Reportes y Estadísticas</h1>
           <p className="text-muted-foreground">
             Análisis detallados para la toma de decisiones
           </p>
@@ -156,8 +182,8 @@ export default function ReportesPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Categorí­as</p>
-                  <p className="text-3xl font-bold text-blue-600">4</p>
+                  <p className="text-sm text-muted-foreground">Reportes Totales</p>
+                  <p className="text-3xl font-bold text-blue-600">{reportes.length}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-600 opacity-20" />
               </div>

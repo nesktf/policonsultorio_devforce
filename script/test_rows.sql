@@ -59,7 +59,7 @@ INSERT INTO "ProfesionalObraSocial" ("id", "id_obra_social", "id_profesional") V
   (17, 1, 3),
   (18, 4, 8),
   (19, 1, 1),
-  (20, 2, 3);
+(20, 2, 3);
 ALTER SEQUENCE "ProfesionalObraSocial_id_seq" RESTART WITH 21;
 
 INSERT INTO "Paciente" ("id", "nombre", "apellido", "dni", "direccion", "fecha_nacimiento", "fecha_registro", "telefono", "id_obra_social", "num_obra_social") VALUES
@@ -629,6 +629,19 @@ INSERT INTO "Turno" ("id", "id_profesional", "id_paciente", "fecha", "duracion_m
 (167, 7, 71, '2025-10-04 18:00:00', 45, 'PROGRAMADO');
 
 ALTER SEQUENCE "Turno_id_seq" RESTART WITH 168;
+
+INSERT INTO "TurnoCancelacionLog" ("id", "turnoId", "canceladoPorId", "solicitadoPor", "fecha") VALUES
+  (1, 2, 3, 'PACIENTE', '2025-08-15 10:15:00'),
+  (2, 7, 1, 'PROFESIONAL', '2025-08-18 08:45:00'),
+  (3, 12, 3, 'PACIENTE', '2025-07-03 16:20:00'),
+  (4, 19, 2, 'PROFESIONAL', '2025-07-10 11:30:00'),
+  (5, 27, 3, 'PACIENTE', '2025-07-12 17:05:00'),
+  (6, 35, 3, 'PACIENTE', '2025-08-01 12:10:00'),
+  (7, 43, 2, 'PROFESIONAL', '2025-08-06 14:35:00'),
+  (8, 51, 3, 'PACIENTE', '2025-08-09 09:50:00'),
+  (9, 59, 3, 'PACIENTE', '2025-09-01 15:25:00'),
+  (10, 66, 3, 'PACIENTE', '2025-09-04 13:05:00');
+ALTER SEQUENCE "TurnoCancelacionLog_id_seq" RESTART WITH 11;
 
 UPDATE "Profesional" SET "userId" = 1 WHERE id = 1;  -- profesional@gmail.com -> Eirin Yagokoro
 UPDATE "Profesional" SET "userId" = 2 WHERE id = 2;  -- profesional2@gmail.com -> Reimu Hakurei
