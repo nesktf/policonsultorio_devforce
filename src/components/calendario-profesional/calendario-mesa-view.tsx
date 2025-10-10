@@ -7,6 +7,7 @@ import { TurnoCard } from "@/components/calendario-profesional/turno-card";
 import { TurnoDetailDialog } from "@/components/calendario-profesional/turno-detail-dialog";
 import { useAuth } from "@/context/auth-context";
 import { Clock } from "lucide-react";
+import { NuevaConsultaDialog } from "@/components/pacientes/nueva-consulta-dialog";
 
 export interface Turno {
   id: string;
@@ -85,6 +86,14 @@ export function CalendarioMesaView({
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openNuevaConsulta, setOpenNuevaConsulta] = useState(false);
+  const [pacienteParaConsulta, setPacienteParaConsulta] = useState<{
+    id: number;
+    nombre: string;
+    apellido?: string;
+    dni?: string;
+    telefono?: string;
+  } | null>(null);
 
   const puedeModificar = user?.rol === "MESA_ENTRADA";
 
@@ -118,8 +127,8 @@ export function CalendarioMesaView({
           // Extraer hora directamente de la fecha ISO sin conversión de timezone
           // porque la fecha ya viene en el formato correcto desde el servidor
           const fechaISO = new Date(turno.fecha);
-          const hora = fechaISO.getUTCHours().toString().padStart(2, '0');
-          const minutos = fechaISO.getUTCMinutes().toString().padStart(2, '0');
+          const hora = fechaISO.getUTCHours().toString().padStart(2, "0");
+          const minutos = fechaISO.getUTCMinutes().toString().padStart(2, "0");
           const horaFormateada = `${hora}:${minutos}`;
 
           return {
@@ -140,6 +149,38 @@ export function CalendarioMesaView({
 
     fetchTurnos();
   }, [profesionalId, selectedDate]);
+
+  // NUEVO: cambiar estado (optimista + rollback)
+  const handleEstadoChange = async (
+    turnoId: string,
+    nuevoEstado: Turno["estado"]
+  ) => {
+    const turnoAnterior = turnos.find((t) => t.id === turnoId);
+    // optimista
+    setTurnos((prev) =>
+      prev.map((t) => (t.id === turnoId ? { ...t, estado: nuevoEstado } : t))
+    );
+
+    try {
+      const response = await fetch(`/api/v1/turnos/${turnoId}/estado`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al actualizar el estado del turno");
+      }
+    } catch (error) {
+      console.error("Error al actualizar estado:", error);
+      // rollback
+      if (turnoAnterior) {
+        setTurnos((prev) =>
+          prev.map((t) => (t.id === turnoId ? turnoAnterior : t))
+        );
+      }
+    }
+  };
 
   const turnosFiltrados = turnos.filter((t) =>
     esMismaFecha(new Date(t.fecha), selectedDate)
@@ -191,7 +232,7 @@ export function CalendarioMesaView({
                         turno={turno}
                         onClick={() => setSelectedTurno(turno)}
                         puedeModificar={puedeModificar}
-                        onEstadoChange={() => {}}
+                        onEstadoChange={handleEstadoChange} // <-- PASAMOS la función
                       />
                     ))}
                   </div>
@@ -207,6 +248,26 @@ export function CalendarioMesaView({
           turno={selectedTurno}
           open={!!selectedTurno}
           onOpenChange={(open) => !open && setSelectedTurno(null)}
+          onEstadoChange={handleEstadoChange} // <-- PASAMOS la función
+          puedeModificar={puedeModificar}
+          onNuevaConsulta={(paciente) => {
+            setPacienteParaConsulta(paciente);
+            setOpenNuevaConsulta(true);
+          }}
+        />
+      )}
+      {pacienteParaConsulta && (
+        <NuevaConsultaDialog
+          paciente={{
+            ...pacienteParaConsulta,
+            id: pacienteParaConsulta.id.toString(), // <-- aquí
+            apellido: pacienteParaConsulta.apellido || "",
+            dni: pacienteParaConsulta.dni || "",
+          }}
+          open={openNuevaConsulta}
+          onOpenChange={setOpenNuevaConsulta}
+          profesionalId={profesionalId} // si quieres pasar el id del profesional
+          onConsultaCreada={() => {}}
         />
       )}
     </div>
