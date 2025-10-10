@@ -41,7 +41,9 @@ export default function ReportesPage() {
     )
   }
 
-  if (user.rol !== "GERENTE") {
+  const rolesConAcceso = new Set(["GERENTE", "MESA_ENTRADA", "PROFESIONAL"])
+
+  if (!rolesConAcceso.has(user.rol)) {
     return (
       <MainLayout>
         <div className="p-6">
@@ -137,6 +139,40 @@ export default function ReportesPage() {
     },
   ]
 
+  const reportesPorRol: Record<"GERENTE" | "MESA_ENTRADA" | "PROFESIONAL", string[]> = {
+    GERENTE: reportes.map((reporte) => reporte.id),
+    MESA_ENTRADA: ["pacientes-atendidos", "turnos-cancelados"],
+    PROFESIONAL: ["paciente-por-periodo"],
+  }
+
+  const reportesDisponiblesIds = reportesPorRol[user.rol] ?? []
+  const reportesVisibles = reportes.filter((reporte) => reportesDisponiblesIds.includes(reporte.id))
+  const cantidadReportesDisponibles = reportesVisibles.filter((reporte) => reporte.disponible).length
+  const cantidadReportesProximamente = reportesVisibles.filter((reporte) => !reporte.disponible).length
+
+  if (reportesVisibles.length === 0) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
+              <AlertCircle className="h-12 w-12 text-muted-foreground" />
+              <p className="text-muted-foreground text-center">
+                No hay reportes habilitados para tu rol en este momento.
+              </p>
+              <Link href="/">
+                <Button variant="outline" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver al Dashboard
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    )
+  }
+
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
@@ -156,7 +192,7 @@ export default function ReportesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Reportes Disponibles</p>
                   <p className="text-3xl font-bold text-primary">
-                    {reportes.filter(r => r.disponible).length}
+                    {cantidadReportesDisponibles}
                   </p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-primary opacity-20" />
@@ -170,7 +206,7 @@ export default function ReportesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Próximamente</p>
                   <p className="text-3xl font-bold text-orange-600">
-                    {reportes.filter(r => !r.disponible).length}
+                    {cantidadReportesProximamente}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-orange-600 opacity-20" />
@@ -183,7 +219,7 @@ export default function ReportesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Reportes Totales</p>
-                  <p className="text-3xl font-bold text-blue-600">{reportes.length}</p>
+                  <p className="text-3xl font-bold text-blue-600">{reportesVisibles.length}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-600 opacity-20" />
               </div>
@@ -193,7 +229,7 @@ export default function ReportesPage() {
 
         {/* Grid de Reportes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {reportes.map((reporte) => {
+          {reportesVisibles.map((reporte) => {
             const Icon = reporte.icon
             
             return (

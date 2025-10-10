@@ -89,7 +89,7 @@ const toInputDate = (date: Date) =>
 
 export default function ReporteTurnosCancelados() {
   const { user } = useAuth()
-  const canAccessReport = user?.rol === "GERENTE"
+  const canAccessReport = user?.rol === "GERENTE" || user?.rol === "MESA_ENTRADA"
 
   const [filters, setFilters] = useState(() => {
     const now = new Date()
