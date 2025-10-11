@@ -127,7 +127,7 @@ export default function ReportesPage() {
     },
     {
       id: "paciente-por-periodo",
-      titulo: "Pacientes por Período",
+      titulo: "Pacientes Atendidos por Período",
       descripcion: "Volumen de pacientes atendidos comparado por períodos seleccionados",
       icon: CalendarRange,
       color: "text-indigo-600",

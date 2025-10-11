@@ -524,7 +524,6 @@ useEffect(() => {
                         <th className="p-3 font-semibold">Profesional</th>
                         <th className="p-3 font-semibold">Especialidad</th>
                         <th className="p-3 font-semibold">Solicitado por</th>
-                        <th className="p-3 font-semibold">Registrado por</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -543,9 +542,6 @@ useEffect(() => {
                             {log.turno.profesional.especialidad ?? "Sin especialidad"}
                           </td>
                           <td className="p-3">{log.solicitadoPorEtiqueta}</td>
-                          <td className="p-3 text-sm text-muted-foreground">
-                            {log.canceladoPor ? log.canceladoPor.nombre : "—"}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
