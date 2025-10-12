@@ -1,5 +1,7 @@
 "use client"
 
+import { MouseEvent } from "react"
+
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,6 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { User, Stethoscope, Clock, MoreVertical, CheckCircle, XCircle, Calendar, UserX, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+type CancelacionOrigen = "PACIENTE" | "PROFESIONAL"
 
 interface Turno {
   id: string
@@ -30,10 +34,14 @@ interface Turno {
   notas?: string
 }
 
+interface EstadoChangeOptions {
+  solicitadoPor?: CancelacionOrigen
+}
+
 interface TurnoCardProps {
   turno: Turno
   onClick: () => void
-  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"]) => void
+  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"], opciones?: EstadoChangeOptions) => void
   puedeModificar?: boolean
 }
 
@@ -74,8 +82,8 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
   const config = estadoConfig[turno.estado]
   const Icon = config.icon
 
-  const handleEstadoClick = (e: React.MouseEvent, nuevoEstado: Turno["estado"]) => {
-    e.stopPropagation()
+  const handleEstadoClick = (event: MouseEvent, nuevoEstado: Turno["estado"]) => {
+    event.stopPropagation()
     if (puedeModificar) {
       onEstadoChange(turno.id, nuevoEstado)
     }
