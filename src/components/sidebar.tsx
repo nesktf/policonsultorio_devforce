@@ -82,6 +82,14 @@ export function Sidebar() {
                   height={32}
                   className="object-contain"
                 />
+                
+                {/* Opción 2: Usando img normal si no usas Next.js Image
+                <img 
+                  src="/logo.png" 
+                  alt="DevForce Logo" 
+                  className="w-full h-full object-contain"
+                />
+                */}
               </div>
               <div>
                 <h2 className="font-semibold text-sm text-foreground">DevForce</h2>
