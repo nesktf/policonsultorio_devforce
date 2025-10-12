@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { TurnoCard } from "@/components/calendario-mesa/turno-card"
 import { TurnoDetailDialog } from "@/components/calendario-mesa/turno-detail-dialog"
+import { CancelarTurnoDialog } from "@/components/turnos/cancelar-turno-dialog"
 import { useAuth } from "@/context/auth-context"
-import { Clock, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
+
+type CancelacionOrigen = "PACIENTE" | "PROFESIONAL"
 
 interface Turno {
   id: string
@@ -27,6 +29,31 @@ interface Turno {
   notas?: string
 }
 
+interface TurnoApiResponse {
+  id: number
+  hora: string
+  paciente: {
+    nombre: string
+    apellido: string
+    dni: string
+    telefono: string
+  }
+  profesional: {
+    id: number
+    nombre: string
+    apellido: string
+    especialidad: string
+  }
+  estado: Turno["estado"]
+  duracion: number
+}
+
+interface TurnoConLayout extends Turno {
+  bloques: number
+  indiceInicio: number
+  indiceFin: number
+}
+
 interface CalendarioMesaViewProps {
   selectedDate: Date
   selectedProfesional: string
@@ -44,6 +71,8 @@ const generarBloques = () => {
 }
 
 const bloquesHorarios = generarBloques()
+// Constante para la altura de cada fila de 15 minutos en píxeles.
+const ROW_HEIGHT_PX = 105
 
 export function CalendarioMesaView({
   selectedDate,
@@ -55,6 +84,8 @@ export function CalendarioMesaView({
   const [turnos, setTurnos] = useState<Turno[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cancelDialog, setCancelDialog] = useState<{ turnoId: string } | null>(null)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   const puedeModificar = user?.rol === "MESA_ENTRADA"
 
@@ -84,9 +115,9 @@ export function CalendarioMesaView({
           throw new Error("Error al cargar los turnos")
         }
         
-        const data = await response.json()
+        const data = (await response.json()) as { turnos: TurnoApiResponse[] }
         
-        const turnosFormateados = data.turnos.map((turno: any) => ({
+        const turnosFormateados = data.turnos.map((turno) => ({
           id: turno.id.toString(),
           hora: turno.hora,
           paciente: {
@@ -117,97 +148,129 @@ export function CalendarioMesaView({
     fetchTurnos()
   }, [selectedDate, selectedProfesional, selectedEspecialidad])
 
-  const handleEstadoChange = async (turnoId: string, nuevoEstado: Turno["estado"]) => {
-    const turnoAnterior = turnos.find(t => t.id === turnoId)
-    
+  const handleEstadoChange = async (
+    turnoId: string,
+    nuevoEstado: Turno["estado"],
+    opciones?: { solicitadoPor?: CancelacionOrigen },
+  ) => {
+    setError(null)
+    if (nuevoEstado === "CANCELADO" && (!opciones || !opciones.solicitadoPor)) {
+      setCancelDialog({ turnoId })
+      return
+    }
+
+    const turnoAnterior = turnos.find((t) => t.id === turnoId)
+
     setTurnos((prev) =>
       prev.map((t) =>
-        t.id === turnoId ? { ...t, estado: nuevoEstado } : t
-      )
+        t.id === turnoId
+          ? {
+              ...t,
+              estado: nuevoEstado,
+            }
+          : t,
+      ),
     )
-    
+
     try {
       const response = await fetch(`/api/v1/turnos/${turnoId}/estado`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: nuevoEstado })
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          estado: nuevoEstado,
+          solicitadoPor: opciones?.solicitadoPor,
+          canceladoPorId: user?.id,
+        }),
       })
-      
+
       if (!response.ok) {
-        throw new Error('Error al actualizar el estado del turno')
+        throw new Error("Error al actualizar el estado del turno")
       }
     } catch (error) {
-      console.error('Error al actualizar estado:', error)
-      
+      console.error("Error al actualizar estado:", error)
+
       if (turnoAnterior) {
         setTurnos((prev) =>
-          prev.map((t) =>
-            t.id === turnoId ? turnoAnterior : t
-          )
+          prev.map((t) => (t.id === turnoId ? turnoAnterior : t)),
         )
+      }
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el estado del turno."
+      setError(errorMessage)
+
+      if (nuevoEstado === "CANCELADO") {
+        throw error instanceof Error ? error : new Error(errorMessage)
       }
     }
   }
 
+  const handleConfirmCancelacion = async (
+    solicitadoPor: CancelacionOrigen,
+  ) => {
+    if (!cancelDialog) return
+    setError(null)
+    setIsCancelling(true)
+    try {
+      await handleEstadoChange(cancelDialog.turnoId, "CANCELADO", {
+        solicitadoPor,
+      })
+      setCancelDialog(null)
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo cancelar el turno.",
+      )
+    } finally {
+      setIsCancelling(false)
+    }
+  }
+
   const calcularBloques = (duracion: number) => {
+    if (duracion <= 0) return 1
     return Math.ceil(duracion / 15)
   }
 
   const organizarTurnosPorColumnas = () => {
-    // Sistema mejorado que evita completamente las superposiciones
-    const turnosConBloques = turnos.map(turno => {
+    const turnosPorColumna: TurnoConLayout[][] = []
+
+    const turnosConBloques: TurnoConLayout[] = turnos.map((turno) => {
       const bloques = calcularBloques(turno.duracion)
       const indiceInicio = bloquesHorarios.indexOf(turno.hora)
-      // Calcular altura mínima en bloques (120px = ~2.14 bloques, redondeamos a 3)
-      const bloquesMinimos = Math.max(bloques, 3)
       return {
         ...turno,
         bloques,
-        bloquesMinimos,
         indiceInicio,
-        indiceFin: indiceInicio + bloquesMinimos
+        indiceFin: indiceInicio + bloques,
       }
-    }).filter(t => t.indiceInicio !== -1)
-    .sort((a, b) => a.indiceInicio - b.indiceInicio)
+    })
+    .filter(t => t.indiceInicio !== -1)
+    .sort((a, b) => a.indiceInicio - b.indiceInicio || b.bloques - a.bloques)
 
-    // Estructura para rastrear qué bloques están ocupados en cada columna
-    const columnasOcupadas: Array<Set<number>> = []
-    const turnosPorColumna: Array<Array<typeof turnosConBloques[0]>> = []
+    const columnasOcupadas: Array<Array<{ inicio: number; fin: number }>> = []
 
     turnosConBloques.forEach(turno => {
       let columnaAsignada = -1
       
-      // Buscar la primera columna donde todos los bloques necesarios estén libres
       for (let col = 0; col < columnasOcupadas.length; col++) {
-        let puedePoner = true
-        
-        // Verificar si todos los bloques que necesita el turno están libres
-        for (let bloque = turno.indiceInicio; bloque < turno.indiceFin; bloque++) {
-          if (columnasOcupadas[col].has(bloque)) {
-            puedePoner = false
-            break
-          }
-        }
-        
-        if (puedePoner) {
+        const seSuperpone = columnasOcupadas[col].some(
+          turnoPuesto => turno.indiceInicio < turnoPuesto.fin && turno.indiceFin > turnoPuesto.inicio
+        )
+        if (!seSuperpone) {
           columnaAsignada = col
           break
         }
       }
       
-      // Si no se encontró columna disponible, crear una nueva
       if (columnaAsignada === -1) {
         columnaAsignada = columnasOcupadas.length
-        columnasOcupadas.push(new Set())
+        columnasOcupadas.push([])
         turnosPorColumna.push([])
       }
       
-      // Marcar todos los bloques como ocupados en esta columna
-      for (let bloque = turno.indiceInicio; bloque < turno.indiceFin; bloque++) {
-        columnasOcupadas[columnaAsignada].add(bloque)
-      }
-      
-      // Agregar el turno a su columna
+      columnasOcupadas[columnaAsignada].push({ inicio: turno.indiceInicio, fin: turno.indiceFin })
       turnosPorColumna[columnaAsignada].push(turno)
     })
 
@@ -248,11 +311,23 @@ export function CalendarioMesaView({
   }
 
   const stats = getEstadisticas()
+
+  if (loading) {
+    return (
+      <Card className="p-12 flex items-center justify-center min-h-[500px]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Cargando turnos...</p>
+        </div>
+      </Card>
+    )
+  }
+
   const columnas = organizarTurnosPorColumnas()
-  const anchoColumna = 240 // Ancho reducido de cada columna
+  const anchoColumna = 240
 
   return (
-    <div className="space-y-4">
+    <>
       {/* Estadísticas */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="p-4">
@@ -298,30 +373,24 @@ export function CalendarioMesaView({
           <p className="text-2xl font-bold text-red-600">{stats.cancelados}</p>
         </Card>
       </div>
-
-      {/* Grid de Turnos - SCROLL VERTICAL EXTERNO */}
+      
       <Card className="p-0 overflow-hidden">
-        {/* Header fijo */}
-        <div className="sticky top-0 bg-background border-b h-12 flex items-center px-4 z-20">
-          <span className="text-xs font-semibold text-muted-foreground">CALENDARIO DEL DÍA</span>
-        </div>
-
-        {/* Contenedor principal con scroll vertical */}
-        <div className="max-h-[calc(100vh-160px)] overflow-y-auto overflow-x-hidden">
-          <div className="flex overflow-x-auto pb-4">
+        <div className="max-h-[calc(100vh-100px)] overflow-y-auto">
+          <div className="flex">
             {/* Columna de horas FIJA */}
-            <div className="w-16 border-r bg-muted/30 flex-shrink-0 sticky left-0 z-10">
+            <div className="w-20 border-r bg-muted/30 flex-shrink-0 sticky top-0 left-0 z-10">
               {bloquesHorarios.map((bloque) => {
                 const esInicioHora = bloque.endsWith(':00')
                 return (
                   <div 
                     key={`hora-${bloque}`}
-                    className={`h-14 flex items-center justify-center ${
-                      esInicioHora ? 'border-t-2 border-t-gray-300 bg-muted/50' : 'border-t border-t-gray-100'
+                    className={`flex items-center justify-center text-center ${
+                      esInicioHora ? 'border-t-2 border-t-slate-300' : 'border-t border-t-slate-200'
                     }`}
+                    style={{ height: `${ROW_HEIGHT_PX}px` }}
                   >
                     {esInicioHora && (
-                      <span className="font-mono text-xs font-bold">
+                      <span className="font-mono text-xs font-bold text-slate-600">
                         {bloque}
                       </span>
                     )}
@@ -330,55 +399,54 @@ export function CalendarioMesaView({
               })}
             </div>
 
-            {/* Área de turnos con SCROLL HORIZONTAL INTERNO */}
-            <div className="flex-1 overflow-x-auto">
+            {/* Área de turnos con SCROLL HORIZONTAL */}
+            <div className="flex-1">
               <div 
                 className="relative"
                 style={{ 
-                  minWidth: `${columnas.length * anchoColumna}px`,
-                  height: `${bloquesHorarios.length * 56}px` // 56px por bloque (h-14)
+                  width: `${columnas.length * anchoColumna}px`,
+                  minWidth: '100%',
+                  height: `${bloquesHorarios.length * ROW_HEIGHT_PX}px`
                 }}
               >
                 {/* Grid de fondo */}
-                {bloquesHorarios.map((bloque, index) => {
-                  const esInicioHora = bloque.endsWith(':00')
+                {bloquesHorarios.map((_, index) => {
+                  const esInicioHora = bloquesHorarios[index].endsWith(':00')
                   return (
                     <div
-                      key={`bg-${bloque}`}
+                      key={`bg-${index}`}
                       className={`absolute w-full ${
-                        esInicioHora ? 'border-t-2 border-t-gray-300' : 'border-t border-t-gray-100'
+                        esInicioHora ? 'border-t-2 border-t-slate-300' : 'border-t border-t-slate-200'
                       }`}
                       style={{
-                        top: `${index * 56}px`, //aca 56
-                        height: '56px'          //aca 56
+                        top: `${index * ROW_HEIGHT_PX}px`,
+                        height: `${ROW_HEIGHT_PX}px`
                       }}
                     />
                   )
                 })}
 
                 {/* Columnas de turnos */}
-                {columnas.map((columna, colIndex) => (
+                {columnas.map((columna: TurnoConLayout[], colIndex: number) => (
                   <div
                     key={`col-${colIndex}`}
-                    className="absolute top-0"
+                    className="absolute top-0 h-full"
                     style={{
-                      left: `${colIndex * anchoColumna + 8}px`,
-                      width: `${anchoColumna - 16}px`
+                      left: `${colIndex * anchoColumna}px`,
+                      width: `${anchoColumna}px`,
+                      padding: '0 4px',
                     }}
                   >
-                    {columna.map((turno) => {
-                      const alturaReal = turno.bloques * 56    //56
-                      const alturaMinima = 120
-                      const alturaFinal = Math.max(alturaReal, alturaMinima)
-                      
+                    {columna.map((turno: TurnoConLayout) => {
+                      const alturaCalculada = turno.bloques * ROW_HEIGHT_PX
                       return (
                         <div
                           key={turno.id}
-                          className="absolute"
+                          className="absolute w-[calc(100%-8px)]"
                           style={{
-                            top: `${turno.indiceInicio * 56}px`, //56
-                            height: `${alturaFinal}px`,
-                            width: '100%'
+                            top: `${turno.indiceInicio * ROW_HEIGHT_PX}px`,
+                            height: `${alturaCalculada - 2}px`,
+                            marginTop: '1px',
                           }}
                         >
                           <TurnoCard
@@ -408,6 +476,19 @@ export function CalendarioMesaView({
           puedeModificar={puedeModificar}
         />
       )}
-    </div>
+
+      <CancelarTurnoDialog
+        open={cancelDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelDialog(null)
+          }
+        }}
+        onConfirm={async ({ solicitadoPor }) => {
+          await handleConfirmCancelacion(solicitadoPor)
+        }}
+        isSubmitting={isCancelling}
+      />
+    </>
   )
 }

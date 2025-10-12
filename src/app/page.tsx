@@ -61,6 +61,14 @@ export default function HomePage() {
           color: "bg-green-50 border-green-200 hover:bg-green-100",
           iconColor: "text-green-600",
         },
+        {
+          icon: Activity,
+          title: "Reportes",
+          description: "Acceder a estadísticas y reportes del consultorio",
+          href: "/reportes",
+          color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
+          iconColor: "text-orange-600",
+        },
       ]
     }
 
@@ -89,6 +97,14 @@ export default function HomePage() {
           href: "/historias-clinicas",
           color: "bg-amber-50 border-amber-200 hover:bg-amber-100",
           iconColor: "text-amber-600",
+        },
+        {
+          icon: Activity,
+          title: "Reportes",
+          description: "Ver estadísticas de pacientes y turnos",
+          href: "/reportes",
+          color: "bg-orange-50 border-orange-200 hover:bg-orange-100",
+          iconColor: "text-orange-600",
         },
       ]
     }

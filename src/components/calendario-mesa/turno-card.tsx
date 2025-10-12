@@ -1,5 +1,7 @@
 "use client"
 
+import { MouseEvent } from "react"
+
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,8 +11,10 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { User, Stethoscope, Clock, MoreVertical, CheckCircle, XCircle, Calendar, UserCheck, UserX } from "lucide-react"
+import { User, Stethoscope, Clock, MoreVertical, CheckCircle, XCircle, Calendar, UserX, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+type CancelacionOrigen = "PACIENTE" | "PROFESIONAL"
 
 interface Turno {
   id: string
@@ -30,10 +34,14 @@ interface Turno {
   notas?: string
 }
 
+interface EstadoChangeOptions {
+  solicitadoPor?: CancelacionOrigen
+}
+
 interface TurnoCardProps {
   turno: Turno
   onClick: () => void
-  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"]) => void
+  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"], opciones?: EstadoChangeOptions) => void
   puedeModificar?: boolean
 }
 
@@ -48,7 +56,7 @@ const estadoConfig = {
     color: "bg-yellow-50 border-yellow-200 hover:bg-yellow-100",
     badge: "bg-yellow-100 text-yellow-800 border-yellow-200",
     icon: Clock,
-    label: "En Sala de Espera",
+    label: "En Sala",
   },
   ASISTIO: {
     color: "bg-green-50 border-green-200 hover:bg-green-100",
@@ -74,8 +82,8 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
   const config = estadoConfig[turno.estado]
   const Icon = config.icon
 
-  const handleEstadoClick = (e: React.MouseEvent, nuevoEstado: Turno["estado"]) => {
-    e.stopPropagation()
+  const handleEstadoClick = (event: MouseEvent, nuevoEstado: Turno["estado"]) => {
+    event.stopPropagation()
     if (puedeModificar) {
       onEstadoChange(turno.id, nuevoEstado)
     }
@@ -84,21 +92,20 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
   return (
     <Card
       className={cn(
-        "p-4 cursor-pointer transition-all duration-200 border-2",
+        "h-full w-full p-2.5 flex flex-col cursor-pointer transition-all duration-200 border-2 overflow-hidden",
         config.color,
-        "hover:shadow-md"
+        "hover:shadow-md hover:border-primary/20"
       )}
       onClick={onClick}
     >
-      <div className="space-y-3">
-        {/* Header con estado y acciones */}
-        <div className="flex items-start justify-between gap-2">
-          <Badge variant="outline" className={cn("gap-1", config.badge)}>
-            <Icon className="h-3 w-3" />
-            {config.label}
-          </Badge>
-          
-          <DropdownMenu>
+      {/* Header */}
+      {turno.duracion >= 30 && (
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <Badge variant="outline" className={cn("gap-1 text-xs", config.badge)}>
+          <Icon className="h-3 w-3" />
+          {config.label}
+        </Badge>
+        <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button 
                 variant="ghost" 
@@ -144,40 +151,51 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
               </DropdownMenuContent>
             )}
           </DropdownMenu>
-        </div>
+      </div>
+      )}
 
-        {/* Paciente */}
-        <div className="space-y-1">
-          <div className="flex items-start gap-2">
-            <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+      {/* Contenido Principal */}
+      <div className="flex-grow min-h-0 space-y-2 flex flex-col justify-center">
+        {/* Paciente (solo si hay espacio)*/}
+        {turno.duracion >= 30 && (
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-sm truncate">{turno.paciente.nombre}</p>
-              <p className="text-xs text-muted-foreground">DNI: {turno.paciente.dni}</p>
+              <p className="font-semibold text-sm truncate leading-tight">{turno.paciente.nombre}</p>
+              {turno.duracion >= 30 && (
+                <p className="text-xs text-muted-foreground">DNI: {turno.paciente.dni}</p>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Profesional */}
-        <div className="space-y-1">
-          <div className="flex items-start gap-2">
-            <Stethoscope className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{turno.profesional.nombre}</p>
+        {/* Profesional (siempre) */}
+        <div className="flex items-center gap-2">
+          <Stethoscope className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0 flex-1 gap-2">
+            <p className="text-sm font-medium truncate leading-tight">{turno.profesional.nombre}</p>
+            {turno.duracion >= 15 && (
               <p className="text-xs text-muted-foreground">{turno.profesional.especialidad}</p>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* Motivo 
-        <div className="pt-2 border-t border-current/10">
-          <p className="text-xs text-muted-foreground line-clamp-2">{turno.motivo}</p>
-        </div>*/}
-
-        {/* Duración*/}
-        <div className="pt-2 border-t border-current/10 flex items-center gap-2 text-xs text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          <span>{turno.duracion} min - {turno.motivo}</span>
+        {/* motivo (solo si hay espacio) */}
+        {turno.duracion >= 45 && (
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate leading-tight">Motivo</p>
+              <p className="text-xs text-muted-foreground">{turno.motivo}</p>
+            </div>
+          </div>
+        )}
         </div>
+
+      {/* Footer */}
+      <div className="mt-auto pt-2 border-t border-current/10 flex items-center gap-2 text-xs text-muted-foreground">
+        <Clock className="h-3 w-3" />
+        <span className="font-medium">{turno.hora} ({turno.duracion} min)</span>
       </div>
     </Card>
   )
