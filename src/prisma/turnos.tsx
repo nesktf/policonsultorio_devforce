@@ -359,3 +359,24 @@ export async function registerTurno(data: TurnoData) {
     }),
   ]);
 }
+
+export async function getTurnosOcupantes(profesionalId: DBId, fecha: string) {
+  return await prisma.turno.findMany({
+    where: {
+      id_profesional: profesionalId,
+      fecha: {
+        gte: new Date(`${fecha}T00:00:00`),
+        lt: new Date(`${fecha}T23:59:59`),
+      },
+      estado: {
+        in: [
+          EstadoTurno.PROGRAMADO,
+          EstadoTurno.EN_SALA_ESPERA,
+          EstadoTurno.ASISTIO,
+          EstadoTurno.NO_ASISTIO,
+        ],
+      },
+    },
+    select: { id: true, fecha: true, duracion_minutos: true, estado: true },
+  });
+}
