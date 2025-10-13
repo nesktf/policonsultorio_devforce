@@ -1,7 +1,6 @@
 // app/api/test-turnos/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/prisma/instance";
-import { EstadoTurno } from "@/generated/prisma";
+import { getTurnosOcupantes } from "@/prisma/turnos";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -16,24 +15,7 @@ export async function GET(req: Request) {
   }
 
   // Traer los turnos ocupantes (filtramos por estados que bloquean)
-  const turnosRaw = await prisma.turno.findMany({
-    where: {
-      id_profesional: profesionalId,
-      fecha: {
-        gte: new Date(`${fecha}T00:00:00`),
-        lt: new Date(`${fecha}T23:59:59`),
-      },
-      estado: {
-        in: [
-          EstadoTurno.PROGRAMADO,
-          EstadoTurno.EN_SALA_ESPERA,
-          EstadoTurno.ASISTIO,
-          EstadoTurno.NO_ASISTIO,
-        ],
-      },
-    },
-    select: { id: true, fecha: true, duracion_minutos: true, estado: true },
-  });
+  const turnosRaw = await getTurnosOcupantes(profesionalId, fecha);
 
   // Reconstruimos cada turno interpretando sus componentes UTC como hora local (solución para "timestamp without time zone")
   const turnos = turnosRaw.map((t) => {

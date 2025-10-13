@@ -1,9 +1,18 @@
 import { Maybe } from "@/lib/error_monads";
 import { DBData } from "@/prisma/instance"
-import { retrieveHistoriaClinica, retrieveHistoriasFromProfesional, retrieveHistoriasClinicas, HistoriaDBData, HistoriaClinicaDBInput, registerHistoriaClinica, updateHistoriaClinica, SignoVitalDBData, MedicamentoDBData, EstudioDBData } from "@/prisma/historia_clinica";
+import {
+  retrieveHistoriaClinica,
+  retrieveHistoriasFromProfesional,
+  retrieveHistoriasClinicas,
+  HistoriaDBData,
+  HistoriaClinicaDBInput,
+  registerHistoriaClinica,
+  updateHistoriaClinica,
+  SignoVitalDBData,
+  MedicamentoDBData,
+  EstudioDBData
+} from "@/prisma/historia_clinica";
 import { NextRequest, NextResponse } from "next/server";
-import { JsonArray } from "@/generated/prisma/runtime/library";
-
 
 type MedicamentoAPIData = {
   nombre: string,
