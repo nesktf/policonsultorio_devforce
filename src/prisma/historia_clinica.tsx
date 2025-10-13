@@ -110,8 +110,7 @@ export async function retrieveHistoriasClinicas(): Promise<Result<Array<DBData<H
 export async function retrieveHistoriasFromProfesional(id_prof: DBId): Promise<Result<Array<DBData<HistoriaDBData>>>> {
   try {
     return Result.Some(await prisma.historiaClinica.findMany({
-      where: { id_profesional: id_prof },
-      include: { paciente: true, profesional: true }
+      include: { paciente: true, profesional: true },
     })
     .then((hists) => hists.map((hist) => {
       return {

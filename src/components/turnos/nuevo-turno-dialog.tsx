@@ -159,7 +159,7 @@ export function NuevoTurnoDialog({
           durationMinutes: duracion,
         });
         const response = await fetch(
-          `/api/v2/turnos2/disponibles?${params.toString()}`,
+          `/api/v2/turnos/disponibles?${params.toString()}`,
           {
             cache: "no-store",
           }
@@ -208,7 +208,7 @@ export function NuevoTurnoDialog({
       try {
         const params = new URLSearchParams({ search: busquedaPaciente.trim() });
         const response = await fetch(
-          `/api/v2/turnos2/pacientes?${params.toString()}`,
+          `/api/v2/turnos/pacientes?${params.toString()}`,
           {
             signal: controller.signal,
             cache: "no-store",
