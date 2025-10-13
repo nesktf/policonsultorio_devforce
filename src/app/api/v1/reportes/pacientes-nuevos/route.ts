@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getPacientesNuevosPorPeriodo } from '@/prisma/pacientes';
+import { getPacientesNuevosPorPeriodoConAgrupacion } from '@/prisma/pacientes';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const AGRUPACIONES_VALIDAS = ["day", "week", "month"] as const;
 
 function parseIntOrNull(value: string | null) {
   if (!value) {
@@ -44,11 +45,17 @@ export async function GET(request: Request) {
     id_obra_social = parsed;
   }
 
+  const groupByParam = (searchParams.get("groupBy") ?? "month").toLowerCase();
+  const agrupacion = AGRUPACIONES_VALIDAS.includes(groupByParam as (typeof AGRUPACIONES_VALIDAS)[number])
+    ? (groupByParam as (typeof AGRUPACIONES_VALIDAS)[number])
+    : "month";
+
   try {
-    const reporte = await getPacientesNuevosPorPeriodo(
+    const reporte = await getPacientesNuevosPorPeriodoConAgrupacion(
       new Date(fechaInicio),
       new Date(fechaFin),
-      id_obra_social
+      id_obra_social,
+      agrupacion
     );
 
     return NextResponse.json(

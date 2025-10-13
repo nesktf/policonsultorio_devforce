@@ -5,8 +5,6 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
 import { 
   BarChart3, 
@@ -49,72 +47,28 @@ export default function ReporteTurnosPage() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [reporte, setReporte] = useState<ReporteData | null>(null)
-  const [rangoSeleccionado, setRangoSeleccionado] = useState<string>("ultimos-30-dias")
   const [error, setError] = useState<string | null>(null)
-
-  const obtenerRangoFechas = (rango: string) => {
-    const hoy = new Date()
-    let from: Date
-    let to: Date
-
-    if (rango.match(/^\d{4}-\d{2}$/)) {
-      const [year, month] = rango.split('-').map(Number)
-      from = new Date(year, month - 1, 1)
-      to = new Date(year, month, 0)
-    } else {
-      switch (rango) {
-        case "ultimos-30-dias":
-          to = new Date(hoy)
-          from = new Date(hoy)
-          from.setDate(hoy.getDate() - 30)
-          break
-        case "anio-actual":
-          from = new Date(hoy.getFullYear(), 0, 1)
-          to = new Date(hoy.getFullYear(), 11, 31)
-          break
-        default:
-          to = new Date(hoy)
-          from = new Date(hoy)
-          from.setDate(hoy.getDate() - 30)
-      }
-    }
-
-    return {
-      from: from.toISOString().split('T')[0],
-      to: to.toISOString().split('T')[0]
-    }
-  }
-
-  const generarOpcionesMeses = () => {
-    const meses = []
-    const hoy = new Date()
-    const nombresMeses = [
-      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ]
-
-    for (let i = 11; i >= 0; i--) {
-      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
-      const year = fecha.getFullYear()
-      const month = fecha.getMonth()
-      const valor = `${year}-${String(month + 1).padStart(2, '0')}`
-      const label = `${nombresMeses[month]} ${year}`
-      meses.push({ valor, label })
-    }
-
-    return meses
-  }
-
-  const opcionesMeses = generarOpcionesMeses()
+  
+  // Filtros de fecha
+  const [fechaInicio, setFechaInicio] = useState(() => {
+    const date = new Date()
+    date.setMonth(date.getMonth() - 1)
+    return date.toISOString().split('T')[0]
+  })
+  const [fechaFin, setFechaFin] = useState(() => {
+    return new Date().toISOString().split('T')[0]
+  })
 
   const cargarReporte = async () => {
+    if (!fechaInicio || !fechaFin || fechaInicio.length !== 10 || fechaFin.length !== 10) {
+      return
+    }
+
     setLoading(true)
     setError(null)
 
     try {
-      const { from, to } = obtenerRangoFechas(rangoSeleccionado)
-      
-      const response = await fetch(`/api/v1/reportes/turnos-especialidad?from=${from}&to=${to}`)
+      const response = await fetch(`/api/v1/reportes/turnos-especialidad?from=${fechaInicio}&to=${fechaFin}`)
       
       if (!response.ok) {
         const errorText = await response.text()
@@ -136,7 +90,7 @@ export default function ReporteTurnosPage() {
     if (user && user.rol === "GERENTE") {
       cargarReporte()
     }
-  }, [rangoSeleccionado, user])
+  }, [fechaInicio, fechaFin, user])
 
   if (!user) {
     return (
@@ -236,26 +190,31 @@ export default function ReporteTurnosPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-4">
-              <Select value={rangoSeleccionado} onValueChange={setRangoSeleccionado}>
-                <SelectTrigger className="w-[250px]">
-                  <SelectValue placeholder="Seleccionar mes" />
-                </SelectTrigger>
-                <SelectContent>
-                  {opcionesMeses.map((mes) => (
-                    <SelectItem key={mes.valor} value={mes.valor}>
-                      {mes.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="anio-actual">Año Completo {new Date().getFullYear()}</SelectItem>
-                </SelectContent>
-              </Select>
-              {reporte && (
-                <div className="text-sm text-muted-foreground">
-                  Desde {new Date(reporte.rango.from).toLocaleDateString('es-AR')} hasta{' '}
-                  {new Date(reporte.rango.to).toLocaleDateString('es-AR')}
-                </div>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Fecha Inicio:</label>
+                <input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                  onKeyDown={(e) => e.preventDefault()}
+                  max={fechaFin}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                />
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Fecha Fin:</label>
+                <input
+                  type="date"
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
+                  onKeyDown={(e) => e.preventDefault()}
+                  min={fechaInicio}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring cursor-pointer"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -497,39 +456,6 @@ export default function ReporteTurnosPage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Comparativa Visual */}
-            {reporte.resultados.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Distribución de Turnos</CardTitle>
-                  <CardDescription>Proporción de turnos por especialidad</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {reporte.resultados
-                      .sort((a, b) => b.total - a.total)
-                      .map((esp, index) => {
-                        const porcentaje = calcularPorcentaje(esp.total, reporte.totalTurnos)
-                        return (
-                          <div key={index} className="flex items-center gap-3">
-                            <div className="w-32 text-sm font-medium truncate">{esp.especialidad}</div>
-                            <div className="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-400 flex items-center justify-end pr-2 text-xs text-white font-medium transition-all"
-                                style={{ width: `${porcentaje}%` }}
-                              >
-                                {parseFloat(porcentaje) > 5 && `${porcentaje}%`}
-                              </div>
-                            </div>
-                            <div className="w-16 text-sm text-right font-semibold">{esp.total}</div>
-                          </div>
-                        )
-                      })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </>
         )}
       </div>
