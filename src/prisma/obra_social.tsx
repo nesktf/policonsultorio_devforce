@@ -78,13 +78,13 @@ export async function updateObraSocial(id: DBId, os: ObraSocialData): Promise<bo
 }
 
 
-//para reportes
+// Para reportes
 export async function getReporteObraSocial(obraSocialId: number | null) {
   try {
     let obraSocialInfo: { id: number | null; nombre: string; estado: string };
     let patientWhereClause: object;
-    let turnosInProfesionalWhereClause: object;
-    let profesionalWhereClause: object; // <-- AÑADIDO: Filtro para profesionales
+    let profesionalWhereClause: object;
+    let turnosWhereClause: object; // NUEVO: Filtro común para turnos
 
     // 1. Definir la información y los filtros
     if (obraSocialId === null) {
@@ -95,9 +95,11 @@ export async function getReporteObraSocial(obraSocialId: number | null) {
         estado: 'ACTIVA',
       };
       patientWhereClause = { id_obra_social: null };
-      turnosInProfesionalWhereClause = { paciente: { id_obra_social: null } };
-      // Para particulares, consideramos a todos los profesionales disponibles
-      profesionalWhereClause = {}; 
+      profesionalWhereClause = {};
+      // CORREGIDO: Filtro para turnos de particulares
+      turnosWhereClause = {
+        paciente: { id_obra_social: null }
+      };
     } else {
       // Caso para una Obra Social específica
       const obraSocial = await prisma.obraSocial.findUnique({
@@ -108,7 +110,6 @@ export async function getReporteObraSocial(obraSocialId: number | null) {
 
       obraSocialInfo = obraSocial;
       patientWhereClause = { id_obra_social: obraSocialId };
-      turnosInProfesionalWhereClause = { paciente: { id_obra_social: obraSocialId } };
       profesionalWhereClause = {
         obras_sociales: {
           some: {
@@ -116,34 +117,56 @@ export async function getReporteObraSocial(obraSocialId: number | null) {
           },
         },
       };
+      // CORREGIDO: Filtro para turnos que cumplen AMBAS condiciones
+      turnosWhereClause = {
+        paciente: { id_obra_social: obraSocialId },
+        profesional: {
+          obras_sociales: {
+            some: {
+              id_obra_social: obraSocialId,
+            },
+          },
+        },
+      };
     }
 
     // 2. Obtener los datos usando los filtros dinámicos
-    const [pacientes, profesionalesRelevantes] = await Promise.all([
+    const [pacientes, profesionalesRelevantes, todosLosTurnos] = await Promise.all([
       prisma.paciente.findMany({
         where: patientWhereClause,
         select: {
           id: true,
-          turnos: { select: { estado: true, fecha: true } },
+          turnos: { 
+            where: turnosWhereClause, // Aplicar el filtro correcto
+            select: { estado: true, fecha: true } 
+          },
         },
       }),
-      // Usamos el nuevo filtro para obtener solo los profesionales correctos
       prisma.profesional.findMany({
-        where: profesionalWhereClause, // <-- APLICANDO EL FILTRO
+        where: profesionalWhereClause,
         select: {
           id: true,
           nombre: true,
           apellido: true,
           especialidad: true,
           turnos: {
-            where: turnosInProfesionalWhereClause, // Este filtro anidado sigue siendo necesario para los turnos
+            where: turnosWhereClause, // Usar el mismo filtro
             select: { id: true, estado: true },
           },
         },
       }),
+      // NUEVO: Obtener todos los turnos filtrados directamente
+      prisma.turno.findMany({
+        where: turnosWhereClause,
+        select: {
+          id: true,
+          estado: true,
+          fecha: true,
+        },
+      }),
     ]);
 
-    // 3. Calcular las métricas (esta lógica no cambia, pero ahora opera sobre datos correctos)
+    // 3. Calcular las métricas
     const totalPacientes = pacientes.length;
     
     const pacientesActivos = pacientes.filter(p => 
@@ -155,14 +178,13 @@ export async function getReporteObraSocial(obraSocialId: number | null) {
       })
     ).length;
 
-    const todosTurnos = pacientes.flatMap(p => p.turnos);
-
+    // CORREGIDO: Usar todosLosTurnos en lugar de turnos de pacientes
     const turnosPorEstado = {
-      PROGRAMADO: todosTurnos.filter(t => t.estado === 'PROGRAMADO').length,
-      EN_SALA_ESPERA: todosTurnos.filter(t => t.estado === 'EN_SALA_ESPERA').length,
-      ASISTIO: todosTurnos.filter(t => t.estado === 'ASISTIO').length,
-      NO_ASISTIO: todosTurnos.filter(t => t.estado === 'NO_ASISTIO').length,
-      CANCELADO: todosTurnos.filter(t => t.estado === 'CANCELADO').length,
+      PROGRAMADO: todosLosTurnos.filter(t => t.estado === 'PROGRAMADO').length,
+      EN_SALA_ESPERA: todosLosTurnos.filter(t => t.estado === 'EN_SALA_ESPERA').length,
+      ASISTIO: todosLosTurnos.filter(t => t.estado === 'ASISTIO').length,
+      NO_ASISTIO: todosLosTurnos.filter(t => t.estado === 'NO_ASISTIO').length,
+      CANCELADO: todosLosTurnos.filter(t => t.estado === 'CANCELADO').length,
     };
 
     const profesionalesData = profesionalesRelevantes.map(prof => ({
@@ -172,7 +194,7 @@ export async function getReporteObraSocial(obraSocialId: number | null) {
       turnosAtendidos: prof.turnos.filter(t => t.estado === 'ASISTIO').length,
     })).sort((a, b) => b.turnosAtendidos - a.turnosAtendidos);
 
-    //distribución de especialidades
+    // Distribución de especialidades
     const distribucionEspecialidadesMap = new Map<string, number>();
     profesionalesRelevantes.forEach(p => {
         const count = distribucionEspecialidadesMap.get(p.especialidad) || 0;
@@ -190,7 +212,7 @@ export async function getReporteObraSocial(obraSocialId: number | null) {
         totalPacientes,
         pacientesActivos,
         totalProfesionales: profesionalesRelevantes.length,
-        totalTurnos: todosTurnos.length,
+        totalTurnos: todosLosTurnos.length, // CORREGIDO: Usar el conteo correcto
       },
       turnosPorEstado,
       profesionales: profesionalesData,
