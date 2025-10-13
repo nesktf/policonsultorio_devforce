@@ -17,7 +17,6 @@ import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   Cell,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -28,6 +27,7 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { exportarReporteObraSocial } from "@/utils/pdfExport"
 import { useAuth } from "@/context/auth-context"
 
 interface ObraSocial {
@@ -79,6 +79,12 @@ const COLORES_ESPECIALIDADES = [
 export default function ReporteObraSocialPage() {
   const { user } = useAuth()
   const canAccessReport = user?.rol === "GERENTE"
+
+  const handleExport = () => {
+    if (reporte) {
+      exportarReporteObraSocial(reporte)
+    }
+  }
 
   const [loading, setLoading] = useState(false)
   const [reporte, setReporte] = useState<ReporteData | null>(null)
@@ -252,7 +258,12 @@ export default function ReporteObraSocialPage() {
                 <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                 Actualizar
               </Button>
-              <Button variant="outline" className="gap-2" disabled={!reporte}>
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                onClick={handleExport} // <-- Se añade el onClick
+                disabled={!reporte}
+              >
                 <Download className="h-4 w-4" />
                 Exportar
               </Button>

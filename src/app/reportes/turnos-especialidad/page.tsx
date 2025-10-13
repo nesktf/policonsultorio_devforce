@@ -5,6 +5,7 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { exportarReporteTurnosEspecialidad } from "@/utils/pdfExport"
 import { useAuth } from "@/context/auth-context"
 import { 
   BarChart3, 
@@ -49,6 +50,12 @@ export default function ReporteTurnosPage() {
   const [reporte, setReporte] = useState<ReporteData | null>(null)
   const [error, setError] = useState<string | null>(null)
   
+  const handleExport = () => {
+    if (reporte) {
+      exportarReporteTurnosEspecialidad(reporte)
+    }
+  }
+
   // Filtros de fecha
   const [fechaInicio, setFechaInicio] = useState(() => {
     const date = new Date()
@@ -174,7 +181,12 @@ export default function ReporteTurnosPage() {
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Actualizar
             </Button>
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={handleExport} // <--- SE AÑADE ESTA LÍNEA
+              disabled={!reporte} // <--- SE AÑADE ESTA CONDICIÓN
+            >
               <Download className="h-4 w-4" />
               Exportar
             </Button>

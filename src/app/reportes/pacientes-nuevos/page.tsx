@@ -6,7 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { exportarReportePacientesNuevos } from "@/utils/pdfExport"
 import { useAuth } from "@/context/auth-context"
+
 import { 
   UserPlus,
   Calendar, 
@@ -24,7 +26,6 @@ import {
 import Link from "next/link"
 import {
   Cell,
-  Legend,
   Pie,
   PieChart as RechartsPieChart,
   ResponsiveContainer,
@@ -74,6 +75,12 @@ export default function NuevosPacientesPage() {
   const [error, setError] = useState<string | null>(null)
   const [obrasSociales, setObrasSociales] = useState<ObraSocial[]>([])
   
+  const handleExport = () => {
+    if (reporte) {
+      exportarReportePacientesNuevos(reporte, groupBy)
+    }
+  }
+
   // Filtros
   const [fechaInicio, setFechaInicio] = useState(() => {
     const date = new Date()
@@ -233,7 +240,12 @@ export default function NuevosPacientesPage() {
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Actualizar
             </Button>
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={handleExport} // <--- SE AÑADE ESTA LÍNEA
+              disabled={!reporte || loading} // <--- SE RECOMIENDA deshabilitar si no hay reporte
+            >
               <Download className="h-4 w-4" />
               Exportar
             </Button>
@@ -521,7 +533,7 @@ export default function NuevosPacientesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {reporte.total === 0 ? (
+                {!reporte.periodos || reporte.total === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No hay datos para el período seleccionado
                   </div>
