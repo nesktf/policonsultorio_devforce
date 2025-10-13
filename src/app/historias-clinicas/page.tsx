@@ -208,13 +208,13 @@ export default function HistoriasClinicasPage() {
         (h) => h.pacienteId === pacienteId
       )
 
-      // Si es profesional, filtrar solo sus historias
-      if (user?.rol === Role.PROFESIONAL && profesionalId) {
-        const profesionalIdStr = profesionalId.toString()
-        historiasDelPaciente = historiasDelPaciente.filter(
-          (h) => h.profesionalId === profesionalIdStr
-        )
-      }
+      // // Si es profesional, filtrar solo sus historias
+      // if (user?.rol === Role.PROFESIONAL && profesionalId) {
+      //   const profesionalIdStr = profesionalId.toString()
+      //   historiasDelPaciente = historiasDelPaciente.filter(
+      //     (h) => h.profesionalId === profesionalIdStr
+      //   )
+      // }
 
       setHistoriaClinica(
         historiasDelPaciente.sort(
