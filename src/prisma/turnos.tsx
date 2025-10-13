@@ -1,5 +1,6 @@
 import { DBId, prisma } from "@/prisma/instance";
 import { EstadoTurno } from "@/generated/prisma";
+import { Result } from "@/lib/error_monads";
 
 interface TurnoResumen {
   id: number;
@@ -379,4 +380,16 @@ export async function getTurnosOcupantes(profesionalId: DBId, fecha: string) {
     },
     select: { id: true, fecha: true, duracion_minutos: true, estado: true },
   });
+}
+
+export async function updateTurnoEstado(turno_id: DBId, estado: EstadoTurno): Promise<Result<EstadoTurno>> {
+  try {
+    const res = await prisma.turno.update({
+      where: { id: turno_id },
+      data: { estado }
+    });
+    return Result.Some(res.estado);
+  } catch (err) {
+    return Result.None(new Error(`${err}`));
+  }
 }
