@@ -237,3 +237,117 @@ export async function getPacientesNuevosPorMes(
     meses,
   };
 }
+
+//nuevo
+
+export async function getPacientesNuevosPorPeriodo(
+  fechaInicio: Date,
+  fechaFin: Date,
+  obraSocialFilter?: number | null | 'sin-obra-social',
+) {
+  const start = new Date(fechaInicio);
+  start.setHours(0, 0, 0, 0);
+  
+  const end = new Date(fechaFin);
+  end.setHours(23, 59, 59, 999);
+
+  const where: any = {
+    fecha_registro: {
+      gte: start,
+      lte: end,
+    },
+  };
+
+  // Manejar el filtro de obra social
+  if (obraSocialFilter === 'sin-obra-social') {
+    where.id_obra_social = null;
+  } else if (obraSocialFilter !== null && obraSocialFilter !== undefined) {
+    where.id_obra_social = obraSocialFilter;
+  }
+
+  const pacientes = await prisma.paciente.findMany({
+    where,
+    select: {
+      fecha_registro: true,
+      id_obra_social: true,
+      obra_social: {
+        select: {
+          nombre: true,
+        },
+      },
+    },
+  });
+
+  // Agrupar por mes
+  const mesesMap = new Map<string, number>();
+  const diffMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+  
+  for (let i = 0; i < diffMonths; i++) {
+    const date = new Date(start.getFullYear(), start.getMonth() + i, 1);
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    mesesMap.set(key, 0);
+  }
+
+  for (const paciente of pacientes) {
+    const fecha = new Date(paciente.fecha_registro);
+    const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+    if (mesesMap.has(key)) {
+      mesesMap.set(key, mesesMap.get(key)! + 1);
+    }
+  }
+
+  const meses = Array.from(mesesMap.entries()).map(([key, cantidad]) => {
+    const [year, month] = key.split('-');
+    return {
+      month: parseInt(month),
+      year: parseInt(year),
+      label: `${MONTH_LABELS[parseInt(month) - 1]} ${year}`,
+      cantidad,
+    };
+  });
+
+  // Distribución por obra social
+  const obrasSocialesMap = new Map<string, { nombre: string; cantidad: number }>();
+  let sinObraSocial = 0;
+
+  for (const paciente of pacientes) {
+    if (paciente.id_obra_social && paciente.obra_social) {
+      const key = String(paciente.id_obra_social);
+      if (obrasSocialesMap.has(key)) {
+        obrasSocialesMap.get(key)!.cantidad += 1;
+      } else {
+        obrasSocialesMap.set(key, {
+          nombre: paciente.obra_social.nombre,
+          cantidad: 1,
+        });
+      }
+    } else {
+      sinObraSocial += 1;
+    }
+  }
+
+  const distribucionObrasSociales = Array.from(obrasSocialesMap.values())
+    .sort((a, b) => b.cantidad - a.cantidad);
+
+  if (sinObraSocial > 0) {
+    distribucionObrasSociales.push({
+      nombre: 'Sin Obra Social',
+      cantidad: sinObraSocial,
+    });
+  }
+
+  // Calcular promedio diario
+  const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const promedioDiario = pacientes.length / diffDays;
+
+  return {
+    fechaInicio: start.toISOString(),
+    fechaFin: end.toISOString(),
+    obraSocialId: obraSocialFilter === 'sin-obra-social' ? null : (obraSocialFilter ?? null),
+    total: pacientes.length,
+    meses,
+    distribucionObrasSociales,
+    promedioDiario: parseFloat(promedioDiario.toFixed(2)),
+    diasAnalizados: diffDays,
+  };
+}

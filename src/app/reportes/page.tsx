@@ -98,6 +98,18 @@ export default function ReportesPage() {
       stats: ["Asistencia", "Cancelaciones", "Productividad"]
     },
     {
+      id: "obras-sociales",
+      titulo: "Detalles por Obra Social",
+      descripcion: "Algunas estadísticas y datos asociados a profesionales, pacientes y obras sociales",
+      icon: Users,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      disponible: true,
+      href: "/reportes/obras-sociales",
+      stats: ["Estadísticas", "Tasas", "Comparativas"]
+    },
+    {
       id: "agenda-diaria",
       titulo: "Agenda Diaria",
       descripcion: "Turnos programados por fecha y especialidad para coordinación de mesa de entrada",
