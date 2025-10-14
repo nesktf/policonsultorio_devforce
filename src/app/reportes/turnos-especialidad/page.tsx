@@ -16,7 +16,6 @@ import {
   AlertCircle,
   ArrowLeft,
   Download,
-  RefreshCw,
   Stethoscope,
   CheckCircle,
   XCircle,
@@ -133,7 +132,7 @@ export default function ReporteTurnosPage() {
   }
 
   useEffect(() => {
-    if (user && user.rol === "GERENTE") {
+    if (user && (user.rol === "GERENTE" || user.rol === "MESA_ENTRADA")) {
       cargarReporte()
     }
   }, [rangoSeleccionado, user])
@@ -152,18 +151,18 @@ export default function ReporteTurnosPage() {
     )
   }
 
-  if (user.rol !== "GERENTE") {
+  if (user.rol !== "GERENTE" && user.rol !== "MESA_ENTRADA") {
     return (
       <MainLayout>
         <div className="p-6">
           <Card>
             <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
-              <p className="text-muted-foreground">No tienes permisos para acceder a los reportes.</p>
-              <Link href="/">
+              <p className="text-muted-foreground">No tienes permisos para acceder a este reporte.</p>
+              <Link href="/reportes">
                 <Button variant="outline" className="gap-2">
                   <ArrowLeft className="h-4 w-4" />
-                  Volver al Dashboard
+                  Volver a Reportes
                 </Button>
               </Link>
             </CardContent>
@@ -211,15 +210,6 @@ export default function ReporteTurnosPage() {
             <p className="text-muted-foreground">Análisis estadístico de turnos médicos</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={cargarReporte}
-              disabled={loading}
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
             <Button variant="outline" className="gap-2">
               <Download className="h-4 w-4" />
               Exportar
@@ -275,7 +265,7 @@ export default function ReporteTurnosPage() {
           <Card>
             <CardContent className="flex items-center justify-center h-32">
               <div className="flex items-center gap-2">
-                <RefreshCw className="h-5 w-5 animate-spin" />
+                <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 <p className="text-muted-foreground">Cargando reporte...</p>
               </div>
             </CardContent>

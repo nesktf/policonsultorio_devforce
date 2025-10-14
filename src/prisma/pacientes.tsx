@@ -95,7 +95,8 @@ export async function createPatient(data: {
         id_paciente: newId,
         id_profesional: 1, // ID del profesional que registra
         motivo: "Registro inicial del paciente",
-        detalle: "Se crea la historia clínica del paciente."
+        detalle: "Se crea la historia clínica del paciente.",
+        diagnostico: "Paciente registrado en el sistema"
       }
     });
 

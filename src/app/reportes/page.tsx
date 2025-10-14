@@ -39,7 +39,7 @@ export default function ReportesPage() {
     )
   }
 
-  if (user.rol !== "GERENTE") {
+  if (user.rol !== "GERENTE" && user.rol !== "MESA_ENTRADA") {
     return (
       <MainLayout>
         <div className="p-6">
@@ -87,15 +87,27 @@ export default function ReportesPage() {
     },
     {
       id: "turnos-profesional",
-      titulo: "Turnos por Profesional",
-      descripcion: "Distribución y estadísticas de turnos de cada profesional médico",
+      titulo: "Desempeño por Profesional",
+      descripcion: "Análisis de turnos atendidos, cancelaciones y ausencias por profesional",
       icon: Activity,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       borderColor: "border-purple-200",
-      disponible: false,
+      disponible: true,
       href: "/reportes/turnos-profesional",
-      stats: ["Carga horaria", "Tasas", "Comparativas"]
+      stats: ["Asistencia", "Cancelaciones", "Productividad"]
+    },
+    {
+      id: "agenda-diaria",
+      titulo: "Agenda Diaria",
+      descripcion: "Turnos programados por fecha y especialidad para coordinación de mesa de entrada",
+      icon: Calendar,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+      disponible: true,
+      href: "/reportes/agenda-diaria",
+      stats: ["Por fecha", "Por especialidad", "Estados"]
     },
     {
       id: "turnos-cancelados",
@@ -110,6 +122,18 @@ export default function ReportesPage() {
       stats: ["Por motivo", "Tasa cancelación", "Profesional"]
     },
   ]
+
+  // Filtrar reportes según el rol del usuario
+  const reportesFiltrados = reportes.filter(reporte => {
+    if (user.rol === "GERENTE") {
+      // Los gerentes pueden ver todos los reportes
+      return true
+    } else if (user.rol === "MESA_ENTRADA") {
+      // Mesa de entrada solo puede ver reportes operativos
+      return ["turnos-especialidad", "agenda-diaria"].includes(reporte.id)
+    }
+    return false
+  })
 
   return (
     <MainLayout>
@@ -130,7 +154,7 @@ export default function ReportesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Reportes Disponibles</p>
                   <p className="text-3xl font-bold text-primary">
-                    {reportes.filter(r => r.disponible).length}
+                    {reportesFiltrados.filter(r => r.disponible).length}
                   </p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-primary opacity-20" />
@@ -144,7 +168,7 @@ export default function ReportesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Próximamente</p>
                   <p className="text-3xl font-bold text-orange-600">
-                    {reportes.filter(r => !r.disponible).length}
+                    {reportesFiltrados.filter(r => !r.disponible).length}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-orange-600 opacity-20" />
@@ -157,7 +181,7 @@ export default function ReportesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Categorí­as</p>
-                  <p className="text-3xl font-bold text-blue-600">4</p>
+                  <p className="text-2xl font-bold text-blue-600">{reportesFiltrados.length}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-600 opacity-20" />
               </div>
@@ -167,7 +191,7 @@ export default function ReportesPage() {
 
         {/* Grid de Reportes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {reportes.map((reporte) => {
+          {reportesFiltrados.map((reporte) => {
             const Icon = reporte.icon
             
             return (

@@ -162,21 +162,27 @@ export default function PacientesPage() {
 
   const handleNuevoPaciente = async (nuevoPaciente: any) => {
     try {
+      console.log("Datos recibidos en handleNuevoPaciente:", nuevoPaciente);
+      
+      const requestBody = {
+        nombre: nuevoPaciente.nombre,
+        apellido: nuevoPaciente.apellido,
+        dni: nuevoPaciente.dni,
+        telefono: nuevoPaciente.telefono,
+        direccion: nuevoPaciente.direccion,
+        fecha_nacimiento: nuevoPaciente.fecha_nacimiento,
+        id_obra_social: nuevoPaciente.id_obra_social || null,
+        num_obra_social: nuevoPaciente.num_obra_social || null,
+      };
+      
+      console.log("Request body a enviar:", JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch('/api/v1/pacientes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          nombre: nuevoPaciente.nombre,
-          apellido: nuevoPaciente.apellido,
-          dni: nuevoPaciente.dni,
-          telefono: nuevoPaciente.telefono,
-          direccion: nuevoPaciente.direccion,
-          fecha_nacimiento: nuevoPaciente.fechaNacimiento,
-          id_obra_social: nuevoPaciente.obraSocialId || null,
-          num_obra_social: nuevoPaciente.numeroAfiliado || null,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {

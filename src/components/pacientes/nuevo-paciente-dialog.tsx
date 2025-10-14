@@ -38,9 +38,85 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
     telefono: "",
     fechaNacimiento: "",
     direccion: "",
-    obraSocialId: "",
+    obraSocialId: "none",
     numeroAfiliado: "",
   })
+
+  // Función para formatear fecha dd/mm/aaaa
+  const formatearFecha = (value: string) => {
+    // Remover caracteres no numéricos
+    const numeros = value.replace(/\D/g, "")
+    
+    if (numeros.length === 0) return ""
+    if (numeros.length <= 2) return numeros
+    if (numeros.length <= 4) return `${numeros.slice(0, 2)}/${numeros.slice(2)}`
+    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4, 8)}`
+  }
+
+  // Función para convertir dd/mm/aaaa a formato ISO (aaaa-mm-dd)
+  const fechaAFormatoISO = (fechaFormateada: string) => {
+    if (!fechaFormateada || fechaFormateada.length !== 10) return ""
+    
+    const [dia, mes, año] = fechaFormateada.split("/")
+    if (!dia || !mes || !año) return ""
+    
+    // Asegurar que tenga el formato correcto
+    const diaFormatted = dia.padStart(2, "0")
+    const mesFormatted = mes.padStart(2, "0")
+    
+    return `${año}-${mesFormatted}-${diaFormatted}`
+  }
+
+  // Función para convertir formato ISO a dd/mm/aaaa
+  const fechaISOAFormateada = (fechaISO: string) => {
+    if (!fechaISO) return ""
+    const [año, mes, dia] = fechaISO.split("-")
+    return `${dia}/${mes}/${año}`
+  }
+
+  // Validación en tiempo real para cada campo
+  const validarCampo = (campo: string, valor: string) => {
+    switch (campo) {
+      case "nombre":
+        return valor.trim() ? "" : "El nombre es obligatorio"
+      case "apellido":
+        return valor.trim() ? "" : "El apellido es obligatorio"
+      case "dni":
+        if (!valor.trim()) return "El DNI es obligatorio"
+        if (!/^\d{7,8}$/.test(valor)) return "El DNI debe tener 7 u 8 dígitos"
+        return ""
+      case "telefono":
+        return valor.trim() ? "" : "El teléfono es obligatorio"
+      case "direccion":
+        return valor.trim() ? "" : "La dirección es obligatoria"
+      case "fechaNacimiento":
+        if (!valor.trim()) return "La fecha de nacimiento es obligatoria"
+        if (valor.length !== 10) return "Formato: dd/mm/aaaa"
+        
+        const [dia, mes, año] = valor.split("/")
+        if (!dia || !mes || !año || año.length !== 4) return "Formato: dd/mm/aaaa"
+        
+        const diaNum = parseInt(dia)
+        const mesNum = parseInt(mes)
+        const añoNum = parseInt(año)
+        
+        if (diaNum < 1 || diaNum > 31) return "Día inválido"
+        if (mesNum < 1 || mesNum > 12) return "Mes inválido"
+        
+        const fechaObj = new Date(añoNum, mesNum - 1, diaNum)
+        if (fechaObj.getDate() !== diaNum || fechaObj.getMonth() !== mesNum - 1) {
+          return "Fecha inválida"
+        }
+        
+        const hoy = new Date()
+        const edad = hoy.getFullYear() - añoNum
+        if (edad < 0 || edad > 120) return "La fecha de nacimiento no es válida"
+        
+        return ""
+      default:
+        return ""
+    }
+  }
 
   // Cargar obras sociales
   useEffect(() => {
@@ -67,28 +143,21 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.nombre.trim()) newErrors.nombre = "El nombre es obligatorio"
-    if (!formData.apellido.trim()) newErrors.apellido = "El apellido es obligatorio"
-    if (!formData.dni.trim()) newErrors.dni = "El DNI es obligatorio"
-    if (!formData.telefono.trim()) newErrors.telefono = "El teléfono es obligatorio"
-    if (!formData.fechaNacimiento) newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria"
-    if (!formData.direccion.trim()) newErrors.direccion = "La dirección es obligatoria"
+    // Validar todos los campos usando las funciones individuales
+    newErrors.nombre = validarCampo("nombre", formData.nombre)
+    newErrors.apellido = validarCampo("apellido", formData.apellido)
+    newErrors.dni = validarCampo("dni", formData.dni)
+    newErrors.telefono = validarCampo("telefono", formData.telefono)
+    newErrors.direccion = validarCampo("direccion", formData.direccion)
+    newErrors.fechaNacimiento = validarCampo("fechaNacimiento", formData.fechaNacimiento)
 
-    if (formData.dni && !/^\d{7,8}$/.test(formData.dni)) {
-      newErrors.dni = "El DNI debe tener 7 u 8 dígitos"
-    }
+    // Filtrar errores vacíos
+    const filteredErrors = Object.fromEntries(
+      Object.entries(newErrors).filter(([_, value]) => value !== "")
+    )
 
-    if (formData.fechaNacimiento) {
-      const nacimiento = new Date(formData.fechaNacimiento)
-      const hoy = new Date()
-      const edad = hoy.getFullYear() - nacimiento.getFullYear()
-      if (edad < 0 || edad > 120) {
-        newErrors.fechaNacimiento = "La fecha de nacimiento no es válida"
-      }
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
+    setErrors(filteredErrors)
+    return Object.keys(filteredErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,20 +167,32 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
       return
     }
 
+    // Validación adicional de fecha antes del envío
+    const fechaISO = fechaAFormatoISO(formData.fechaNacimiento);
+    if (!fechaISO) {
+      setErrors(prev => ({ ...prev, fechaNacimiento: "Error al convertir la fecha. Verifique el formato." }));
+      return;
+    }
+
     setIsSubmitting(true)
     setErrorMessage("")
 
     try {
+      console.log("Fecha original:", formData.fechaNacimiento);
+      console.log("Fecha convertida a ISO:", fechaISO);
+      
       const nuevoPaciente = {
         nombre: formData.nombre,
         apellido: formData.apellido,
         dni: formData.dni,
         telefono: formData.telefono,
         direccion: formData.direccion,
-        fechaNacimiento: formData.fechaNacimiento,
-        obraSocialId: formData.obraSocialId ? parseInt(formData.obraSocialId) : null,
-        numeroAfiliado: formData.numeroAfiliado || null,
+        fecha_nacimiento: fechaISO,
+        id_obra_social: formData.obraSocialId && formData.obraSocialId !== "none" ? parseInt(formData.obraSocialId) : null,
+        num_obra_social: formData.numeroAfiliado || null,
       }
+
+      console.log("Objeto a enviar:", nuevoPaciente);
 
       await onPacienteCreado(nuevoPaciente)
       setShowSuccessDialog(true)
@@ -132,7 +213,7 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
       telefono: "",
       fechaNacimiento: "",
       direccion: "",
-      obraSocialId: "",
+      obraSocialId: "none",
       numeroAfiliado: "",
     })
     setErrors({})
@@ -153,10 +234,18 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
   }
 
   const updateFormData = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }))
+    let processedValue = value
+    
+    // Formatear fecha si es el campo fechaNacimiento
+    if (field === "fechaNacimiento") {
+      processedValue = formatearFecha(value)
     }
+    
+    setFormData((prev) => ({ ...prev, [field]: processedValue }))
+    
+    // Validar en tiempo real
+    const error = validarCampo(field, processedValue)
+    setErrors((prev) => ({ ...prev, [field]: error }))
   }
 
   return (
@@ -177,7 +266,9 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nombre">Nombre *</Label>
+                  <Label htmlFor="nombre" className={errors.nombre ? "text-destructive" : ""}>
+                    Nombre *
+                  </Label>
                   <Input
                     id="nombre"
                     value={formData.nombre}
@@ -194,7 +285,9 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="apellido">Apellido *</Label>
+                  <Label htmlFor="apellido" className={errors.apellido ? "text-destructive" : ""}>
+                    Apellido *
+                  </Label>
                   <Input
                     id="apellido"
                     value={formData.apellido}
@@ -211,7 +304,9 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="dni">DNI *</Label>
+                  <Label htmlFor="dni" className={errors.dni ? "text-destructive" : ""}>
+                    DNI *
+                  </Label>
                   <Input
                     id="dni"
                     value={formData.dni}
@@ -229,13 +324,16 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="fechaNacimiento">Fecha de Nacimiento *</Label>
+                  <Label htmlFor="fechaNacimiento" className={errors.fechaNacimiento ? "text-destructive" : ""}>
+                    Fecha de Nacimiento *
+                  </Label>
                   <Input
                     id="fechaNacimiento"
-                    type="date"
+                    type="text"
                     value={formData.fechaNacimiento}
                     onChange={(e) => updateFormData("fechaNacimiento", e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
+                    placeholder="dd/mm/aaaa"
+                    maxLength={10}
                     className={errors.fechaNacimiento ? "border-destructive" : ""}
                   />
                   {errors.fechaNacimiento && (
@@ -254,7 +352,9 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="telefono">Teléfono *</Label>
+                  <Label htmlFor="telefono" className={errors.telefono ? "text-destructive" : ""}>
+                    Teléfono *
+                  </Label>
                   <Input
                     id="telefono"
                     value={formData.telefono}
@@ -271,7 +371,9 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="direccion">Dirección *</Label>
+                  <Label htmlFor="direccion" className={errors.direccion ? "text-destructive" : ""}>
+                    Dirección *
+                  </Label>
                   <Input
                     id="direccion"
                     value={formData.direccion}
@@ -310,7 +412,7 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
                         <SelectValue placeholder="Seleccionar obra social (opcional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin obra social</SelectItem>
+                        <SelectItem value="none">Sin obra social</SelectItem>
                         {obrasSociales.map((obra) => (
                           <SelectItem key={obra.id} value={obra.id.toString()}>
                             {obra.nombre}
@@ -328,7 +430,7 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
                     value={formData.numeroAfiliado}
                     onChange={(e) => updateFormData("numeroAfiliado", e.target.value)}
                     placeholder="Ej: 123456789"
-                    disabled={!formData.obraSocialId}
+                    disabled={!formData.obraSocialId || formData.obraSocialId === "none"}
                   />
                 </div>
               </div>
@@ -393,7 +495,7 @@ export function NuevoPacienteDialog({ open, onOpenChange, onPacienteCreado }: Nu
               <Button variant="outline" onClick={handleErrorClose} className="flex-1">
                 Reintentar
               </Button>
-              <Button onClick={handleClose} className="flex-1">
+              <Button onClick={() => { setShowErrorDialog(false); handleClose(); }} className="flex-1">
                 Cancelar
               </Button>
             </div>

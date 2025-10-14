@@ -112,6 +112,8 @@ export async function POST(request: Request) {
     );
   }
 
+  console.log('Payload recibido en API:', JSON.stringify(payload, null, 2));
+
   const {
     nombre,
     apellido,
@@ -122,6 +124,8 @@ export async function POST(request: Request) {
     id_obra_social,
     num_obra_social,
   } = payload;
+
+  console.log('fecha_nacimiento extraída:', fecha_nacimiento, 'tipo:', typeof fecha_nacimiento);
 
   // Validaciones
   if (!isNonEmptyString(nombre)) {
