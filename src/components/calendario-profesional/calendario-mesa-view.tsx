@@ -101,6 +101,53 @@ interface CalendarioMesaViewProps {
   profesionalId: number;
 }
 
+function mapTurnosPorHorario(turnos: Turno[]) {
+  const horariosMap = new Map<string, Turno | null>();
+
+  turnos.forEach((turno) => {
+    const [horaIni, minIni] = turno.hora.split(":").map(Number);
+    const inicio = horaIni * 60 + minIni;
+    const fin = inicio + turno.duracion;
+
+    for (let m = inicio; m < fin; m += 15) {
+      const h = Math.floor(m / 60)
+        .toString()
+        .padStart(2, "0");
+      const min = (m % 60).toString().padStart(2, "0");
+      const horaStr = `${h}:${min}`;
+
+      if (m === inicio) {
+        // Solo en el inicio asignamos el turno
+        horariosMap.set(horaStr, turno);
+      } else {
+        // Franjas intermedias ocupadas, sin mostrar turno
+        horariosMap.set(horaStr, null);
+      }
+    }
+  });
+
+  return horariosMap;
+}
+
+function getHorasOcupadas(turno: Turno) {
+  const [horaIni, minIni] = turno.hora.split(":").map(Number);
+  const inicio = horaIni * 60 + minIni; // minutos desde 00:00
+  const fin = inicio + turno.duracion; // minutos de fin
+
+  const ocupadas: string[] = [];
+
+  for (let m = inicio; m < fin; m += 15) {
+    // cada franja de 15 min
+    const h = Math.floor(m / 60)
+      .toString()
+      .padStart(2, "0");
+    const min = (m % 60).toString().padStart(2, "0");
+    ocupadas.push(`${h}:${min}`);
+  }
+
+  return ocupadas;
+}
+
 export function CalendarioMesaView({
   selectedDate,
   profesionalId,
@@ -211,19 +258,24 @@ export function CalendarioMesaView({
   );
 
   const getTurnosEnHorario = (hora: string) => {
-    return turnosFiltrados.filter((t) => t.hora === hora);
+    return turnosFiltrados.filter((t) => getHorasOcupadas(t).includes(hora));
   };
 
   if (loading) return <p>Cargando turnos...</p>;
   if (error) return <p className="text-red-600">Error: {error}</p>;
+
+  const horariosMap = mapTurnosPorHorario(turnosFiltrados);
 
   return (
     <div className="space-y-4">
       <Card className="p-6">
         <div className="space-y-4">
           {horarios.map((hora) => {
-            const turnosHora = getTurnosEnHorario(hora);
-            const tieneDisponibilidad = turnosHora.length === 0;
+            const turno = horariosMap.get(hora); // Obtenemos el turno que inicia en esta franja
+            const tieneDisponibilidad = !turno && !horariosMap.has(hora); // Si no hay turno ni franja ocupada
+
+            // Si la franja está ocupada pero no es inicio, no mostramos nada
+            if (horariosMap.has(hora) && turno === null) return null;
 
             return (
               <div key={hora} className="space-y-2">
@@ -234,10 +286,9 @@ export function CalendarioMesaView({
                       {hora}
                     </span>
                   </div>
-                  {turnosHora.length > 0 && (
+                  {turno && (
                     <Badge variant="outline" className="text-xs">
-                      {turnosHora.length}{" "}
-                      {turnosHora.length === 1 ? "turno" : "turnos"}
+                      1 turno
                     </Badge>
                   )}
                 </div>
@@ -248,19 +299,16 @@ export function CalendarioMesaView({
                       Sin turnos programados
                     </p>
                   </div>
-                ) : (
-                  <div className="ml-24 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                    {turnosHora.map((turno) => (
-                      <TurnoCard
-                        key={turno.id}
-                        turno={turno}
-                        onClick={() => setSelectedTurno(turno)}
-                        puedeModificar={puedeModificar}
-                        onEstadoChange={handleEstadoChange} // <-- PASAMOS la función
-                      />
-                    ))}
+                ) : turno ? (
+                  <div className="ml-24">
+                    <TurnoCard
+                      turno={turno}
+                      onClick={() => setSelectedTurno(turno)}
+                      puedeModificar={puedeModificar}
+                      onEstadoChange={handleEstadoChange}
+                    />
                   </div>
-                )}
+                ) : null}
               </div>
             );
           })}
