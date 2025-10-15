@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/context/auth-context"
 import { NuevaConsultaDialog } from "@/components/pacientes/nueva-consulta-dialog"
 import { AntecedentesFamiliaresCard } from "@/components/pacientes/antecedentes-familiares-card"
+import { Input } from "@/components/ui/input"
 import {
   FileText,
   Calendar,
@@ -26,6 +27,8 @@ import {
   Eye,
   UserCheck,
   Loader2,
+  Search,
+  Filter,
 } from "lucide-react"
 import Link from "next/link"
 import { Role } from "@/generated/prisma"
@@ -78,6 +81,7 @@ export default function HistoriasClinicasPage() {
   const [showNuevaConsulta, setShowNuevaConsulta] = useState(false)
   const [vistaLista, setVistaLista] = useState(!pacienteId)
   const [pacientesFiltrados, setPacientesFiltrados] = useState<PacienteData[]>([])
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Obtener el ID del profesional del usuario actual
   const getProfesionalId = async () => {
@@ -153,6 +157,16 @@ export default function HistoriasClinicasPage() {
       console.error("Error fetching historias:", error)
     }
   }
+
+  const onSearchTerm = (newTerm: string) => {
+    const filtrados = pacientes.filter((paciente) => {
+      return paciente.nombre.toLowerCase().includes(newTerm.toLowerCase()) ||
+              paciente.apellido.toLowerCase().includes(newTerm.toLowerCase()) ||
+              paciente.dni.includes(newTerm);
+    });
+    setPacientesFiltrados(filtrados);
+    setSearchTerm(newTerm);
+  };
 
   // Inicializar datos
   useEffect(() => {
@@ -335,6 +349,22 @@ export default function HistoriasClinicasPage() {
               </p>
             </div>
           </div>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre, apellido, o DNI..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchTerm(e.target.value) }
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
           <Card>
             <CardHeader>
