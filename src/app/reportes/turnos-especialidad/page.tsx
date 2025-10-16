@@ -2,9 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/context/auth-context"
@@ -49,6 +54,9 @@ export default function ReporteTurnosPage() {
   const [loading, setLoading] = useState(false)
   const [reporte, setReporte] = useState<ReporteData | null>(null)
   const [rangoSeleccionado, setRangoSeleccionado] = useState<string>("ultimos-30-dias")
+  const [fechaInicio, setFechaInicio] = useState("")
+  const [fechaFin, setFechaFin] = useState("")
+  const [usarFechasPersonalizadas, setUsarFechasPersonalizadas] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const obtenerRangoFechas = (rango: string) => {
@@ -111,7 +119,24 @@ export default function ReporteTurnosPage() {
     setError(null)
 
     try {
-      const { from, to } = obtenerRangoFechas(rangoSeleccionado)
+      let from: string, to: string
+      
+      if (usarFechasPersonalizadas) {
+        if (!fechaInicio || !fechaFin) {
+          throw new Error('Debe seleccionar ambas fechas (inicio y fin)')
+        }
+        
+        if (new Date(fechaInicio) > new Date(fechaFin)) {
+          throw new Error('La fecha de inicio no puede ser mayor que la fecha de fin')
+        }
+        
+        from = fechaInicio
+        to = fechaFin
+      } else {
+        const fechasRango = obtenerRangoFechas(rangoSeleccionado)
+        from = fechasRango.from
+        to = fechasRango.to
+      }
       
       const response = await fetch(`/api/v1/reportes/turnos-especialidad?from=${from}&to=${to}`)
       
@@ -133,9 +158,25 @@ export default function ReporteTurnosPage() {
 
   useEffect(() => {
     if (user && (user.rol === "GERENTE" || user.rol === "MESA_ENTRADA")) {
-      cargarReporte()
+      // Establecer fechas por defecto
+      const hoy = new Date()
+      const hace30Dias = new Date(hoy.getTime() - (30 * 24 * 60 * 60 * 1000))
+      setFechaInicio(hace30Dias.toISOString().split('T')[0])
+      setFechaFin(hoy.toISOString().split('T')[0])
+      
+      // Solo cargar automáticamente si no se usan fechas personalizadas
+      if (!usarFechasPersonalizadas) {
+        cargarReporte()
+      }
     }
   }, [rangoSeleccionado, user])
+
+  // Cargar cuando se desactivan las fechas personalizadas
+  useEffect(() => {
+    if (!usarFechasPersonalizadas && user && (user.rol === "GERENTE" || user.rol === "MESA_ENTRADA")) {
+      cargarReporte()
+    }
+  }, [usarFechasPersonalizadas])
 
   if (!user) {
     return (
@@ -177,6 +218,111 @@ export default function ReporteTurnosPage() {
     return ((valor / total) * 100).toFixed(1)
   }
 
+  const exportarDatos = () => {
+    if (!reporte || !totales) {
+      alert('No hay datos para exportar')
+      return
+    }
+
+    const doc = new jsPDF()
+    
+    // Configuración de colores
+    const primaryColor: [number, number, number] = [59, 130, 246] // blue-500
+    const grayColor: [number, number, number] = [107, 114, 128] // gray-500
+    
+    // Encabezado
+    doc.setFillColor(...primaryColor)
+    doc.rect(0, 0, doc.internal.pageSize.width, 25, 'F')
+    
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('REPORTE DE TURNOS POR ESPECIALIDAD', 15, 16)
+    
+    // Información del período
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Período: ${new Date(reporte.rango.from).toLocaleDateString('es-AR')} - ${new Date(reporte.rango.to).toLocaleDateString('es-AR')}`, 15, 35)
+    doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-AR')} ${new Date().toLocaleTimeString('es-AR')}`, 15, 42)
+    
+    // Métricas generales
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('RESUMEN GENERAL', 15, 55)
+    
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const resumenY = 65
+    const lineHeight = 7
+    
+    doc.text(`• Total de Turnos: ${reporte.totalTurnos}`, 15, resumenY)
+    doc.text(`• Total de Especialidades: ${reporte.totalEspecialidades}`, 15, resumenY + lineHeight)
+    doc.text(`• Turnos Programados: ${totales.programados} (${calcularPorcentaje(totales.programados, reporte.totalTurnos)}%)`, 15, resumenY + lineHeight * 2)
+    doc.text(`• Turnos en Sala de Espera: ${totales.enSalaEspera} (${calcularPorcentaje(totales.enSalaEspera, reporte.totalTurnos)}%)`, 15, resumenY + lineHeight * 3)
+    doc.text(`• Turnos Asistidos: ${totales.asistidos} (${calcularPorcentaje(totales.asistidos, reporte.totalTurnos)}%)`, 15, resumenY + lineHeight * 4)
+    doc.text(`• Turnos No Asistidos: ${totales.noAsistidos} (${calcularPorcentaje(totales.noAsistidos, reporte.totalTurnos)}%)`, 15, resumenY + lineHeight * 5)
+    doc.text(`• Turnos Cancelados: ${totales.cancelados} (${calcularPorcentaje(totales.cancelados, reporte.totalTurnos)}%)`, 15, resumenY + lineHeight * 6)
+    
+    // Tabla de especialidades
+    const tableData = reporte.resultados
+      .sort((a, b) => b.total - a.total)
+      .map((esp, index) => [
+        (index + 1).toString(),
+        esp.especialidad,
+        esp.total.toString(),
+        esp.programados.toString(),
+        esp.enSalaEspera.toString(),
+        esp.asistidos.toString(),
+        esp.noAsistidos.toString(),
+        esp.cancelados.toString(),
+        `${calcularPorcentaje(esp.total, reporte.totalTurnos)}%`
+      ])
+    
+    autoTable(doc, {
+      head: [['#', 'Especialidad', 'Total', 'Programados', 'En Sala', 'Asistidos', 'No Asistidos', 'Cancelados', '% Total']],
+      body: tableData,
+      startY: resumenY + lineHeight * 7 + 5,
+      theme: 'striped',
+      headStyles: {
+        fillColor: primaryColor,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9
+      },
+      bodyStyles: {
+        fontSize: 8,
+        cellPadding: 3
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 40 },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 18, halign: 'center' },
+        4: { cellWidth: 15, halign: 'center' },
+        5: { cellWidth: 15, halign: 'center' },
+        6: { cellWidth: 18, halign: 'center' },
+        7: { cellWidth: 17, halign: 'center' },
+        8: { cellWidth: 15, halign: 'center' }
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252]
+      },
+      margin: { left: 15, right: 15 }
+    })
+    
+    // Pie de página
+    const pageHeight = doc.internal.pageSize.height
+    doc.setFontSize(8)
+    doc.setTextColor(...grayColor)
+    doc.text('Sistema de Gestión Médica - Reporte generado automáticamente', 15, pageHeight - 15)
+    doc.text(`Página 1 de 1`, doc.internal.pageSize.width - 30, pageHeight - 15)
+    
+    // Guardar el archivo
+    const fechaArchivo = new Date().toISOString().split('T')[0]
+    doc.save(`reporte-turnos-especialidad-${fechaArchivo}.pdf`)
+  }
+
   const especialidadConMasTurnos = reporte && reporte.resultados.length > 0 ? 
     reporte.resultados.reduce((max, esp) => esp.total > max.total ? esp : max, reporte.resultados[0])
     : null
@@ -210,9 +356,14 @@ export default function ReporteTurnosPage() {
             <p className="text-muted-foreground">Análisis estadístico de turnos médicos</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={exportarDatos}
+              disabled={!reporte || loading}
+            >
               <Download className="h-4 w-4" />
-              Exportar
+              Exportar PDF
             </Button>
           </div>
         </div>
@@ -225,28 +376,91 @@ export default function ReporteTurnosPage() {
               Período de Análisis
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <Select value={rangoSeleccionado} onValueChange={setRangoSeleccionado}>
-                <SelectTrigger className="w-[250px]">
-                  <SelectValue placeholder="Seleccionar mes" />
-                </SelectTrigger>
-                <SelectContent>
-                  {opcionesMeses.map((mes) => (
-                    <SelectItem key={mes.valor} value={mes.valor}>
-                      {mes.label}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="anio-actual">Año Completo {new Date().getFullYear()}</SelectItem>
-                </SelectContent>
-              </Select>
-              {reporte && (
-                <div className="text-sm text-muted-foreground">
-                  Desde {new Date(reporte.rango.from).toLocaleDateString('es-AR')} hasta{' '}
-                  {new Date(reporte.rango.to).toLocaleDateString('es-AR')}
-                </div>
-              )}
+          <CardContent className="space-y-4">
+            {/* Checkbox para activar fechas personalizadas */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="fechas-personalizadas"
+                checked={usarFechasPersonalizadas}
+                onCheckedChange={(checked) => setUsarFechasPersonalizadas(checked as boolean)}
+              />
+              <Label htmlFor="fechas-personalizadas" className="text-sm font-medium cursor-pointer">
+                Usar fechas personalizadas
+              </Label>
             </div>
+
+            {usarFechasPersonalizadas ? (
+              /* Filtros de fechas personalizadas */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+                  <Input
+                    id="fechaInicio"
+                    type="date"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fechaFin">Fecha Fin</Label>
+                  <Input
+                    id="fechaFin"
+                    type="date"
+                    value={fechaFin}
+                    onChange={(e) => setFechaFin(e.target.value)}
+                  />
+                </div>
+              </div>
+            ) : (
+              /* Filtros de rangos predefinidos */
+              <div className="flex items-center gap-4">
+                <Select value={rangoSeleccionado} onValueChange={setRangoSeleccionado}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder="Seleccionar período" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ultimos-30-dias">Últimos 30 días</SelectItem>
+                    {opcionesMeses.map((mes) => (
+                      <SelectItem key={mes.valor} value={mes.valor}>
+                        {mes.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="anio-actual">Año Completo {new Date().getFullYear()}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Botón para cargar reporte con fechas personalizadas */}
+            {usarFechasPersonalizadas && (
+              <div className="flex justify-start">
+                <Button 
+                  onClick={cargarReporte} 
+                  disabled={loading || !fechaInicio || !fechaFin}
+                  className="gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Cargando...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="h-4 w-4" />
+                      Generar Reporte
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {/* Información del rango seleccionado */}
+            {reporte && (
+              <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+                <strong>Período analizado:</strong> Desde {new Date(reporte.rango.from).toLocaleDateString('es-AR')} hasta{' '}
+                {new Date(reporte.rango.to).toLocaleDateString('es-AR')}
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/context/auth-context"
 import { useToast } from "@/hooks/use-toast"
 import {
@@ -27,6 +28,8 @@ import {
   Loader2
 } from "lucide-react"
 import Link from "next/link"
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
   BarChart,
   Bar,
@@ -71,6 +74,8 @@ export default function TurnosProfesionalPage() {
   const [fechaInicio, setFechaInicio] = useState("")
   const [fechaFin, setFechaFin] = useState("")
   const [profesionalSeleccionado, setProfesionalSeleccionado] = useState<string>("todos")
+  const [usarFechasPersonalizadas, setUsarFechasPersonalizadas] = useState(false)
+  const [rangoSeleccionado, setRangoSeleccionado] = useState("ultimos-30-dias")
 
   // Control de permisos
   if (!user || user.rol !== "GERENTE") {
@@ -94,15 +99,35 @@ export default function TurnosProfesionalPage() {
     )
   }
 
+  const generarOpcionesMeses = () => {
+    const meses = []
+    const hoy = new Date()
+    const nombresMeses = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+
+    for (let i = 11; i >= 0; i--) {
+      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
+      const year = fecha.getFullYear()
+      const month = fecha.getMonth()
+      const valor = `${year}-${String(month + 1).padStart(2, '0')}`
+      const label = `${nombresMeses[month]} ${year}`
+      meses.push({ valor, label })
+    }
+
+    return meses
+  }
+
+  const opcionesMeses = generarOpcionesMeses()
+
   // Cargar datos iniciales
   useEffect(() => {
     cargarProfesionales()
-    // Establecer fechas por defecto (último mes)
-    const hoy = new Date()
-    const hace30Dias = new Date(hoy.getTime() - (30 * 24 * 60 * 60 * 1000))
-    
-    setFechaInicio(hace30Dias.toISOString().split('T')[0])
-    setFechaFin(hoy.toISOString().split('T')[0])
+    // Establecer fechas por defecto (mismo período que turnos-especialidad)
+    // Desde 15/9/2025 hasta 16/10/2025
+    setFechaInicio('2025-09-15')
+    setFechaFin('2025-10-16')
   }, [])
 
   // Cargar datos cuando cambien los filtros
@@ -175,26 +200,158 @@ export default function TurnosProfesionalPage() {
     : 0
 
   const exportarDatos = () => {
-    // Implementar exportación CSV
-    const csv = [
-      ['Profesional', 'Especialidad', 'Asistidos', 'Cancelados', 'Ausentes', 'Total', '% Asistencia'].join(','),
-      ...filteredData.map(stat => [
-        `${stat.nombre} ${stat.apellido}`,
-        stat.especialidad,
-        stat.asistidos,
-        stat.cancelados,
-        stat.ausentes,
-        stat.total,
-        `${stat.porcentajeAsistencia.toFixed(1)}%`
-      ].join(','))
-    ].join('\n')
-
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.setAttribute('href', url)
-    a.setAttribute('download', `reporte-profesionales-${fechaInicio}-${fechaFin}.csv`)
-    a.click()
+    const doc = new jsPDF()
+    
+    // Configuración de colores
+    const primaryColor: [number, number, number] = [37, 99, 235] // azul
+    const successColor: [number, number, number] = [34, 197, 94] // verde
+    const warningColor: [number, number, number] = [249, 115, 22] // naranja
+    const dangerColor: [number, number, number] = [239, 68, 68] // rojo
+    const secondaryColor: [number, number, number] = [107, 114, 128] // gris
+    
+    // Header principal
+    doc.setFontSize(18)
+    doc.setTextColor(...primaryColor)
+    doc.text('Reporte de Desempeño por Profesional', 20, 25)
+    
+    doc.setFontSize(10)
+    doc.setTextColor(...secondaryColor)
+    doc.text(`Generado el: ${new Date().toLocaleDateString('es-AR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`, 20, 35)
+    
+    // Sección de filtros aplicados
+    let yPosition = 50
+    doc.setFontSize(12)
+    doc.setTextColor(...primaryColor)
+    doc.text('Filtros Aplicados:', 20, yPosition)
+    
+    yPosition += 10
+    doc.setFontSize(10)
+    doc.setTextColor(0, 0, 0)
+    
+    // Mostrar filtros de fecha
+    doc.text(`• Período: ${fechaInicio} al ${fechaFin}`, 25, yPosition)
+    yPosition += 6
+    
+    // Mostrar filtro de profesional si está activo
+    if (profesionalSeleccionado && profesionalSeleccionado !== 'todos') {
+      const profesionalNombre = profesionales.find(p => p.id.toString() === profesionalSeleccionado)
+      if (profesionalNombre) {
+        doc.text(`• Profesional: ${profesionalNombre.nombre} ${profesionalNombre.apellido}`, 25, yPosition)
+        yPosition += 6
+      }
+    } else {
+      doc.text(`• Profesional: Todos los profesionales`, 25, yPosition)
+      yPosition += 6
+    }
+    
+    doc.text(`• Total de registros: ${filteredData.length}`, 25, yPosition)
+    yPosition += 15
+    
+    // Leyenda de colores
+    doc.setFontSize(12)
+    doc.setTextColor(...primaryColor)
+    doc.text('Leyenda de Performance:', 20, yPosition)
+    yPosition += 10
+    
+    doc.setFontSize(9)
+    // Verde - Excelente
+    doc.setFillColor(...successColor)
+    doc.rect(25, yPosition - 3, 4, 4, 'F')
+    doc.setTextColor(0, 0, 0)
+    doc.text('Excelente (≥ 90% asistencia)', 32, yPosition)
+    yPosition += 8
+    
+    // Naranja - Bueno
+    doc.setFillColor(...warningColor)
+    doc.rect(25, yPosition - 3, 4, 4, 'F')
+    doc.text('Bueno (70-89% asistencia)', 32, yPosition)
+    yPosition += 8
+    
+    // Rojo - Necesita mejora
+    doc.setFillColor(...dangerColor)
+    doc.rect(25, yPosition - 3, 4, 4, 'F')
+    doc.text('Necesita mejora (< 70% asistencia)', 32, yPosition)
+    yPosition += 15
+    
+    // Tabla de datos
+    const tableData = filteredData.map(stat => [
+      `${stat.nombre} ${stat.apellido}`,
+      stat.especialidad,
+      stat.asistidos.toString(),
+      stat.cancelados.toString(),
+      stat.ausentes.toString(),
+      stat.total.toString(),
+      `${stat.porcentajeAsistencia.toFixed(1)}%`
+    ])
+    
+    // Configurar la tabla
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Profesional', 'Especialidad', 'Asistidos', 'Cancelados', 'Ausentes', 'Total', '% Asistencia']],
+      body: tableData,
+      headStyles: {
+        fillColor: primaryColor,
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: 'bold'
+      },
+      bodyStyles: {
+        fontSize: 9,
+        cellPadding: 3
+      },
+      columnStyles: {
+        0: { cellWidth: 35 }, // Profesional
+        1: { cellWidth: 30 }, // Especialidad
+        2: { cellWidth: 20, halign: 'center' }, // Asistidos
+        3: { cellWidth: 20, halign: 'center' }, // Cancelados
+        4: { cellWidth: 20, halign: 'center' }, // Ausentes
+        5: { cellWidth: 20, halign: 'center' }, // Total
+        6: { cellWidth: 25, halign: 'center' } // % Asistencia
+      },
+      didParseCell: function(data) {
+        // Colorear la celda de porcentaje según el valor
+        if (data.column.index === 6 && data.section === 'body') {
+          const rowIndex = data.row.index
+          const porcentajeStr = tableData[rowIndex][6] as string
+          const porcentaje = parseFloat(porcentajeStr.replace('%', ''))
+          
+          if (porcentaje >= 90) {
+            data.cell.styles.fillColor = [220, 252, 231] // verde claro
+            data.cell.styles.textColor = [22, 101, 52] // verde oscuro
+          } else if (porcentaje >= 70) {
+            data.cell.styles.fillColor = [255, 237, 213] // naranja claro
+            data.cell.styles.textColor = [154, 52, 18] // naranja oscuro
+          } else {
+            data.cell.styles.fillColor = [254, 226, 226] // rojo claro
+            data.cell.styles.textColor = [153, 27, 27] // rojo oscuro
+          }
+        }
+      },
+      margin: { top: 20, left: 20, right: 20 }
+    })
+    
+    // Footer
+    const pageHeight = doc.internal.pageSize.height
+    doc.setFontSize(8)
+    doc.setTextColor(...secondaryColor)
+    doc.text('Sistema de Gestión Médica - Reporte Profesional', 20, pageHeight - 15)
+    doc.text(`Página 1 de 1 | ${new Date().toLocaleDateString('es-AR')}`, 20, pageHeight - 10)
+    
+    // Guardar el archivo
+    const timestamp = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '-')
+    const fileName = `reporte-profesionales-${fechaInicio}-${fechaFin}_${timestamp}.pdf`
+    doc.save(fileName)
+    
+    toast({
+      title: "Exportación exitosa",
+      description: "El reporte PDF se ha generado con filtros y colores",
+    })
   }
 
   return (
@@ -214,54 +371,77 @@ export default function TurnosProfesionalPage() {
           </div>
           <Button onClick={exportarDatos} variant="outline" className="gap-2">
             <Download className="h-4 w-4" />
-            Exportar CSV
+            Exportar PDF
           </Button>
         </div>
 
-        {/* Filtros */}
+        {/* Período de Análisis */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros de Búsqueda
+              <Calendar className="h-5 w-5" />
+              Período de Análisis
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fechaInicio">Fecha Inicio</Label>
-                <Input
-                  id="fechaInicio"
-                  type="date"
-                  value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                />
+            {/* Checkbox para activar fechas personalizadas */}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="fechas-personalizadas"
+                checked={usarFechasPersonalizadas}
+                onCheckedChange={(checked) => setUsarFechasPersonalizadas(checked as boolean)}
+              />
+              <Label htmlFor="fechas-personalizadas" className="text-sm font-medium cursor-pointer">
+                Usar fechas personalizadas
+              </Label>
+            </div>
+
+            {usarFechasPersonalizadas ? (
+              /* Filtros de fechas personalizadas */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fechaInicio">Fecha Inicio</Label>
+                  <Input
+                    id="fechaInicio"
+                    type="date"
+                    value={fechaInicio}
+                    onChange={(e) => setFechaInicio(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fechaFin">Fecha Fin</Label>
+                  <Input
+                    id="fechaFin"
+                    type="date"
+                    value={fechaFin}
+                    onChange={(e) => setFechaFin(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="fechaFin">Fecha Fin</Label>
-                <Input
-                  id="fechaFin"
-                  type="date"
-                  value={fechaFin}
-                  onChange={(e) => setFechaFin(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="profesional">Profesional</Label>
-                <Select value={profesionalSeleccionado} onValueChange={setProfesionalSeleccionado}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar profesional" />
+            ) : (
+              /* Filtros de rangos predefinidos */
+              <div className="flex items-center gap-4">
+                <Select value={rangoSeleccionado} onValueChange={setRangoSeleccionado}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder="Seleccionar período" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos los profesionales</SelectItem>
-                    {profesionales.map((prof) => (
-                      <SelectItem key={prof.id} value={prof.id.toString()}>
-                        {prof.nombre} {prof.apellido} - {prof.especialidad}
+                    <SelectItem value="ultimos-30-dias">Últimos 30 días</SelectItem>
+                    {opcionesMeses.map((mes) => (
+                      <SelectItem key={mes.valor} value={mes.valor}>
+                        {mes.label}
                       </SelectItem>
                     ))}
+                    <SelectItem value="anio-actual">Año Completo {new Date().getFullYear()}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            )}
+
+            {/* Información del período analizado */}
+            <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg">
+              <strong>Período analizado:</strong> Desde {new Date(fechaInicio).toLocaleDateString('es-AR')} hasta{' '}
+              {new Date(fechaFin).toLocaleDateString('es-AR')}
             </div>
           </CardContent>
         </Card>
