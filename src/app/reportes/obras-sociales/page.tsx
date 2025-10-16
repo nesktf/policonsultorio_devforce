@@ -80,9 +80,9 @@ export default function ReporteObraSocialPage() {
   const { user } = useAuth()
   const canAccessReport = user?.rol === "GERENTE"
 
-  const handleExport = () => {
-    if (reporte) {
-      exportarReporteObraSocial(reporte)
+  const handleExport = async () => {
+  if (reporte) {
+    await exportarReporteObraSocial(reporte)
     }
   }
 
@@ -261,7 +261,7 @@ export default function ReporteObraSocialPage() {
               <Button 
                 variant="outline" 
                 className="gap-2" 
-                onClick={handleExport} // <-- Se añade el onClick
+                onClick={handleExport} // <-- Se aÃ±ade el onClick
                 disabled={!reporte}
               >
                 <Download className="h-4 w-4" />
@@ -317,7 +317,7 @@ export default function ReporteObraSocialPage() {
             </Card>
           )}
 
-          {/* Mensaje cuando no hay selección */}
+          {/* Mensaje cuando no hay selecciÃ³n */}
           {!obraSocialId && !loading && (
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-6 text-center">
@@ -333,7 +333,7 @@ export default function ReporteObraSocialPage() {
           {/* Contenido del Reporte */}
           {reporte && !loading && (
             <>
-              {/* Métricas principales */}
+              {/* MÃ©tricas principales */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="p-6">
                   <div className="flex items-start justify-between">
@@ -355,7 +355,7 @@ export default function ReporteObraSocialPage() {
                       <p className="mt-2 text-4xl font-bold text-green-600">
                         {numberFormatter.format(reporte.metricas.pacientesActivos)}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">último mes</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Último mes</p>
                     </div>
                     <Activity className="h-8 w-8 text-green-600/20" />
                   </div>
@@ -406,7 +406,7 @@ export default function ReporteObraSocialPage() {
               )}
 
               <div className="grid gap-6 md:grid-cols-2">
-                {/* Distribución de Turnos con Gráfico de Torta */}
+                {/* DistribuciÃ³n de Turnos con GrÃ¡fico de Torta */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -422,7 +422,7 @@ export default function ReporteObraSocialPage() {
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {/* Gráfico de Torta */}
+                        {/* GrÃ¡fico de Torta */}
                         <ResponsiveContainer width="100%" height={280}>
                           <PieChart>
                             <Pie
@@ -478,7 +478,7 @@ export default function ReporteObraSocialPage() {
                   </CardContent>
                 </Card>
 
-                {/* Distribución por Especialidad con Gráfico de Torta */}
+                {/* DistribuciÃ³n por Especialidad con GrÃ¡fico de Torta */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -494,7 +494,7 @@ export default function ReporteObraSocialPage() {
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        {/* Gráfico de Torta */}
+                        {/* GrÃ¡fico de Torta */}
                         <ResponsiveContainer width="100%" height={280}>
                           <PieChart>
                             <Pie

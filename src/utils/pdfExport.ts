@@ -10,57 +10,111 @@ declare module 'jspdf' {
   }
 }
 
-const addHeader = (doc: jsPDF, title: string, subtitle?: string) => {
+// Función para cargar el logo como base64
+const loadLogo = async (): Promise<string | null> => {
+  try {
+    const response = await fetch('/logo.png')
+    const blob = await response.blob()
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch (error) {
+    console.error('Error cargando logo:', error)
+    return null
+  }
+}
+
+const addHeader = async (doc: jsPDF, title: string, subtitle?: string) => {
+  // Intentar cargar y agregar el logo
+  const logoData = await loadLogo()
   
-  doc.setFontSize(20)
+  if (logoData) {
+    try {
+      // Agregar logo en la esquina superior derecha
+      doc.addImage(logoData, 'PNG', 160, 10, 30, 30)
+    } catch (error) {
+      console.error('Error agregando logo al PDF:', error)
+    }
+  }
+  
+  // Nombre de la empresa
+  doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
-  // MEJORA: Color principal para el título (Azul)
-  doc.setTextColor(59, 130, 246) 
-  doc.text(title, 14, 22)
+  doc.setTextColor(59, 130, 246)
+  doc.text('POLICONSULTORIO DEVFORCE', 14, 15)
   
+  // Título del reporte
+  doc.setFontSize(18)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59) // Gris oscuro más elegante
+  doc.text(title, 14, 28)
+  
+  // Subtítulo
   if (subtitle) {
     doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
-    // MEJORA: Gris más oscuro para mejor lectura
-    doc.setTextColor(96, 108, 120) 
-    doc.text(subtitle, 14, 30)
+    doc.setTextColor(71, 85, 105)
+    doc.text(subtitle, 14, 36)
   }
   
+  // Fecha de generación
   doc.setFontSize(9)
-  // MEJORA: Gris más oscuro para la fecha
-  doc.setTextColor(96, 108, 120) 
-  doc.text(`Generado: ${new Date().toLocaleDateString('es-AR', { 
+  doc.setTextColor(100, 116, 139)
+  doc.text(`Generado el ${new Date().toLocaleDateString('es-AR', { 
     day: '2-digit', 
     month: '2-digit', 
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  })}`, 14, subtitle ? 36 : 30)
+  })}`, 14, subtitle ? 42 : 38)
   
-  // Línea divisoria
-  // MEJORA: Usar color principal y un grosor sutil
-  doc.setDrawColor(59, 130, 246) 
-  doc.setLineWidth(0.5) 
-  doc.line(14, subtitle ? 40 : 34, 196, subtitle ? 40 : 34)
+  // Línea divisoria con gradiente visual
+  doc.setDrawColor(59, 130, 246)
+  doc.setLineWidth(0.8)
+  doc.line(14, subtitle ? 46 : 42, 196, subtitle ? 46 : 42)
   
-  // Restaurar color de texto a negro y color de línea a negro (por si acaso) para el contenido
-  doc.setTextColor(0, 0, 0) 
-  doc.setDrawColor(0, 0, 0) 
+  // Línea secundaria más delgada
+  doc.setDrawColor(226, 232, 240)
+  doc.setLineWidth(0.3)
+  doc.line(14, subtitle ? 47 : 43, 196, subtitle ? 47 : 43)
+  
+  // Restaurar colores
+  doc.setTextColor(0, 0, 0)
+  doc.setDrawColor(0, 0, 0)
 }
 
 const addFooter = (doc: jsPDF, pageNumber: number) => {
   const pageCount = doc.getNumberOfPages()
+  const pageHeight = doc.internal.pageSize.height
+  
+  // Línea superior del footer
+  doc.setDrawColor(226, 232, 240)
+  doc.setLineWidth(0.5)
+  doc.line(14, pageHeight - 20, 196, pageHeight - 20)
+  
+  // Nombre de la empresa a la izquierda
   doc.setFontSize(8)
-  // MEJORA: Usar fuente itálica para el footer
-  doc.setFont('helvetica', 'italic') 
-  doc.setTextColor(150, 150, 150)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(71, 85, 105)
+  doc.text('Policonsultorio DevForce', 14, pageHeight - 12)
+  
+  // Número de página al centro
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(100, 116, 139)
   doc.text(
     `Página ${pageNumber} de ${pageCount}`,
     doc.internal.pageSize.width / 2,
-    doc.internal.pageSize.height - 10,
+    pageHeight - 12,
     { align: 'center' }
   )
-  doc.setFont('helvetica', 'normal') // Restaurar fuente normal
+  
+  // Información adicional a la derecha
+  doc.setFontSize(7)
+  doc.setTextColor(148, 163, 184)
+  doc.text('Sistema de Gestión Médica', 196, pageHeight - 12, { align: 'right' })
 }
 
 // ============================================
@@ -96,21 +150,22 @@ interface ReporteObraSocialData {
   }>
 }
 
-export function exportarReporteObraSocial(reporte: ReporteObraSocialData) {
+export async function exportarReporteObraSocial(reporte: ReporteObraSocialData) {
   const doc = new jsPDF()
   
-  // Header
-  addHeader(
+  // Header (ahora es async)
+  await addHeader(
     doc, 
     'Reporte de Obra Social',
     reporte.obraSocial.nombre
   )
   
-  let yPos = 48
+  let yPos = 54
   
   // Métricas principales
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Métricas Principales', 14, yPos)
   
   const metricas = [
@@ -122,35 +177,43 @@ export function exportarReporteObraSocial(reporte: ReporteObraSocialData) {
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [metricas[0]],
     body: metricas.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      halign: 'left'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 80 }, 
-      1: { cellWidth: 'auto' }
+      0: { fontStyle: 'bold', cellWidth: 90, textColor: [51, 65, 85] }, 
+      1: { cellWidth: 'auto', halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] }
     }
   })
   
   // Distribución de Turnos
   yPos = doc.lastAutoTable.finalY + 15
   
-  if (yPos > 240) {
+  if (yPos > 235) {
     doc.addPage()
     yPos = 20
   }
   
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Distribución de Turnos por Estado', 14, yPos)
   
   const totalTurnos = reporte.metricas.totalTurnos
@@ -184,37 +247,43 @@ export function exportarReporteObraSocial(reporte: ReporteObraSocialData) {
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [turnosData[0]],
     body: turnosData.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      // ✅ Aplicar negrita a la primera columna para resaltar el estado
-      0: { fontStyle: 'bold', cellWidth: 80 }, 
-      1: {  cellWidth: 50 },
-      2: {  cellWidth: 'auto' }
+      0: { fontStyle: 'bold', cellWidth: 85, textColor: [51, 65, 85] }, 
+      1: { cellWidth: 50, halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] },
+      2: { cellWidth: 'auto', halign: 'right', textColor: [71, 85, 105] }
     }
   })
   
   // Distribución por Especialidad
   yPos = doc.lastAutoTable.finalY + 15
   
-  if (yPos > 240) {
+  if (yPos > 235) {
     doc.addPage()
     yPos = 20
   }
   
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Profesionales por Especialidad', 14, yPos)
   
   const totalProfesionales = reporte.metricas.totalProfesionales
@@ -228,41 +297,47 @@ export function exportarReporteObraSocial(reporte: ReporteObraSocialData) {
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [especialidadesData[0]],
     body: especialidadesData.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      // ✅ Aplicar negrita a la primera columna para resaltar la especialidad
-      0: { fontStyle: 'bold', cellWidth: 100 }, 
-      1: {  cellWidth: 40 },
-      2: {  cellWidth: 'auto' }
+      0: { fontStyle: 'bold', cellWidth: 105, textColor: [51, 65, 85] }, 
+      1: { cellWidth: 40, halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] },
+      2: { cellWidth: 'auto', halign: 'right', textColor: [71, 85, 105] }
     }
   })
   
   // Ranking de Profesionales
   yPos = doc.lastAutoTable.finalY + 15
   
-  if (yPos > 200) {
+  if (yPos > 195) {
     doc.addPage()
     yPos = 20
   }
   
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Ranking de Profesionales', 14, yPos)
   
   const profesionalesData = [
-    ['#', 'Profesional', 'Especialidad', 'Turnos Atendidos'],
+    ['#', 'Profesional', 'Especialidad', 'Turnos'],
     ...reporte.profesionales.slice(0, 20).map((prof, idx) => [
       (idx + 1).toString(),
       prof.nombre,
@@ -272,26 +347,31 @@ export function exportarReporteObraSocial(reporte: ReporteObraSocialData) {
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [profesionalesData[0]],
     body: profesionalesData.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 15 },
-      // ✅ Aplicar negrita a la columna 'Profesional'
-      1: { fontStyle: 'bold', cellWidth: 70 }, 
-      2: { cellWidth: 60 },
-      3: {  cellWidth: 'auto' }
-    }
+      0: { halign: 'center', cellWidth: 12, fontStyle: 'bold', fillColor: [240, 249, 255] },
+      1: { fontStyle: 'bold', cellWidth: 70, textColor: [51, 65, 85] }, 
+      2: { cellWidth: 60, textColor: [71, 85, 105] },
+      3: { cellWidth: 'auto', halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] }
+    },
   })
   
   // Agregar pie de página a todas las páginas
@@ -327,26 +407,34 @@ interface ReportePacientesNuevosData {
   }>
   promedioDiario: number
   diasAnalizados: number
+  obraSocialFiltro?: string
 }
 
-export function exportarReportePacientesNuevos(reporte: ReportePacientesNuevosData, groupBy: string) {
+export async function exportarReportePacientesNuevos(reporte: ReportePacientesNuevosData, groupBy: string) {
   const doc = new jsPDF()
   
   // Header
   const fechaInicio = new Date(reporte.fechaInicio).toLocaleDateString('es-AR')
   const fechaFin = new Date(reporte.fechaFin).toLocaleDateString('es-AR')
   
-  addHeader(
+  // Construir el subtítulo con el filtro de obra social si existe
+  let subtitle = `Período: ${fechaInicio} - ${fechaFin}`
+  if (reporte.obraSocialFiltro) {
+    subtitle += ` | Obra Social: ${reporte.obraSocialFiltro}`
+  }
+  
+  await addHeader(
     doc, 
     'Reporte de Pacientes Nuevos',
-    `Período: ${fechaInicio} - ${fechaFin}`
+    subtitle 
   )
   
-  let yPos = 48
+  let yPos = 54
   
   // Resumen General
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Resumen General', 14, yPos)
   
   const resumen = [
@@ -357,37 +445,43 @@ export function exportarReportePacientesNuevos(reporte: ReportePacientesNuevosDa
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [resumen[0]],
     body: resumen.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      // ✅ Asegurar Negrita en la primera columna ('Métrica')
-      0: { fontStyle: 'bold', cellWidth: 80 }, 
-      1: {  cellWidth: 'auto' }
+      0: { fontStyle: 'bold', cellWidth: 90, textColor: [51, 65, 85] }, 
+      1: { cellWidth: 'auto', halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] }
     }
   })
   
   // Distribución Temporal
   yPos = doc.lastAutoTable.finalY + 15
   
-  if (yPos > 200) {
+  if (yPos > 195) {
     doc.addPage()
     yPos = 20
   }
   
   const agrupacionLabel = groupBy === 'day' ? 'Diaria' : groupBy === 'week' ? 'Semanal' : 'Mensual'
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text(`Distribución Temporal (${agrupacionLabel})`, 14, yPos)
   
   const periodosData = [
@@ -400,37 +494,43 @@ export function exportarReportePacientesNuevos(reporte: ReportePacientesNuevosDa
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [periodosData[0]],
     body: periodosData.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      // ✅ Aplicar negrita a la primera columna para resaltar el Período
-      0: { fontStyle: 'bold', cellWidth: 100 },
-      1: {  cellWidth: 40 },
-      2: {  cellWidth: 'auto' }
+      0: { fontStyle: 'bold', cellWidth: 105, textColor: [51, 65, 85] },
+      1: { cellWidth: 40, halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] },
+      2: { cellWidth: 'auto', halign: 'right', textColor: [71, 85, 105] }
     }
   })
   
   // Distribución por Obra Social
   yPos = doc.lastAutoTable.finalY + 15
   
-  if (yPos > 220) {
+  if (yPos > 215) {
     doc.addPage()
     yPos = 20
   }
   
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Distribución por Obra Social', 14, yPos)
   
   const obrasSocialesData = [
@@ -443,24 +543,29 @@ export function exportarReportePacientesNuevos(reporte: ReportePacientesNuevosDa
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [obrasSocialesData[0]],
     body: obrasSocialesData.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      // ✅ Aplicar negrita a la primera columna para resaltar la Obra Social
-      0: { fontStyle: 'bold', cellWidth: 100 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 'auto' }
+      0: { fontStyle: 'bold', cellWidth: 105, textColor: [51, 65, 85] },
+      1: { cellWidth: 40, halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] },
+      2: { cellWidth: 'auto', halign: 'right', textColor: [71, 85, 105] }
     }
   })
   
@@ -498,24 +603,25 @@ interface ReporteTurnosEspecialidadData {
   }>
 }
 
-export function exportarReporteTurnosEspecialidad(reporte: ReporteTurnosEspecialidadData) {
+export async function exportarReporteTurnosEspecialidad(reporte: ReporteTurnosEspecialidadData) {
   const doc = new jsPDF()
   
   // Header
   const fechaInicio = new Date(reporte.rango.from).toLocaleDateString('es-AR')
   const fechaFin = new Date(reporte.rango.to).toLocaleDateString('es-AR')
   
-  addHeader(
+  await addHeader(
     doc, 
     'Reporte de Turnos por Especialidad',
     `Período: ${fechaInicio} - ${fechaFin}`
   )
   
-  let yPos = 48
+  let yPos = 54
   
   // Resumen General
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Resumen General', 14, yPos)
   
   const totales = {
@@ -557,37 +663,36 @@ export function exportarReporteTurnosEspecialidad(reporte: ReporteTurnosEspecial
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [resumen[0]],
     body: resumen.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 10,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 9,
-      cellPadding: 3
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      // ✅ Asegurar Negrita en la primera columna ('Estado')
-      0: { fontStyle: 'bold', cellWidth: 70 }, 
-      1: {  cellWidth: 40 },
-      2: {  cellWidth: 'auto' }
+      0: { fontStyle: 'bold', cellWidth: 75, textColor: [51, 65, 85] }, 
+      1: { cellWidth: 40, halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] },
+      2: { cellWidth: 'auto', halign: 'right', textColor: [71, 85, 105] }
     },
-    // Resaltar la fila de 'Total Turnos'
     didDrawCell: (data) => {
-      // La fila de 'Total Turnos' es la primera en el 'body' (index 0)
       if (data.row.index === 0 && data.section === 'body') {
-        doc.setFillColor(240, 248, 255); // Fondo azul muy claro
-        doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-        doc.setTextColor(59, 130, 246); // Texto color primario
-        doc.setFont('helvetica', 'bold');
-      } else {
-        // Restaurar estilos para otras filas
-        doc.setTextColor(0, 0, 0);
-        doc.setFont('helvetica', 'normal');
+        doc.setFillColor(240, 249, 255)
+        doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F')
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(59, 130, 246)
       }
     }
   })
@@ -595,13 +700,14 @@ export function exportarReporteTurnosEspecialidad(reporte: ReporteTurnosEspecial
   // Desglose por Especialidad
   yPos = doc.lastAutoTable.finalY + 15
   
-  if (yPos > 180) {
+  if (yPos > 175) {
     doc.addPage()
     yPos = 20
   }
   
-  doc.setFontSize(14)
+  doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
   doc.text('Desglose por Especialidad', 14, yPos)
   
   const especialidadesData = [
@@ -620,28 +726,33 @@ export function exportarReporteTurnosEspecialidad(reporte: ReporteTurnosEspecial
   ]
   
   autoTable(doc, {
-    startY: yPos + 5,
+    startY: yPos + 6,
     head: [especialidadesData[0]],
     body: especialidadesData.slice(1),
     theme: 'striped',
     headStyles: { 
       fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
       fontSize: 9,
       fontStyle: 'bold'
     },
     styles: {
       fontSize: 8,
-      cellPadding: 2
+      cellPadding: 3,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
     },
     columnStyles: {
-      // ✅ Aplicar negrita a la primera columna para resaltar la Especialidad
-      0: { fontStyle: 'bold', cellWidth: 60 },
-      1: {  cellWidth: 25 },
-      2: { cellWidth: 20 },
-      3: { cellWidth: 18 },
-      4: { cellWidth: 20 },
-      5: { cellWidth: 20 },
-      6: { cellWidth: 20 }
+      0: { fontStyle: 'bold', cellWidth: 60, textColor: [51, 65, 85] },
+      1: { cellWidth: 25, halign: 'right', fontStyle: 'bold', textColor: [59, 130, 246] },
+      2: { cellWidth: 20, halign: 'center', textColor: [71, 85, 105] },
+      3: { cellWidth: 18, halign: 'center', textColor: [71, 85, 105] },
+      4: { cellWidth: 20, halign: 'center', textColor: [34, 197, 94] },
+      5: { cellWidth: 20, halign: 'center', textColor: [239, 68, 68] },
+      6: { cellWidth: 20, halign: 'center', textColor: [148, 163, 184] }
     }
   })
   

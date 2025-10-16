@@ -99,7 +99,7 @@ export default function ReportesPage() {
       borderColor: "border-purple-200",
       disponible: true,
       href: "/reportes/obras-sociales",
-      stats: ["", "Tasas", "Comparativas"]
+      stats: ["Ranking", "Tasas", "Comparativas"]
     },
     {
       id: "turnos-cancelados",

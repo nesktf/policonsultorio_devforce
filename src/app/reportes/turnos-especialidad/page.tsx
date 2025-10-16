@@ -50,9 +50,9 @@ export default function ReporteTurnosPage() {
   const [reporte, setReporte] = useState<ReporteData | null>(null)
   const [error, setError] = useState<string | null>(null)
   
-  const handleExport = () => {
-    if (reporte) {
-      exportarReporteTurnosEspecialidad(reporte)
+  const handleExport = async () => {
+  if (reporte) {
+    await exportarReporteTurnosEspecialidad(reporte)
     }
   }
 

@@ -75,11 +75,29 @@ export default function NuevosPacientesPage() {
   const [error, setError] = useState<string | null>(null)
   const [obrasSociales, setObrasSociales] = useState<ObraSocial[]>([])
   
-  const handleExport = () => {
-    if (reporte) {
-      exportarReportePacientesNuevos(reporte, groupBy)
+  const handleExport = async () => {
+  if (reporte) {
+    // Obtener el nombre de la obra social si hay filtro
+    let obraSocialNombre: string | undefined = undefined
+    
+    if (obraSocialId !== "todos") {
+      if (obraSocialId === "sin-obra-social") {
+        obraSocialNombre = "Sin obra social"
+      } else {
+        const obraSocial = obrasSociales.find(os => os.id.toString() === obraSocialId)
+        obraSocialNombre = obraSocial?.nombre
+      }
     }
+    
+    // Crear el objeto con el filtro
+    const reporteConFiltro = {
+      ...reporte,
+      obraSocialFiltro: obraSocialNombre
+    }
+    
+    await exportarReportePacientesNuevos(reporteConFiltro, groupBy)
   }
+}
 
   // Filtros
   const [fechaInicio, setFechaInicio] = useState(() => {
@@ -243,8 +261,8 @@ export default function NuevosPacientesPage() {
             <Button 
               variant="outline" 
               className="gap-2" 
-              onClick={handleExport} // <--- SE AÑADE ESTA LÍNEA
-              disabled={!reporte || loading} // <--- SE RECOMIENDA deshabilitar si no hay reporte
+              onClick={handleExport} 
+              disabled={!reporte || loading}
             >
               <Download className="h-4 w-4" />
               Exportar
@@ -351,7 +369,7 @@ export default function NuevosPacientesPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">Total Pacientes</p>
                       <p className="text-3xl font-bold text-primary">{reporte.total}</p>
-                      <p className="text-xs text-muted-foreground mt-1">en el período</p>
+                      <p className="text-xs text-muted-foreground mt-1">en el perí­odo</p>
                     </div>
                     <Users className="h-8 w-8 text-primary opacity-20" />
                   </div>
@@ -375,7 +393,7 @@ export default function NuevosPacientesPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Período Pico</p>
+                      <p className="text-sm text-muted-foreground">Perí­odo Pico</p>
                       <p className="text-3xl font-bold text-green-600">
                         {periodoConMasPacientes?.cantidad || 0}
                       </p>
@@ -428,7 +446,7 @@ export default function NuevosPacientesPage() {
               </Card>
             )}
 
-            {/* Gráfico de Torta - Distribución por Obra Social */}
+            {/* GrÃ¡fico de Torta - DistribuciÃ³n por Obra Social */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -502,7 +520,7 @@ export default function NuevosPacientesPage() {
               </CardContent>
             </Card>
 
-            {/* Gráfico de Barras - Distribución por Período */}
+            {/* GrÃ¡fico de Barras - DistribuciÃ³n por PerÃ­odo */}
             <Card>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-4">
@@ -512,7 +530,7 @@ export default function NuevosPacientesPage() {
                       Distribución Temporal
                     </CardTitle>
                     <CardDescription>
-                      Pacientes registrados por período
+                      Pacientes registrados por perÃ­odo
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
@@ -535,7 +553,7 @@ export default function NuevosPacientesPage() {
               <CardContent>
                 {!reporte.periodos || reporte.total === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    No hay datos para el período seleccionado
+                    No hay datos para el perí­odo seleccionado
                   </div>
                 ) : (
                   <div className="space-y-4">
