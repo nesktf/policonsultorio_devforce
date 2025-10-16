@@ -60,7 +60,7 @@ export default function MiAgendaPage() {
       const fechaIso = selectedDate.toISOString().slice(0, 10)
       params.set("from", fechaIso)
       params.set("to", fechaIso)
-      params.set("profesionalId", targetProfesionalId)
+      params.set("profesionalId", targetProfesionalId.toString())
 
       try {
         const response = await fetch(`/api/v1/turnos?${params.toString()}`, {
@@ -133,14 +133,14 @@ export default function MiAgendaPage() {
     )
   }
 
-  if (!hasPermission(user.role, "canViewOwnTurnos")) {
+  if (!hasPermission(user.rol, "canViewOwnTurnos")) {
     return (
       <MainLayout>
         <div className="p-6">
           <Card>
             <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
               <AlertCircle className="h-12 w-12 text-muted-foreground" />
-              <p className="text-muted-foreground text-center">{getAccessDeniedMessage(user.role, "default")}</p>
+              <p className="text-muted-foreground text-center">{getAccessDeniedMessage(user.rol, "default")}</p>
               <p className="text-sm text-muted-foreground">Esta página es exclusiva para profesionales médicos.</p>
             </CardContent>
           </Card>
@@ -149,7 +149,7 @@ export default function MiAgendaPage() {
     )
   }
 
-  const especialidadNombre = user.especialidad?.trim() || "General"
+  const especialidadNombre = user.rol.trim() || "General"
 
   const especialidades = [
     {
@@ -161,7 +161,7 @@ export default function MiAgendaPage() {
   const profesionales = [
     {
       id: user.id,
-      nombre: user.name,
+      nombre: user.nombre,
       especialidad: especialidadNombre,
     },
   ]
@@ -173,9 +173,9 @@ export default function MiAgendaPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Mi Agenda</h1>
-            <p className="text-muted-foreground">Gestiona tus citas médicas - {user.especialidad || "Profesional"}</p>
+            <p className="text-muted-foreground">Gestiona tus citas médicas - {user.rol || "Profesional"}</p>
           </div>
-          {hasPermission(user.role, "canCreateTurnos") && (
+          {hasPermission(user.rol, "canCreateTurnos") && (
             <Button onClick={() => setShowNuevoTurno(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Nuevo Turno
@@ -224,7 +224,7 @@ export default function MiAgendaPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Especialidad</p>
-                <p className="text-lg font-bold text-foreground">{user.especialidad || "N/A"}</p>
+                <p className="text-lg font-bold text-foreground">{user.rol || "N/A"}</p>
               </div>
             </div>
           </Card>
@@ -257,7 +257,7 @@ export default function MiAgendaPage() {
             />
             <div className="flex items-center gap-2 ml-auto">
               <span className="text-sm text-muted-foreground">
-                Mostrando turnos de: <strong>{user.name}</strong>
+                Mostrando turnos de: <strong>{user.nombre}</strong>
               </span>
             </div>
           </div>
@@ -269,16 +269,19 @@ export default function MiAgendaPage() {
           turnos={turnos}
           loading={turnosLoading}
           error={turnosError}
+          rol={user.rol}
         />
 
         {/* Nuevo Turno Dialog - Solo si tiene permisos */}
-        {hasPermission(user.role, "canCreateTurnos") && (
+        {hasPermission(user.rol, "canCreateTurnos") && (
           <NuevoTurnoDialog
             open={showNuevoTurno}
             onOpenChange={setShowNuevoTurno}
             defaultDate={selectedDate}
             especialidades={especialidades}
-            profesionales={profesionales}
+            profesionales={profesionales.map((prof) => {
+              return { id: prof.id.toString(), nombre: prof.nombre, especialidad: prof.especialidad }
+            })}
             onTurnoCreado={handleTurnoCreado}
           />
         )}

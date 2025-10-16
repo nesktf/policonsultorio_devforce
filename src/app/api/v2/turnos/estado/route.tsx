@@ -4,7 +4,7 @@ import { DBId } from "@/prisma/instance";
 import { updateTurnoEstado } from "@/prisma/turnos";
 import { NextRequest, NextResponse } from "next/server";
 
-enum TurnoEstadoAPIEnum {
+export enum TurnoEstadoAPIEnum {
   PROGRAMADO,
   EN_SALA_ESPERA,
   ASISTIO,
@@ -25,7 +25,7 @@ function parseInputJson(data: any): Maybe<{turno_id: DBId, estado_id: EstadoTurn
   function parseId(maybe_id: any): Maybe<number> {
     try {
       const id = Math.floor(parseInt(maybe_id));
-      if (id <= 0) {
+      if (id < 0) {
         return Maybe.None();
       }
       if (Number.isNaN(id)) {
@@ -38,10 +38,10 @@ function parseInputJson(data: any): Maybe<{turno_id: DBId, estado_id: EstadoTurn
   }
 
   const {turno_id: raw_turno_id, estado_id: raw_estado_id} = data;
-  if (!raw_turno_id) {
+  if (raw_turno_id == undefined) {
     return Maybe.None();
   }
-  if (!raw_estado_id) {
+  if (raw_estado_id == undefined) {
     return Maybe.None();
   }
 
