@@ -3,12 +3,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Role } from "@/generated/prisma";
+import { Button } from "@/components/ui/button";
+import { Edit } from "lucide-react";
+import { useState } from "react";
+import { EditarTurnoDialog } from "@/components/turnos/editar-turno-dialog";
 
 interface TurnosCalendarProps {
   selectedDate: Date;
   turnos: ApiTurno[];
   loading: boolean;
   error: string | null;
+  rol: Role;
+  onTurnoUpdate?: () => void;
 }
 
 interface ApiTurno {
@@ -63,7 +70,18 @@ export function TurnosCalendar({
   turnos,
   loading,
   error,
+  rol,
+  onTurnoUpdate
 }: TurnosCalendarProps) {
+  const [selectedTurno, setSelectedTurno] = useState<ApiTurno|null>(null);
+  const [showEditTurno, setShowEditTurno] = useState<boolean>(false);
+
+  const onTurnoEdit = (turno: ApiTurno) => {
+    setSelectedTurno(turno);
+
+    setShowEditTurno(true);
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -126,6 +144,19 @@ export function TurnosCalendar({
                     <span className="text-muted-foreground text-xs">
                       Duración: {turno.duracion} minutos
                     </span>
+                    {rol == Role.MESA_ENTRADA && (
+                      <div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="gap-1"
+                          onClick={() => onTurnoEdit(turno)}
+                        >
+                          <Edit className="h-4 w-4" />
+                          Editar Estado
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -133,6 +164,16 @@ export function TurnosCalendar({
           </div>
         )}
       </CardContent>
+      {selectedTurno && (
+        <>
+          <EditarTurnoDialog
+            open={showEditTurno}
+            onOpenChange={setShowEditTurno}
+            turno={selectedTurno}
+            onEdit={onTurnoUpdate}
+          />
+        </>
+      )}
     </Card>
   );
 }
