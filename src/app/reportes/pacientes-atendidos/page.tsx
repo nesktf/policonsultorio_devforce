@@ -33,6 +33,7 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useAuth } from "@/context/auth-context"
+import { exportarReportePacientesAtendidos } from "@/utils/pdfExport"
 
 interface EspecialidadOption {
   id: string
@@ -116,6 +117,7 @@ export default function ReportePacientesAtendidos() {
   const [error, setError] = useState<string | null>(null)
   const [groupBy, setGroupBy] = useState<GroupByOption>("day")
   const [page, setPage] = useState(1)
+  const [isExporting, setIsExporting] = useState(false)
   const canAccessReport = !!user && (user.rol === "GERENTE" || user.rol === "MESA_ENTRADA")
 
   const numberFormatter = useMemo(
@@ -241,6 +243,61 @@ export default function ReportePacientesAtendidos() {
     setPage(1)
   }
 
+  const handleExport = useCallback(async () => {
+    if (!reporte) {
+      return
+    }
+
+    setIsExporting(true)
+    try {
+      const params = new URLSearchParams({
+        from: filters.from,
+        to: filters.to,
+        groupBy,
+        page: "1",
+        pageSize: "500",
+      })
+
+      if (filters.especialidad !== "all" && filters.especialidad.trim().length > 0) {
+        params.set("especialidad", filters.especialidad)
+      }
+
+      const response = await fetch(`/api/v1/reportes/pacientes-atendidos?${params.toString()}`, {
+        cache: "no-store",
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload) {
+        throw new Error(
+          payload && typeof payload === "object" && "error" in payload
+            ? (payload as { error?: string }).error ?? "No se pudo obtener los datos para exportar."
+            : "No se pudo obtener los datos para exportar.",
+        )
+      }
+
+      const especialidadLabel =
+        filters.especialidad === "all"
+          ? "Todas"
+          : especialidades.find((item) => item.id === filters.especialidad)?.nombre ?? "Personalizada"
+
+      const data = payload as ReportePacientesAtendidosResponse
+
+      await exportarReportePacientesAtendidos(data, {
+        agrupacionLabel: GROUP_LABELS[groupBy],
+        especialidadLabel,
+      })
+    } catch (err) {
+      console.error(err)
+      if (typeof window !== "undefined") {
+        window.alert(
+          err instanceof Error ? err.message : "Ocurrió un error inesperado al exportar el reporte.",
+        )
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }, [especialidades, filters.especialidad, filters.from, filters.to, groupBy, reporte])
+
   const pieData = useMemo(
     () =>
       (reporte?.distribucion ?? []).map((item) => ({
@@ -329,9 +386,14 @@ export default function ReportePacientesAtendidos() {
                 <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                 Actualizar
               </Button>
-              <Button variant="outline" className="gap-2" disabled>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || !reporte}
+              >
                 <Download className="h-4 w-4" />
-                Exportar
+                {isExporting ? "Exportando..." : "Exportar"}
               </Button>
             </div>
           </div>

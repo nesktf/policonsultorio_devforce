@@ -582,8 +582,770 @@ export async function exportarReportePacientesNuevos(reporte: ReportePacientesNu
 }
 
 // ============================================
+// REPORTE PACIENTES ATENDIDOS
+// ============================================
+
+interface ReportePacientesAtendidosData {
+  rango: {
+    from: string
+    to: string
+  }
+  filtros: {
+    especialidad: string | null
+  }
+  resumen: {
+    totalTurnos: number
+    asistidos: number
+    noAsistidos: number
+    cancelados: number
+    tasaAsistencia: number
+    comparacionAnterior: {
+      asistidosAnteriores: number
+      diferencia: number
+      variacion: number
+    }
+  }
+  distribucion: Array<{
+    etiqueta: string
+    valor: number
+    porcentaje: number
+  }>
+  detalle: Array<{
+    etiqueta: string
+    rango: string
+    total: number
+    asistidos: number
+    noAsistidos: number
+    cancelados: number
+    tasaAsistencia: number
+  }>
+}
+
+interface ExportOpcionesPacientesAtendidos {
+  agrupacionLabel: string
+  especialidadLabel: string
+}
+
+export async function exportarReportePacientesAtendidos(
+  reporte: ReportePacientesAtendidosData,
+  opciones: ExportOpcionesPacientesAtendidos,
+) {
+  const doc = new jsPDF()
+  const numberFormatter = new Intl.NumberFormat('es-AR')
+  const percentFormatter = new Intl.NumberFormat('es-AR', {
+    style: 'percent',
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  })
+
+  const fechaDesde = new Date(reporte.rango.from).toLocaleDateString('es-AR')
+  const fechaHasta = new Date(reporte.rango.to).toLocaleDateString('es-AR')
+
+  const subtitle = [
+    `Período: ${fechaDesde} - ${fechaHasta}`,
+    `Agrupación: ${opciones.agrupacionLabel}`,
+    `Especialidad: ${opciones.especialidadLabel}`,
+  ].join(' | ')
+
+  await addHeader(doc, 'Reporte de Pacientes Atendidos', subtitle)
+
+  let yPos = 54
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Indicadores principales', 14, yPos)
+
+  const resumen = [
+    ['Turnos totales', numberFormatter.format(reporte.resumen.totalTurnos)],
+    ['Pacientes asistidos', numberFormatter.format(reporte.resumen.asistidos)],
+    ['Pacientes no asistidos', numberFormatter.format(reporte.resumen.noAsistidos)],
+    ['Turnos cancelados', numberFormatter.format(reporte.resumen.cancelados)],
+    ['Tasa de asistencia', percentFormatter.format(reporte.resumen.tasaAsistencia || 0)],
+    [
+      'Asistidos período anterior',
+      numberFormatter.format(reporte.resumen.comparacionAnterior.asistidosAnteriores),
+    ],
+    [
+      'Diferencia vs. período anterior',
+      numberFormatter.format(reporte.resumen.comparacionAnterior.diferencia),
+    ],
+    [
+      'Variación porcentual',
+      `${reporte.resumen.comparacionAnterior.variacion.toFixed(1)}%`,
+    ],
+  ]
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['Métrica', 'Valor']],
+    body: resumen,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [16, 185, 129],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
+      textColor: [30, 41, 59],
+    },
+    alternateRowStyles: {
+      fillColor: [240, 253, 250],
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 90, textColor: [22, 101, 52] },
+      1: { halign: 'right', cellWidth: 'auto', textColor: [6, 95, 70] },
+    },
+  })
+
+  yPos = doc.lastAutoTable.finalY + 15
+  if (yPos > 195) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Distribución por estado del turno', 14, yPos)
+
+  const distribucionRows = reporte.distribucion.map((item, index) => [
+    index + 1,
+    item.etiqueta,
+    numberFormatter.format(item.valor),
+    `${item.porcentaje.toFixed(1)}%`,
+  ])
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['#', 'Estado', 'Turnos', 'Participación']],
+    body: distribucionRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [239, 246, 255],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 12 },
+      1: { cellWidth: 70, fontStyle: 'bold', textColor: [30, 64, 175] },
+      2: { halign: 'right', cellWidth: 35, textColor: [30, 41, 59] },
+      3: { halign: 'right', cellWidth: 35, textColor: [30, 41, 59] },
+    },
+  })
+
+  yPos = doc.lastAutoTable.finalY + 15
+  if (yPos > 195) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(`Detalle por ${opciones.agrupacionLabel.toLowerCase()}`, 14, yPos)
+
+  const detalleRows = reporte.detalle.map((item, index) => [
+    index + 1,
+    item.etiqueta,
+    item.rango,
+    numberFormatter.format(item.total),
+    numberFormatter.format(item.asistidos),
+    numberFormatter.format(item.noAsistidos),
+    numberFormatter.format(item.cancelados),
+    percentFormatter.format(item.tasaAsistencia || 0),
+  ])
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [
+      [
+        '#',
+        'Período',
+        'Rango',
+        'Turnos',
+        'Asistidos',
+        'No asistidos',
+        'Cancelados',
+        'Tasa asistencia',
+      ],
+    ],
+    body: detalleRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [2, 132, 199],
+      textColor: [255, 255, 255],
+      fontSize: 9,
+    },
+    styles: {
+      fontSize: 8,
+      cellPadding: 3,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [241, 245, 249],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 10 },
+      1: { cellWidth: 32, fontStyle: 'bold', textColor: [30, 64, 175] },
+      2: { cellWidth: 42 },
+      3: { halign: 'right', cellWidth: 22 },
+      4: { halign: 'right', cellWidth: 22 },
+      5: { halign: 'right', cellWidth: 24 },
+      6: { halign: 'right', cellWidth: 24 },
+      7: { halign: 'right', cellWidth: 26 },
+    },
+  })
+
+  const pageCount = doc.getNumberOfPages()
+  for (let page = 1; page <= pageCount; page++) {
+    doc.setPage(page)
+    addFooter(doc, page)
+  }
+
+  const fileName = `reporte-pacientes-atendidos-${new Date()
+    .toISOString()
+    .slice(0, 10)}.pdf`
+  doc.save(fileName)
+}
+
+// ============================================
+// REPORTE PACIENTES POR PERÍODO
+// ============================================
+
+interface ReportePacientesPeriodoData {
+  rango: {
+    from: string
+    to: string
+  }
+  filtros: {
+    agrupacion: string
+  }
+  resumen: {
+    totalAtendidos: number
+    promedioPorGrupo: number
+    maximo: {
+      etiqueta: string
+      total: number
+      fechaInicio: string
+      fechaFin: string
+      tooltipRange: string
+    } | null
+    comparacionAnterior: {
+      totalAnterior: number
+      diferencia: number
+      variacion: number
+    }
+  }
+  series: Array<{
+    etiqueta: string
+    valor: number
+    fechaInicio: string
+    fechaFin: string
+    tooltipLabel: string
+    tooltipRange: string
+  }>
+  detalleMensual: Array<{
+    mes: string
+    total: number
+    month: number
+    year: number
+  }>
+  especialidades: Array<{
+    especialidad: string
+    total: number
+    porcentaje: number
+  }>
+}
+
+interface ExportOpcionesPacientesPeriodo {
+  agrupacionLabel: string
+  profesionalNombre?: string
+}
+
+export async function exportarReportePacientesPorPeriodo(
+  reporte: ReportePacientesPeriodoData,
+  opciones: ExportOpcionesPacientesPeriodo,
+) {
+  const doc = new jsPDF()
+  const numberFormatter = new Intl.NumberFormat('es-AR')
+
+  const fechaDesde = new Date(reporte.rango.from).toLocaleDateString('es-AR')
+  const fechaHasta = new Date(reporte.rango.to).toLocaleDateString('es-AR')
+
+  const subtitleParts = [
+    `Período: ${fechaDesde} - ${fechaHasta}`,
+    `Agrupación: ${opciones.agrupacionLabel}`,
+  ]
+  if (opciones.profesionalNombre) {
+    subtitleParts.push(`Profesional: ${opciones.profesionalNombre}`)
+  }
+
+  await addHeader(
+    doc,
+    'Reporte de Pacientes Atendidos por Período',
+    subtitleParts.join(' | '),
+  )
+
+  let yPos = 54
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Resumen general', 14, yPos)
+
+  const resumen = [
+    ['Total pacientes atendidos', numberFormatter.format(reporte.resumen.totalAtendidos)],
+    ['Promedio por grupo', reporte.resumen.promedioPorGrupo.toFixed(2)],
+    [
+      'Período con mayor demanda',
+      reporte.resumen.maximo
+        ? `${reporte.resumen.maximo.etiqueta} (${numberFormatter.format(reporte.resumen.maximo.total)} pacientes)`
+        : 'Sin datos',
+    ],
+    [
+      'Pacientes período anterior',
+      numberFormatter.format(reporte.resumen.comparacionAnterior.totalAnterior),
+    ],
+    [
+      'Diferencia vs. período anterior',
+      numberFormatter.format(reporte.resumen.comparacionAnterior.diferencia),
+    ],
+    [
+      'Variación porcentual',
+      `${reporte.resumen.comparacionAnterior.variacion.toFixed(1)}%`,
+    ],
+  ]
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['Indicador', 'Valor']],
+    body: resumen,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [99, 102, 241],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [237, 233, 254],
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 90, textColor: [55, 48, 163] },
+      1: { halign: 'right', cellWidth: 'auto', textColor: [76, 29, 149] },
+    },
+  })
+
+  yPos = doc.lastAutoTable.finalY + 15
+  if (yPos > 195) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(`Detalle por ${opciones.agrupacionLabel.toLowerCase()}`, 14, yPos)
+
+  const seriesRows = reporte.series.map((item, index) => [
+    index + 1,
+    item.etiqueta,
+    item.tooltipRange || `${new Date(item.fechaInicio).toLocaleDateString('es-AR')} - ${new Date(item.fechaFin).toLocaleDateString('es-AR')}`,
+    numberFormatter.format(item.valor),
+  ])
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['#', 'Período', 'Rango', 'Pacientes atendidos']],
+    body: seriesRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [14, 165, 233],
+      textColor: [255, 255, 255],
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [224, 242, 254],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 12 },
+      1: { cellWidth: 40, fontStyle: 'bold', textColor: [2, 132, 199] },
+      2: { cellWidth: 70 },
+      3: { halign: 'right', cellWidth: 35 },
+    },
+  })
+
+  yPos = doc.lastAutoTable.finalY + 15
+  if (yPos > 195) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Detalle mensual', 14, yPos)
+
+  const detalleRows = reporte.detalleMensual.map((item, index) => [
+    index + 1,
+    item.mes,
+    numberFormatter.format(item.total),
+  ])
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['#', 'Mes', 'Pacientes atendidos']],
+    body: detalleRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [236, 72, 153],
+      textColor: [255, 255, 255],
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [252, 231, 243],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 12 },
+      1: { cellWidth: 90, textColor: [157, 23, 77], fontStyle: 'bold' },
+      2: { halign: 'right', cellWidth: 40 },
+    },
+  })
+
+  yPos = doc.lastAutoTable.finalY + 15
+  if (yPos > 195) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Especialidades más demandadas', 14, yPos)
+
+  const especialidadesRows = reporte.especialidades.map((item, index) => [
+    index + 1,
+    item.especialidad,
+    numberFormatter.format(item.total),
+    `${item.porcentaje.toFixed(1)}%`,
+  ])
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['#', 'Especialidad', 'Pacientes', 'Participación']],
+    body: especialidadesRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [34, 197, 94],
+      textColor: [255, 255, 255],
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [226, 232, 240],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [240, 253, 244],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 12 },
+      1: { cellWidth: 70, fontStyle: 'bold', textColor: [22, 101, 52] },
+      2: { halign: 'right', cellWidth: 35 },
+      3: { halign: 'right', cellWidth: 35 },
+    },
+  })
+
+  const pageCount = doc.getNumberOfPages()
+  for (let page = 1; page <= pageCount; page++) {
+    doc.setPage(page)
+    addFooter(doc, page)
+  }
+
+  const fileName = `reporte-pacientes-periodo-${new Date()
+    .toISOString()
+    .slice(0, 10)}.pdf`
+  doc.save(fileName)
+}
+
+// ============================================
 // REPORTE TURNOS POR ESPECIALIDAD
 // ============================================
+
+interface ReporteTurnosCanceladosData {
+  rango: {
+    from: string
+    to: string
+  }
+  filtros: {
+    especialidad: string | null
+  }
+  resumen: {
+    total: number
+    totalTurnos: number
+    tasa: number
+    comparacionAnterior: {
+      totalAnterior: number
+      diferencia: number
+      variacion: number
+    }
+    promedioMensualUltimosSeisMeses: number
+    cancelacionesPorOrigen: Array<{
+      origen: string
+      etiqueta: string
+      total: number
+      porcentaje: number
+    }>
+  }
+  cancelaciones: {
+    page: number
+    pageSize: number
+    total: number
+    items: Array<{
+      id: number
+      fecha: string
+      solicitadoPor: string
+      solicitadoPorEtiqueta: string
+      turno: {
+        paciente: {
+          nombre: string
+          apellido: string
+        }
+        profesional: {
+          nombre: string
+          apellido: string
+          especialidad: string | null
+        }
+      }
+    }>
+  }
+}
+
+interface ExportOpcionesTurnosCancelados {
+  especialidadLabel: string
+}
+
+export async function exportarReporteTurnosCancelados(
+  reporte: ReporteTurnosCanceladosData,
+  opciones: ExportOpcionesTurnosCancelados,
+) {
+  const doc = new jsPDF()
+  const numberFormatter = new Intl.NumberFormat('es-AR')
+  const percentFormatter = new Intl.NumberFormat('es-AR', {
+    style: 'percent',
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  })
+
+  const fechaDesde = new Date(reporte.rango.from).toLocaleDateString('es-AR')
+  const fechaHasta = new Date(reporte.rango.to).toLocaleDateString('es-AR')
+
+  await addHeader(
+    doc,
+    'Reporte de Turnos Cancelados',
+    `Período: ${fechaDesde} - ${fechaHasta} | Especialidad: ${opciones.especialidadLabel}`,
+  )
+
+  let yPos = 54
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Indicadores clave', 14, yPos)
+
+  const resumenRows = [
+    ['Cancelaciones registradas', numberFormatter.format(reporte.resumen.total)],
+    ['Turnos totales', numberFormatter.format(reporte.resumen.totalTurnos)],
+    ['Tasa de cancelación', percentFormatter.format(reporte.resumen.tasa || 0)],
+    [
+      'Cancelaciones previo período',
+      numberFormatter.format(reporte.resumen.comparacionAnterior.totalAnterior),
+    ],
+    [
+      'Diferencia con período anterior',
+      numberFormatter.format(reporte.resumen.comparacionAnterior.diferencia),
+    ],
+    [
+      'Variación porcentual',
+      `${reporte.resumen.comparacionAnterior.variacion.toFixed(1)}%`,
+    ],
+    [
+      'Promedio mensual últimos 6 meses',
+      reporte.resumen.promedioMensualUltimosSeisMeses.toFixed(1),
+    ],
+  ]
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['Indicador', 'Valor']],
+    body: resumenRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [239, 68, 68],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [254, 226, 226],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [254, 242, 242],
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 90, textColor: [153, 27, 27] },
+      1: { halign: 'right', cellWidth: 'auto', textColor: [185, 28, 28] },
+    },
+  })
+
+  yPos = doc.lastAutoTable.finalY + 15
+  if (yPos > 195) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Cancelaciones por solicitante', 14, yPos)
+
+  const origenRows = reporte.resumen.cancelacionesPorOrigen.map((item, index) => [
+    index + 1,
+    item.etiqueta,
+    numberFormatter.format(item.total),
+    `${item.porcentaje.toFixed(1)}%`,
+  ])
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [['#', 'Origen', 'Cancelaciones', 'Participación']],
+    body: origenRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [248, 113, 113],
+      textColor: [255, 255, 255],
+      fontSize: 10,
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 4,
+      lineColor: [254, 226, 226],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [254, 242, 242],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 12 },
+      1: { cellWidth: 70, fontStyle: 'bold', textColor: [153, 27, 27] },
+      2: { halign: 'right', cellWidth: 35 },
+      3: { halign: 'right', cellWidth: 35 },
+    },
+  })
+
+  yPos = doc.lastAutoTable.finalY + 15
+  if (yPos > 195) {
+    doc.addPage()
+    yPos = 20
+  }
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Detalle de cancelaciones', 14, yPos)
+
+  const detalleRows = reporte.cancelaciones.items.map((item, index) => [
+    index + 1,
+    new Date(item.fecha).toLocaleString('es-AR', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }),
+    `${item.turno.paciente.apellido}, ${item.turno.paciente.nombre}`,
+    `${item.turno.profesional.apellido}, ${item.turno.profesional.nombre}`,
+    item.turno.profesional.especialidad ?? 'Sin especialidad',
+    item.solicitadoPorEtiqueta,
+  ])
+
+  autoTable(doc, {
+    startY: yPos + 6,
+    head: [
+      ['#', 'Fecha', 'Paciente', 'Profesional', 'Especialidad', 'Solicitado por'],
+    ],
+    body: detalleRows,
+    theme: 'striped',
+    headStyles: {
+      fillColor: [185, 28, 28],
+      textColor: [255, 255, 255],
+      fontSize: 9,
+    },
+    styles: {
+      fontSize: 8,
+      cellPadding: 3,
+      lineColor: [254, 226, 226],
+      lineWidth: 0.1,
+    },
+    alternateRowStyles: {
+      fillColor: [254, 242, 242],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 10 },
+      1: { cellWidth: 32 },
+      2: { cellWidth: 42, fontStyle: 'bold' },
+      3: { cellWidth: 42 },
+      4: { cellWidth: 36 },
+      5: { cellWidth: 32 },
+    },
+  })
+
+  const pageCount = doc.getNumberOfPages()
+  for (let page = 1; page <= pageCount; page++) {
+    doc.setPage(page)
+    addFooter(doc, page)
+  }
+
+  const fileName = `reporte-turnos-cancelados-${new Date()
+    .toISOString()
+    .slice(0, 10)}.pdf`
+  doc.save(fileName)
+}
 
 interface ReporteTurnosEspecialidadData {
   rango: {

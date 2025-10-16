@@ -20,6 +20,7 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useAuth } from "@/context/auth-context"
+import { exportarReporteTurnosCancelados } from "@/utils/pdfExport"
 
 interface EspecialidadOption {
   id: string
@@ -105,6 +106,7 @@ export default function ReporteTurnosCancelados() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [isExporting, setIsExporting] = useState(false)
   const pageSize = 10
 
   const numberFormatter = useMemo(
@@ -232,6 +234,62 @@ export default function ReporteTurnosCancelados() {
     setPage(1)
   }
 
+  const handleExport = useCallback(async () => {
+    if (!reporte) {
+      return
+    }
+
+    setIsExporting(true)
+    try {
+      const totalCancelaciones = reporte.cancelaciones.total ?? 0
+      const exportPageSize = Math.min(Math.max(totalCancelaciones, 100), 1000)
+
+      const params = new URLSearchParams({
+        from: filters.from,
+        to: filters.to,
+        page: "1",
+        pageSize: exportPageSize.toString(),
+      })
+
+      if (filters.especialidad !== "all" && filters.especialidad.trim().length > 0) {
+        params.set("especialidad", filters.especialidad)
+      }
+
+      const response = await fetch(`/api/v1/reportes/turnos-cancelados?${params.toString()}`, {
+        cache: "no-store",
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload) {
+        throw new Error(
+          payload && typeof payload === "object" && "error" in payload
+            ? (payload as { error?: string }).error ?? "No se pudo obtener los datos para exportar."
+            : "No se pudo obtener los datos para exportar.",
+        )
+      }
+
+      const data = payload as ReporteTurnosCanceladosResponse
+
+      const especialidadLabel =
+        filters.especialidad === "all"
+          ? "Todas"
+          : especialidades.find((item) => item.id === filters.especialidad)?.nombre ?? "Personalizada"
+
+      await exportarReporteTurnosCancelados(data, {
+        especialidadLabel,
+      })
+    } catch (err) {
+      console.error(err)
+      if (typeof window !== "undefined") {
+        window.alert(
+          err instanceof Error ? err.message : "Ocurrió un error inesperado al exportar el reporte.",
+        )
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }, [especialidades, filters.especialidad, filters.from, filters.to, reporte])
+
   const origenes = reporte?.resumen.cancelacionesPorOrigen ?? []
   const origenPrincipal = origenes[0]
   const variation = reporte?.resumen.comparacionAnterior.variacion ?? 0
@@ -326,9 +384,14 @@ useEffect(() => {
                 <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                 Actualizar
               </Button>
-              <Button variant="outline" className="gap-2" disabled>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || !reporte}
+              >
                 <Download className="h-4 w-4" />
-                Exportar
+                {isExporting ? "Exportando..." : "Exportar"}
               </Button>
             </div>
           </div>

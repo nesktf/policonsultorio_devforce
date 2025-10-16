@@ -36,6 +36,7 @@ import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useAuth } from "@/context/auth-context"
+import { exportarReportePacientesPorPeriodo } from "@/utils/pdfExport"
 
 type GroupByOption = "day" | "week" | "month"
 
@@ -124,6 +125,12 @@ export default function ReportePacientesPorPeriodo() {
   const [profesionalId, setProfesionalId] = useState<number | null>(null)
   const [isProfesionalReady, setIsProfesionalReady] = useState(!isProfesional)
   const [profesionalFetchError, setProfesionalFetchError] = useState<string | null>(null)
+  const [profesionalInfo, setProfesionalInfo] = useState<{
+    nombre: string
+    apellido: string
+    especialidad?: string | null
+  } | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
 
   useEffect(() => {
@@ -132,6 +139,7 @@ export default function ReportePacientesPorPeriodo() {
     if (!isProfesional || !user) {
       setProfesionalId(null)
       setProfesionalFetchError(null)
+      setProfesionalInfo(null)
       setIsProfesionalReady(true)
       return
     }
@@ -155,6 +163,11 @@ export default function ReportePacientesPorPeriodo() {
           throw new Error("No se encontró la información del profesional.")
         }
         setProfesionalId(profesionalIdValue)
+        setProfesionalInfo({
+          nombre: typeof data?.nombre === "string" ? data.nombre : "",
+          apellido: typeof data?.apellido === "string" ? data.apellido : "",
+          especialidad: typeof data?.especialidad === "string" ? data.especialidad : null,
+        })
       } catch (err) {
         console.error(err)
         if (!cancelled) {
@@ -162,6 +175,7 @@ export default function ReportePacientesPorPeriodo() {
             err instanceof Error
               ? err.message
               : "No se pudo obtener la información del profesional."
+          setProfesionalInfo(null)
           setProfesionalId(null)
           setProfesionalFetchError(message)
           setError(message)
@@ -274,6 +288,64 @@ export default function ReportePacientesPorPeriodo() {
       groupBy: event.target.value as GroupByOption,
     }))
   }
+
+  const handleExport = useCallback(async () => {
+    if (!reporte) {
+      return
+    }
+
+    setIsExporting(true)
+    try {
+      const params = new URLSearchParams({
+        from: filters.from,
+        to: filters.to,
+        groupBy: filters.groupBy,
+      })
+
+      if (isProfesional && profesionalId !== null) {
+        params.set("profesionalId", profesionalId.toString())
+      }
+
+      const response = await fetch(`/api/v1/reportes/paciente-por-periodo?${params.toString()}`, {
+        cache: "no-store",
+      })
+      const payload = await response.json().catch(() => null)
+
+      if (!response.ok || !payload) {
+        throw new Error(
+          payload && typeof payload === "object" && "error" in payload
+            ? (payload as { error?: string }).error ?? "No se pudo obtener los datos para exportar."
+            : "No se pudo obtener los datos para exportar.",
+        )
+      }
+
+      const data = payload as ReportePacientesPorPeriodoResponse
+
+      await exportarReportePacientesPorPeriodo(data, {
+        agrupacionLabel: GROUP_LABELS[filters.groupBy],
+        profesionalNombre: profesionalInfo
+          ? `${profesionalInfo.apellido}, ${profesionalInfo.nombre}`
+          : undefined,
+      })
+    } catch (err) {
+      console.error(err)
+      if (typeof window !== "undefined") {
+        window.alert(
+          err instanceof Error ? err.message : "Ocurrió un error inesperado al exportar el reporte.",
+        )
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }, [
+    filters.from,
+    filters.groupBy,
+    filters.to,
+    isProfesional,
+    profesionalId,
+    profesionalInfo,
+    reporte,
+  ])
 
   const chartData = useMemo<ChartDataPoint[]>(
     () =>
@@ -447,9 +519,14 @@ export default function ReportePacientesPorPeriodo() {
                 <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                 Actualizar
               </Button>
-              <Button variant="outline" className="gap-2" disabled>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={handleExport}
+                disabled={isLoading || isExporting || !reporte}
+              >
                 <Download className="h-4 w-4" />
-                Exportar
+                {isExporting ? "Exportando..." : "Exportar"}
               </Button>
             </div>
           </div>
