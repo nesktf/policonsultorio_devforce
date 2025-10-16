@@ -8,8 +8,11 @@ import {
   Download,
   Loader2,
   RefreshCw,
+  TrendingDown,
+  TrendingUp,
   Users,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
 import {
   ChangeEvent,
@@ -289,6 +292,89 @@ export default function ReportePacientesPorPeriodo() {
     }))
   }
 
+  type SummaryCard = {
+    key: string
+    label: string
+    value: string
+    helper?: string
+    highlight?: string
+    icon: LucideIcon
+    gradient: string
+    iconBg: string
+    valueClass: string
+  }
+
+  const resumenCards = useMemo<SummaryCard[]>(() => {
+    const total = reporte?.resumen.totalAtendidos ?? 0
+    const promedio = reporte?.resumen.promedioPorGrupo ?? 0
+    const maximo = reporte?.resumen.maximo ?? null
+    const comparacion = reporte?.resumen.comparacionAnterior
+    const variacion = comparacion?.variacion ?? 0
+    const diferencia = comparacion?.diferencia ?? 0
+    const groupLabel = GROUP_LABELS[filters.groupBy].toLowerCase()
+
+    const variacionEsPositiva = variacion >= 0
+    const variacionStyles = variacionEsPositiva
+      ? {
+          gradient: "from-emerald-500/10 via-background to-background",
+          iconBg: "bg-emerald-500/15 text-emerald-600",
+          valueClass: "text-emerald-600",
+          icon: TrendingUp,
+        }
+      : {
+          gradient: "from-rose-500/10 via-background to-background",
+          iconBg: "bg-rose-500/15 text-rose-600",
+          valueClass: "text-rose-600",
+          icon: TrendingDown,
+        }
+
+    return [
+      {
+        key: "total",
+        label: "Total atendidos",
+        value: reporte ? numberFormatter.format(total) : "—",
+        helper: "en el período seleccionado",
+        icon: Users,
+        gradient: "from-sky-500/10 via-background to-background",
+        iconBg: "bg-sky-500/15 text-sky-600",
+        valueClass: "text-sky-700",
+      },
+      {
+        key: "promedio",
+        label: `Promedio por ${groupLabel}`,
+        value: reporte ? decimalFormatter.format(promedio) : "—",
+        helper: `pacientes por ${groupLabel}`,
+        icon: BarChart3,
+        gradient: "from-indigo-500/10 via-background to-background",
+        iconBg: "bg-indigo-500/15 text-indigo-600",
+        valueClass: "text-indigo-600",
+      },
+      {
+        key: "maximo",
+        label: "Mayor demanda",
+        value: maximo ? numberFormatter.format(maximo.total) : "—",
+        helper: maximo ? maximo.tooltipLabel : "Sin datos destacados",
+        highlight: maximo ? maximo.tooltipRange : undefined,
+        icon: Calendar,
+        gradient: "from-amber-500/10 via-background to-background",
+        iconBg: "bg-amber-500/15 text-amber-600",
+        valueClass: "text-amber-600",
+      },
+      {
+        key: "variacion",
+        label: "Variación de asistidos",
+        value: reporte ? `${variacion >= 0 ? "+" : ""}${variacion.toFixed(1)}%` : "—",
+        helper: reporte
+          ? `${diferencia >= 0 ? "+" : ""}${numberFormatter.format(diferencia)} pacientes vs. período anterior`
+          : "Sin datos comparativos",
+        icon: variacionStyles.icon,
+        gradient: variacionStyles.gradient,
+        iconBg: variacionStyles.iconBg,
+        valueClass: variacionStyles.valueClass,
+      },
+    ]
+  }, [decimalFormatter, filters.groupBy, numberFormatter, reporte])
+
   const handleExport = useCallback(async () => {
     if (!reporte) {
       return
@@ -532,7 +618,7 @@ export default function ReportePacientesPorPeriodo() {
           </div>
 
           {/* Filtros */}
-          <Card className="p-4">
+          <Card className="p-4 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-indigo-50/10">
             <div className="mb-4 flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               <h3 className="font-semibold">Período de análisis</h3>
@@ -583,52 +669,38 @@ export default function ReportePacientesPorPeriodo() {
           </Card>
 
           {/* Métricas principales */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total atendidos</p>
-                  <p className="mt-2 text-4xl font-bold text-blue-600">
-                    {reporte ? numberFormatter.format(reporte.resumen.totalAtendidos) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">en el rango seleccionado</p>
-                </div>
-                <Users className="h-8 w-8 text-blue-400/60" />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Promedio / {GROUP_LABELS[filters.groupBy].toLowerCase()}
-                  </p>
-                  <p className="mt-2 text-4xl font-bold text-foreground">
-                    {reporte ? decimalFormatter.format(reporte.resumen.promedioPorGrupo) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {filters.groupBy === "day" ? "pacientes por día" : filters.groupBy === "week" ? "pacientes por semana" : "pacientes por mes"}
-                  </p>
-                </div>
-                <BarChart3 className="h-8 w-8 text-purple-400/70" />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div>
-                <p className="text-sm text-muted-foreground">Máximo del período</p>
-                <p className="mt-2 text-4xl font-bold text-emerald-600">
-                  {maximoTotal ?? "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {maximo ? `Grupo: ${maximo.etiqueta}` : "Sin datos destacados"}
-                </p>
-              </div>
-            </Card>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {resumenCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <Card
+                  key={card.key}
+                  className={`relative overflow-hidden border border-border/40 bg-gradient-to-br ${card.gradient} p-6 shadow-md transition-all hover:border-primary/40 hover:shadow-lg`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+                        {card.label}
+                      </p>
+                      <p className={`mt-2 text-3xl font-semibold ${card.valueClass}`}>{card.value}</p>
+                      {card.helper ? (
+                        <p className="mt-1 text-xs text-muted-foreground">{card.helper}</p>
+                      ) : null}
+                      {card.highlight ? (
+                        <p className="mt-2 text-xs font-medium text-foreground/80">{card.highlight}</p>
+                      ) : null}
+                    </div>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${card.iconBg}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
 
           {/* Evolución por período */}
-          <Card className="p-6">
+          <Card className="p-6 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-indigo-50/15">
             <div className="mb-4 flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               <h2 className="text-xl font-bold text-foreground">
@@ -658,7 +730,7 @@ export default function ReportePacientesPorPeriodo() {
           </Card>
 
           {/* Detalle mensual */}
-          <Card className="p-6">
+          <Card className="p-6 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-indigo-50/15">
             <h2 className="mb-4 text-xl font-bold text-foreground">Detalle mensual</h2>
             <p className="mb-6 text-sm text-muted-foreground">
               Total de pacientes atendidos por mes dentro del período.
@@ -675,17 +747,22 @@ export default function ReportePacientesPorPeriodo() {
               </p>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto rounded-lg border border-border/40">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-left text-sm text-muted-foreground">
-                        <th className="p-3 font-semibold">Mes</th>
-                        <th className="p-3 font-semibold">Pacientes atendidos</th>
+                      <tr className="border-b bg-muted/30 text-left text-muted-foreground">
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Mes</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">
+                          Pacientes atendidos
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {monthlyRows.map((detalle) => (
-                        <tr key={detalle.key} className="border-b hover:bg-muted/40">
+                        <tr
+                          key={detalle.key}
+                          className="border-b last:border-b-0 hover:bg-muted/30"
+                        >
                           <td className="p-3 capitalize">{detalle.label}</td>
                           <td className="p-3 font-medium">
                             {numberFormatter.format(detalle.total)}
@@ -726,7 +803,7 @@ export default function ReportePacientesPorPeriodo() {
           </Card>
 
           {/* Especialidades destacadas */}
-          <Card className="p-6">
+          <Card className="p-6 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-indigo-50/15">
             <div className="mb-4 flex items-center gap-2">
               <Users className="h-5 w-5" />
               <h2 className="text-xl font-bold text-foreground">Especialidades más demandadas</h2>
@@ -740,7 +817,11 @@ export default function ReportePacientesPorPeriodo() {
             ) : (
               <div className="space-y-4">
                 {reporte?.especialidades.slice(0, 6).map((especialidad) => (
-                  <div key={especialidad.especialidad} className="rounded border bg-card p-4">
+                  <div
+                    key={especialidad.especialidad}
+                    className="rounded-xl border border-border/40 bg-card/70 p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                    style={{ borderLeftColor: "rgb(79 70 229)", borderLeftWidth: "4px" }}
+                  >
                     <div className="mb-3 flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-foreground">{especialidad.especialidad}</p>
@@ -754,7 +835,7 @@ export default function ReportePacientesPorPeriodo() {
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-muted">
                       <div
-                        className="h-full bg-indigo-500"
+                        className="h-full bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400"
                         style={{ width: `${Math.min(100, especialidad.porcentaje)}%` }}
                       />
                     </div>

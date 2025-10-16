@@ -12,6 +12,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
 import {
   ChangeEvent,
@@ -309,6 +310,87 @@ export default function ReportePacientesAtendidos() {
     [reporte?.distribucion],
   )
 
+  const pieChartData = useMemo(
+    () => pieData.filter((item) => item.value > 0),
+    [pieData],
+  )
+
+  type ResumenCard = {
+    key: string
+    label: string
+    value: string
+    helper?: string
+    highlight?: string
+    icon: LucideIcon
+    gradient: string
+    iconBg: string
+    valueClass: string
+  }
+
+  const resumenCards = useMemo<ResumenCard[]>(() => {
+    const totalTurnosNumber = reporte?.resumen.totalTurnos ?? 0
+    const asistidosNumber = reporte?.resumen.asistidos ?? 0
+    const noAsistidosNumber = reporte?.resumen.noAsistidos ?? 0
+    const canceladosNumber = reporte?.resumen.cancelados ?? 0
+    const comparacion = reporte?.resumen.comparacionAnterior
+
+    const porcentaje = (valor: number) => {
+      if (!reporte || totalTurnosNumber === 0) {
+        return "—"
+      }
+      return ratioFormatter.format(valor / totalTurnosNumber)
+    }
+
+    const variacionTexto =
+      comparacion && typeof comparacion.variacion === "number"
+        ? `${comparacion.variacion >= 0 ? "+" : ""}${comparacion.variacion.toFixed(1)}% vs. período anterior`
+        : undefined
+
+    return [
+      {
+        key: "total",
+        label: "Total de turnos",
+        value: reporte ? numberFormatter.format(totalTurnosNumber) : "—",
+        helper: "en el período seleccionado",
+        icon: Users,
+        gradient: "from-sky-500/10 via-background to-background",
+        iconBg: "bg-sky-500/15 text-sky-600",
+        valueClass: "text-sky-700",
+      },
+      {
+        key: "asistidos",
+        label: "Pacientes asistidos",
+        value: reporte ? numberFormatter.format(asistidosNumber) : "—",
+        helper: `${porcentaje(asistidosNumber)} del total`,
+        highlight: variacionTexto,
+        icon: CheckCircle2,
+        gradient: "from-emerald-500/10 via-background to-background",
+        iconBg: "bg-emerald-500/15 text-emerald-600",
+        valueClass: "text-emerald-600",
+      },
+      {
+        key: "no-asistidos",
+        label: "No asistidos",
+        value: reporte ? numberFormatter.format(noAsistidosNumber) : "—",
+        helper: `${porcentaje(noAsistidosNumber)} del total`,
+        icon: XCircle,
+        gradient: "from-amber-500/10 via-background to-background",
+        iconBg: "bg-amber-500/15 text-amber-600",
+        valueClass: "text-amber-600",
+      },
+      {
+        key: "cancelados",
+        label: "Turnos cancelados",
+        value: reporte ? numberFormatter.format(canceladosNumber) : "—",
+        helper: `${porcentaje(canceladosNumber)} del total`,
+        icon: Ban,
+        gradient: "from-rose-500/10 via-background to-background",
+        iconBg: "bg-rose-500/15 text-rose-600",
+        valueClass: "text-rose-600",
+      },
+    ]
+  }, [numberFormatter, ratioFormatter, reporte])
+
   const detalle = useMemo(() => reporte?.detalle ?? [], [reporte?.detalle])
   const currentPage = reporte?.paginacion?.page ?? page
   const totalPages = reporte?.paginacion?.totalPages ?? 1
@@ -399,7 +481,7 @@ export default function ReportePacientesAtendidos() {
           </div>
 
           {/* Filtros */}
-          <Card className="p-4">
+          <Card className="p-4 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-primary/5">
             <div className="mb-4 flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               <h3 className="font-semibold">Período de análisis</h3>
@@ -454,88 +536,37 @@ export default function ReportePacientesAtendidos() {
 
           {/* Métricas principales */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total de turnos</p>
-                  <p className="mt-2 text-4xl font-bold text-blue-600">
-                    {reporte ? numberFormatter.format(reporte.resumen.totalTurnos) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">en el período seleccionado</p>
-                </div>
-                <Users className="h-8 w-8 text-muted-foreground/50" />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Asistidos</p>
-                  <p className="mt-2 text-4xl font-bold text-green-600">
-                    {reporte ? numberFormatter.format(reporte.resumen.asistidos) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {reporte
-                      ? ratioFormatter.format(
-                          reporte.resumen.totalTurnos === 0
-                            ? 0
-                            : reporte.resumen.asistidos / reporte.resumen.totalTurnos,
-                        )
-                      : "—"}{" "}
-                    del total
-                  </p>
-                </div>
-                <CheckCircle2 className="h-8 w-8 text-green-300" />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">No Asistidos</p>
-                  <p className="mt-2 text-4xl font-bold text-orange-600">
-                    {reporte ? numberFormatter.format(reporte.resumen.noAsistidos) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {reporte
-                      ? ratioFormatter.format(
-                          reporte.resumen.totalTurnos === 0
-                            ? 0
-                            : reporte.resumen.noAsistidos / reporte.resumen.totalTurnos,
-                        )
-                      : "—"}{" "}
-                    del total
-                  </p>
-                </div>
-                <XCircle className="h-8 w-8 text-orange-300" />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Cancelados</p>
-                  <p className="mt-2 text-4xl font-bold text-red-600">
-                    {reporte ? numberFormatter.format(reporte.resumen.cancelados) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {reporte
-                      ? ratioFormatter.format(
-                          reporte.resumen.totalTurnos === 0
-                            ? 0
-                            : reporte.resumen.cancelados / reporte.resumen.totalTurnos,
-                        )
-                      : "—"}{" "}
-                    del total
-                  </p>
-                </div>
-                <Ban className="h-8 w-8 text-red-300" />
-              </div>
-            </Card>
+            {resumenCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <Card
+                  key={card.key}
+                  className={`relative overflow-hidden border border-border/40 bg-gradient-to-br ${card.gradient} p-6 shadow-md transition-all hover:border-primary/40 hover:shadow-lg`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+                        {card.label}
+                      </p>
+                      <p className={`mt-2 text-3xl font-semibold ${card.valueClass}`}>{card.value}</p>
+                      {card.helper ? (
+                        <p className="mt-1 text-xs text-muted-foreground">{card.helper}</p>
+                      ) : null}
+                      {card.highlight ? (
+                        <p className="mt-2 text-xs font-medium text-foreground/80">{card.highlight}</p>
+                      ) : null}
+                    </div>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${card.iconBg}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
 
           {/* Distribución de asistencia */}
-          <Card className="p-6">
+          <Card className="p-6 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-primary/5">
             <div className="mb-4 flex items-center gap-2">
               <Users className="h-5 w-5" />
               <h2 className="text-xl font-bold text-foreground">Distribución de asistencia</h2>
@@ -544,7 +575,7 @@ export default function ReportePacientesAtendidos() {
               Relación de turnos asistidos, no asistidos y cancelados en el período seleccionado.
             </p>
 
-            {pieData.length === 0 ? (
+            {pieChartData.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No se registraron turnos en el período seleccionado.
               </p>
@@ -554,7 +585,7 @@ export default function ReportePacientesAtendidos() {
                   <ResponsiveContainer width="100%" height={320}>
                     <PieChart>
                       <Pie
-                        data={pieData}
+                        data={pieChartData}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -564,7 +595,7 @@ export default function ReportePacientesAtendidos() {
                           `${name}: ${numberFormatter.format(value)}`
                         }
                       >
-                        {pieData.map((entry, index) => (
+                        {pieChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -581,7 +612,11 @@ export default function ReportePacientesAtendidos() {
 
                 <div className="grid w-full gap-4 lg:w-1/2">
                   {pieData.map((item) => (
-                    <div key={item.name} className="rounded border bg-card p-4">
+                    <div
+                      key={item.name}
+                      className="rounded-xl border border-border/40 bg-card/70 p-4 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg"
+                      style={{ borderLeftColor: item.color, borderLeftWidth: "4px" }}
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
@@ -607,7 +642,7 @@ export default function ReportePacientesAtendidos() {
           </Card>
 
           {/* Tabla de detalle */}
-          <Card className="p-6">
+          <Card className="p-6 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-primary/5">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-xl font-bold text-foreground">Detalle de asistencia</h2>
@@ -643,21 +678,21 @@ export default function ReportePacientesAtendidos() {
               </p>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto rounded-lg border border-border/40">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-left text-sm text-muted-foreground">
-                        <th className="p-3 font-semibold">Período</th>
-                        <th className="p-3 font-semibold">Turnos</th>
-                        <th className="p-3 font-semibold">Asistidos</th>
-                        <th className="p-3 font-semibold">No asistidos</th>
-                        <th className="p-3 font-semibold">Cancelados</th>
-                        <th className="p-3 font-semibold">Tasa asistencia</th>
+                      <tr className="border-b bg-muted/30 text-left text-muted-foreground">
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Período</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Turnos</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Asistidos</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">No asistidos</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Cancelados</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Tasa asistencia</th>
                       </tr>
                     </thead>
                     <tbody>
                       {detalle.map((item) => (
-                        <tr key={item.id} className="border-b hover:bg-muted/40">
+                        <tr key={item.id} className="border-b last:border-b-0 hover:bg-muted/30">
                           <td className="p-3">
                             <div className="font-semibold capitalize text-foreground">{item.etiqueta}</div>
                             <div className="text-xs capitalize text-muted-foreground">{item.rango}</div>
