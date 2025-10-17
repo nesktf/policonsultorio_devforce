@@ -257,11 +257,10 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
   let estudios: Array<EstudioDBData> = []
   if (data.estudiosComplementarios) {
     try {
-      if (Array.isArray(data.estudios)) {
-        return onErr(`medicamentos`);
+      if (!Array.isArray(data.estudiosComplementarios)) {
+        return onErr(`estudiosComplementarios`);
       }
-      estudios = (data.estudios as Array<any>).map((est: any) => {
-        if (!est.tipo) {
+        estudios = (data.estudiosComplementarios as Array<any>).map((est: any) => {        if (!est.tipo) {
           throw new Error("tipo");
         }
         if (!est.resultado) {
