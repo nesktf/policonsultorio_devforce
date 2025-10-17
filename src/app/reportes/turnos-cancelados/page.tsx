@@ -12,8 +12,9 @@ import {
   TrendingUp,
   XCircle,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react"
+import { ChangeEvent, useCallback, useEffect, useMemo, useState, useId } from "react"
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { MainLayout } from "@/components/layout/main-layout"
@@ -108,6 +109,7 @@ export default function ReporteTurnosCancelados() {
   const [page, setPage] = useState(1)
   const [isExporting, setIsExporting] = useState(false)
   const pageSize = 10
+  const chartGradientId = useId()
 
   const numberFormatter = useMemo(
     () =>
@@ -233,6 +235,79 @@ export default function ReporteTurnosCancelados() {
     }))
     setPage(1)
   }
+
+  type SummaryCard = {
+    key: string
+    label: string
+    value: string
+    helper?: string
+    highlight?: string
+    icon: LucideIcon
+    gradient: string
+    iconBg: string
+    valueClass: string
+  }
+
+  const resumenCards = useMemo<SummaryCard[]>(() => {
+    const totalCancelados = reporte?.resumen.total ?? 0
+    const totalTurnos = reporte?.resumen.totalTurnos ?? 0
+    const tasa = reporte?.resumen.tasa ?? 0
+    const promedioMensual = reporte?.resumen.promedioMensualUltimosSeisMeses ?? 0
+    const comparacion = reporte?.resumen.comparacionAnterior
+    const variacion = comparacion?.variacion ?? 0
+    const diferencia = comparacion?.diferencia ?? 0
+    const variacionPositiva = variacion >= 0
+
+    const variacionStyles = variacionPositiva
+      ? {
+          gradient: "from-rose-500/10 via-background to-background",
+          iconBg: "bg-rose-500/15 text-rose-600",
+          valueClass: "text-rose-600",
+          icon: TrendingUp,
+        }
+      : {
+          gradient: "from-emerald-500/10 via-background to-background",
+          iconBg: "bg-emerald-500/15 text-emerald-600",
+          valueClass: "text-emerald-600",
+          icon: TrendingDown,
+        }
+
+    return [
+      {
+        key: "total",
+        label: "Total cancelados",
+        value: reporte ? numberFormatter.format(totalCancelados) : "—",
+        helper: reporte
+          ? `Sobre ${numberFormatter.format(totalTurnos)} turnos`
+          : "Sin datos en el período",
+        icon: XCircle,
+        gradient: "",
+        iconBg: "bg-rose-500/15 text-rose-600",
+        valueClass: "text-rose-600",
+      },
+      {
+        key: "tasa",
+        label: "Tasa de cancelación",
+        value: reporte ? ratioFormatter.format(tasa) : "—",
+        helper: "del total de turnos",
+        icon: TrendingDown,
+        gradient: "",
+        iconBg: "bg-amber-500/15 text-amber-600",
+        valueClass: "text-amber-600",
+      },
+      {
+        key: "promedio",
+        label: "Promedio mensual",
+        value: reporte ? promedioMensual.toFixed(1) : "—",
+        helper: "últimos 6 meses",
+        icon: Calendar,
+        gradient: "",
+        iconBg: "bg-sky-500/15 text-sky-600",
+        valueClass: "text-sky-700",
+      },
+      
+    ]
+  }, [numberFormatter, ratioFormatter, reporte])
 
   const handleExport = useCallback(async () => {
     if (!reporte) {
@@ -397,7 +472,7 @@ useEffect(() => {
           </div>
 
           {/* Filtros */}
-          <Card className="p-4">
+          <Card className="p-4 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-rose-50/20">
             <div className="mb-4 flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               <h3 className="font-semibold">Período de Análisis</h3>
@@ -452,49 +527,37 @@ useEffect(() => {
 
           {/* Métricas principales */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Cancelados</p>
-                  <p className="mt-2 text-4xl font-bold text-red-600">
-                    {reporte ? numberFormatter.format(reporte.resumen.total) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {reporte
-                      ? `Sobre ${numberFormatter.format(reporte.resumen.totalTurnos)} turnos`
-                      : "Sin datos en el período"}
-                  </p>
-                </div>
-                <XCircle className="h-8 w-8 text-red-400" />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Tasa de Cancelación</p>
-                  <p className="mt-2 text-4xl font-bold text-red-600">
-                    {reporte ? ratioFormatter.format(reporte.resumen.tasa) : "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">del total de turnos</p>
-                </div>
-                <TrendingDown className="h-8 w-8 text-red-400" />
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <div>
-                <p className="text-sm text-muted-foreground">Promedio Mensual (últimos 6 meses)</p>
-                <p className="mt-2 text-4xl font-bold text-foreground">
-                  {reporte ? reporte.resumen.promedioMensualUltimosSeisMeses.toFixed(1) : "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">últimos 6 meses</p>
-              </div>
-            </Card>
+            {resumenCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <Card
+                  key={card.key}
+                  className={`relative overflow-hidden border border-border/40 bg-gradient-to-br ${card.gradient} p-6 shadow-md transition-all hover:border-primary/40 hover:shadow-lg`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground/80">
+                        {card.label}
+                      </p>
+                      <p className={`mt-2 text-3xl font-semibold ${card.valueClass}`}>{card.value}</p>
+                      {card.helper ? (
+                        <p className="mt-1 text-xs text-muted-foreground">{card.helper}</p>
+                      ) : null}
+                      {card.highlight ? (
+                        <p className="mt-2 text-xs font-medium text-foreground/80">{card.highlight}</p>
+                      ) : null}
+                    </div>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-full ${card.iconBg}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
           </div>
 
           {/* Análisis destacado */}
-          <Card className="border-red-200 bg-red-50 p-4">
+          <Card className="border border-rose-200/70 bg-gradient-to-r from-rose-50 via-background to-background p-4 shadow-md">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 text-red-600" />
               <div>
@@ -527,7 +590,7 @@ useEffect(() => {
           </Card>
 
           {/* Cancelaciones por origen */}
-          <Card className="p-6">
+          <Card className="p-6 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-rose-50/10">
             <div className="mb-4 flex items-center gap-2">
               <XCircle className="h-5 w-5" />
               <h2 className="text-xl font-bold text-foreground">Cancelaciones por solicitante</h2>
@@ -542,10 +605,33 @@ useEffect(() => {
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={origenesChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={70} />
-                  <YAxis />
+                <BarChart
+                  data={origenesChartData}
+                  margin={{ top: 10, right: 24, left: 0, bottom: 0 }}
+                  barCategoryGap="22%"
+                >
+                  <defs>
+                    <linearGradient id={chartGradientId} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FB7185" stopOpacity={0.95} />
+                      <stop offset="100%" stopColor="#F87171" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#F1BAC0" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: "#7F1D1D" }}
+                    interval={0}
+                    angle={-18}
+                    textAnchor="end"
+                    height={70}
+                    axisLine={{ stroke: "#F1BAC0" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "#7F1D1D" }}
+                    axisLine={{ stroke: "#F1BAC0" }}
+                    tickLine={false}
+                  />
                   <Tooltip
                     formatter={(value: number, name: string, entry) => [
                       numberFormatter.format(value as number),
@@ -553,15 +639,29 @@ useEffect(() => {
                         ? `${name} (${(entry.payload.porcentaje as number).toFixed(1)}%)`
                         : name,
                     ]}
+                    cursor={{ fill: "rgba(248, 113, 113, 0.08)" }}
+                    wrapperStyle={{ zIndex: 10 }}
+                    contentStyle={{
+                      backgroundColor: "rgba(69, 10, 10, 0.92)",
+                      borderRadius: 12,
+                      border: "none",
+                      color: "#FEE2E2",
+                      boxShadow: "0 10px 25px rgba(69, 10, 10, 0.35)",
+                    }}
                   />
-                  <Bar dataKey="value" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                  <Bar
+                    dataKey="value"
+                    fill={`url(#${chartGradientId})`}
+                    radius={[10, 10, 0, 0]}
+                    maxBarSize={46}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </Card>
 
           {/* Tabla detallada */}
-          <Card className="p-6">
+          <Card className="p-6 shadow-md border border-border/40 bg-gradient-to-br from-background via-background to-rose-50/10">
             <h2 className="mb-4 text-xl font-bold text-foreground">Registro Detallado de Cancelaciones</h2>
             <p className="mb-6 text-sm text-muted-foreground">
               Historial de cancelaciones registradas dentro del período y filtros seleccionados.
@@ -578,20 +678,20 @@ useEffect(() => {
               </p>
             ) : (
               <>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="overflow-x-auto rounded-lg border border-border/40">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b text-left text-sm text-muted-foreground">
-                        <th className="p-3 font-semibold">Fecha</th>
-                        <th className="p-3 font-semibold">Paciente</th>
-                        <th className="p-3 font-semibold">Profesional</th>
-                        <th className="p-3 font-semibold">Especialidad</th>
-                        <th className="p-3 font-semibold">Solicitado por</th>
+                      <tr className="border-b bg-muted/30 text-left text-muted-foreground">
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Fecha</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Paciente</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Profesional</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Especialidad</th>
+                        <th className="p-3 font-semibold uppercase tracking-wide text-xs">Solicitado por</th>
                       </tr>
                     </thead>
                     <tbody>
                       {reporte?.cancelaciones.items.map((log) => (
-                        <tr key={log.id} className="border-b hover:bg-muted/40">
+                        <tr key={log.id} className="border-b last:border-b-0 hover:bg-muted/30">
                           <td className="p-3">
                             {dateTimeFormatter.format(new Date(log.fecha))}
                           </td>
