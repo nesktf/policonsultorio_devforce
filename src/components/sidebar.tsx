@@ -33,6 +33,7 @@ export function Sidebar() {
         { icon: Users, label: "Pacientes", href: "/pacientes" },
         { icon: Calendar, label: "Turnos", href: "/turnos" },
         { icon: CalendarDays, label: "Calendario", href: "/calendario-mesa" },
+        { icon: Activity, label: "Reportes", href: "/reportes" },
       ]
     }
 
@@ -42,6 +43,7 @@ export function Sidebar() {
         { icon: Calendar, label: "Mi Agenda", href: "/calendario-profesional" },
         { icon: Users, label: "Pacientes", href: "/pacientes" },
         { icon: FileText, label: "Historias Clínicas", href: "/historias-clinicas" },
+        { icon: Activity, label: "Reportes", href: "/reportes" },
       ]
     }
 

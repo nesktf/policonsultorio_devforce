@@ -12,8 +12,13 @@ const ESTADOS_ACTUALIZABLES: EstadoTurno[] = [
   "CANCELADO",
 ];
 
+const CANCELACION_ORIGENES = ["PACIENTE", "PROFESIONAL"] as const
+type CancelacionOrigen = (typeof CANCELACION_ORIGENES)[number]
+
 interface ActualizarEstadoPayload {
   estado?: unknown;
+  solicitadoPor?: unknown;
+  canceladoPorId?: unknown;
 }
 
 const isEstadoActualizable = (value: unknown): value is EstadoTurno =>
@@ -85,10 +90,71 @@ export async function PATCH(
       );
     }
 
+    if (estado === "CANCELADO") {
+      const solicitadoPorRaw = payload.solicitadoPor
+      const canceladoPorIdRaw = payload.canceladoPorId
+
+      if (typeof solicitadoPorRaw !== "string" || !CANCELACION_ORIGENES.includes(solicitadoPorRaw as CancelacionOrigen)) {
+        return NextResponse.json(
+          { error: `solicitadoPor es requerido y debe ser uno de: ${CANCELACION_ORIGENES.join(", ")}` },
+          { status: 400 },
+        )
+      }
+
+      const solicitadoPor = solicitadoPorRaw as CancelacionOrigen
+
+      let canceladoPorId: number | null = null
+      if (canceladoPorIdRaw !== undefined && canceladoPorIdRaw !== null) {
+        const parsed = Number(canceladoPorIdRaw)
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+          return NextResponse.json(
+            { error: "canceladoPorId debe ser un identificador válido." },
+            { status: 400 },
+          )
+        }
+        canceladoPorId = parsed
+      }
+
+      const resultado = await prisma.$transaction(async (tx) => {
+        const actualizado = await tx.turno.update({
+          where: { id: turnoId },
+          data: { estado },
+        })
+
+        await tx.turnoCancelacionLog.upsert({
+          where: { turnoId: actualizado.id },
+          update: {
+            solicitadoPor,
+            canceladoPorId,
+            fecha: new Date(),
+          },
+          create: {
+            turnoId: actualizado.id,
+            solicitadoPor,
+            canceladoPorId,
+          },
+        })
+
+        return actualizado
+      })
+
+      return NextResponse.json(
+        {
+          mensaje: "Turno cancelado correctamente.",
+          turno: {
+            id: resultado.id,
+            estado: resultado.estado,
+          },
+          requiereHistoria: false,
+        },
+        { headers: { "Cache-Control": "no-store" } },
+      )
+    }
+
     const actualizado = await prisma.turno.update({
       where: { id: turnoId },
       data: { estado },
-    });
+    })
 
     return NextResponse.json(
       {
@@ -100,7 +166,7 @@ export async function PATCH(
         requiereHistoria: estado === "ASISTIO",
       },
       { headers: { "Cache-Control": "no-store" } },
-    );
+    )
   } catch (error) {
     console.error("Error al actualizar estado de turno:", error);
     return NextResponse.json(

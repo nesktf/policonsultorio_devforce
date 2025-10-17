@@ -15,7 +15,9 @@ import {
   Activity,
   TrendingUp,
   Calendar,
-  UserPlus
+  UserPlus,
+  CalendarRange,
+  CheckCircle2
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -39,7 +41,9 @@ export default function ReportesPage() {
     )
   }
 
-  if (user.rol !== "GERENTE" && user.rol !== "MESA_ENTRADA") {
+  const rolesConAcceso = new Set(["GERENTE", "MESA_ENTRADA", "PROFESIONAL"])
+
+  if (!rolesConAcceso.has(user.rol)) {
     return (
       <MainLayout>
         <div className="p-6">
@@ -76,7 +80,7 @@ export default function ReportesPage() {
     {
       id: "nuevos-pacientes",
       titulo: "Nuevos Pacientes",
-      descripcion: "Registro de pacientes nuevos por perí­odo y análisis de crecimiento",
+      descripcion: "Registro de pacientes nuevos por período y análisis de crecimiento",
       icon: UserPlus,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -119,40 +123,87 @@ export default function ReportesPage() {
       borderColor: "border-indigo-200",
       disponible: true,
       href: "/reportes/agenda-diaria",
-      stats: ["Por fecha", "Por especialidad", "Estados"]
+      // stats: ["Por fecha", "Por especialidad", "Estados"],
+      stats: ["Ranking", "Tasas", "Comparativas"],
     },
     {
       id: "turnos-cancelados",
       titulo: "Turnos Cancelados",
-      descripcion: "Análisis de turnos cancelados, motivos y patrones de cancelación",
+      descripcion: "Análisis de turnos cancelados y solicitantes de la cancelación",
       icon: XCircle,
       color: "text-red-600",
       bgColor: "bg-red-50",
       borderColor: "border-red-200",
-      disponible: false,
+      disponible: true,
       href: "/reportes/turnos-cancelados",
-      stats: ["Por motivo", "Tasa cancelación", "Profesional"]
+      stats: ["Por solicitante", "Tasa cancelación", "Profesional"]
+    },
+    {
+      id: "pacientes-atendidos",
+      titulo: "Pacientes Atendidos",
+      descripcion: "Seguimiento de pacientes asistidos vs. no asistidos en el período",
+      icon: CheckCircle2,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      disponible: true,
+      href: "/reportes/pacientes-atendidos",
+      stats: ["Asistidos", "No asistidos", "Cancelados"]
+    },
+    {
+      id: "paciente-por-periodo",
+      titulo: "Pacientes Atendidos por Período",
+      descripcion: "Volumen de pacientes atendidos comparado por períodos seleccionados",
+      icon: CalendarRange,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+      disponible: true,
+      href: "/reportes/paciente-por-periodo",
+      stats: ["Por semana", "Por mes", "Tendencias"]
     },
   ]
 
-  // Filtrar reportes según el rol del usuario
-  const reportesFiltrados = reportes.filter(reporte => {
-    if (user.rol === "GERENTE") {
-      // Los gerentes pueden ver todos los reportes
-      return true
-    } else if (user.rol === "MESA_ENTRADA") {
-      // Mesa de entrada solo puede ver reportes operativos
-      return ["turnos-especialidad", "agenda-diaria"].includes(reporte.id)
-    }
-    return false
-  })
+  const reportesPorRol: Record<"GERENTE" | "MESA_ENTRADA" | "PROFESIONAL", string[]> = {
+    GERENTE: reportes.map((reporte) => reporte.id),
+    MESA_ENTRADA: ["pacientes-atendidos", "turnos-cancelados"],
+    PROFESIONAL: ["paciente-por-periodo"],
+  }
+
+  const reportesDisponiblesIds = reportesPorRol[user.rol] ?? []
+  const reportesVisibles = reportes.filter((reporte) => reportesDisponiblesIds.includes(reporte.id))
+  const cantidadReportesDisponibles = reportesVisibles.filter((reporte) => reporte.disponible).length
+  const cantidadReportesProximamente = reportesVisibles.filter((reporte) => !reporte.disponible).length
+
+  if (reportesVisibles.length === 0) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
+              <AlertCircle className="h-12 w-12 text-muted-foreground" />
+              <p className="text-muted-foreground text-center">
+                No hay reportes habilitados para tu rol en este momento.
+              </p>
+              <Link href="/">
+                <Button variant="outline" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver al Dashboard
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    )
+  }
 
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Reportes y Estadí­sticas</h1>
+          <h1 className="text-3xl font-bold text-foreground">Reportes y Estadísticas</h1>
           <p className="text-muted-foreground">
             Análisis detallados para la toma de decisiones
           </p>
@@ -166,7 +217,7 @@ export default function ReportesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Reportes Disponibles</p>
                   <p className="text-3xl font-bold text-primary">
-                    {reportesFiltrados.filter(r => r.disponible).length}
+                    {cantidadReportesDisponibles}
                   </p>
                 </div>
                 <BarChart3 className="h-8 w-8 text-primary opacity-20" />
@@ -180,7 +231,7 @@ export default function ReportesPage() {
                 <div>
                   <p className="text-sm text-muted-foreground">Próximamente</p>
                   <p className="text-3xl font-bold text-orange-600">
-                    {reportesFiltrados.filter(r => !r.disponible).length}
+                    {cantidadReportesProximamente}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-orange-600 opacity-20" />
@@ -192,8 +243,8 @@ export default function ReportesPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Categorí­as</p>
-                  <p className="text-2xl font-bold text-blue-600">{reportesFiltrados.length}</p>
+                  <p className="text-sm text-muted-foreground">Reportes Totales</p>
+                  <p className="text-3xl font-bold text-blue-600">{reportesVisibles.length}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-blue-600 opacity-20" />
               </div>
@@ -203,7 +254,7 @@ export default function ReportesPage() {
 
         {/* Grid de Reportes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {reportesFiltrados.map((reporte) => {
+          {reportesVisibles.map((reporte) => {
             const Icon = reporte.icon
             
             return (

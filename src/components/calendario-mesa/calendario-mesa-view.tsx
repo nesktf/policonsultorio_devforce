@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { TurnoCard } from "@/components/calendario-mesa/turno-card"
 import { TurnoDetailDialog } from "@/components/calendario-mesa/turno-detail-dialog"
+import { CancelarTurnoDialog } from "@/components/turnos/cancelar-turno-dialog"
 import { useAuth } from "@/context/auth-context"
-import { Clock, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
+type CancelacionOrigen = "PACIENTE" | "PROFESIONAL"
 
 interface Turno {
   id: string
@@ -26,6 +27,31 @@ interface Turno {
   motivo: string
   duracion: number
   notas?: string
+}
+
+interface TurnoApiResponse {
+  id: number
+  hora: string
+  paciente: {
+    nombre: string
+    apellido: string
+    dni: string
+    telefono: string
+  }
+  profesional: {
+    id: number
+    nombre: string
+    apellido: string
+    especialidad: string
+  }
+  estado: Turno["estado"]
+  duracion: number
+}
+
+interface TurnoConLayout extends Turno {
+  bloques: number
+  indiceInicio: number
+  indiceFin: number
 }
 
 interface CalendarioMesaViewProps {
@@ -58,6 +84,8 @@ export function CalendarioMesaView({
   const [turnos, setTurnos] = useState<Turno[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cancelDialog, setCancelDialog] = useState<{ turnoId: string } | null>(null)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   const puedeModificar = user?.rol === "MESA_ENTRADA"
 
@@ -87,9 +115,9 @@ export function CalendarioMesaView({
           throw new Error("Error al cargar los turnos")
         }
         
-        const data = await response.json()
+        const data = (await response.json()) as { turnos: TurnoApiResponse[] }
         
-        const turnosFormateados = data.turnos.map((turno: any) => ({
+        const turnosFormateados = data.turnos.map((turno) => ({
           id: turno.id.toString(),
           hora: turno.hora,
           paciente: {
@@ -120,35 +148,83 @@ export function CalendarioMesaView({
     fetchTurnos()
   }, [selectedDate, selectedProfesional, selectedEspecialidad])
 
-  const handleEstadoChange = async (turnoId: string, nuevoEstado: Turno["estado"]) => {
-    const turnoAnterior = turnos.find(t => t.id === turnoId)
-    
+  const handleEstadoChange = async (
+    turnoId: string,
+    nuevoEstado: Turno["estado"],
+    opciones?: { solicitadoPor?: CancelacionOrigen },
+  ) => {
+    setError(null)
+    if (nuevoEstado === "CANCELADO" && (!opciones || !opciones.solicitadoPor)) {
+      setCancelDialog({ turnoId })
+      return
+    }
+
+    const turnoAnterior = turnos.find((t) => t.id === turnoId)
+
     setTurnos((prev) =>
       prev.map((t) =>
-        t.id === turnoId ? { ...t, estado: nuevoEstado } : t
-      )
+        t.id === turnoId
+          ? {
+              ...t,
+              estado: nuevoEstado,
+            }
+          : t,
+      ),
     )
-    
+
     try {
       const response = await fetch(`/api/v1/turnos/${turnoId}/estado`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado: nuevoEstado })
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          estado: nuevoEstado,
+          solicitadoPor: opciones?.solicitadoPor,
+          canceladoPorId: user?.id,
+        }),
       })
-      
+
       if (!response.ok) {
-        throw new Error('Error al actualizar el estado del turno')
+        throw new Error("Error al actualizar el estado del turno")
       }
     } catch (error) {
-      console.error('Error al actualizar estado:', error)
-      
+      console.error("Error al actualizar estado:", error)
+
       if (turnoAnterior) {
         setTurnos((prev) =>
-          prev.map((t) =>
-            t.id === turnoId ? turnoAnterior : t
-          )
+          prev.map((t) => (t.id === turnoId ? turnoAnterior : t)),
         )
       }
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el estado del turno."
+      setError(errorMessage)
+
+      if (nuevoEstado === "CANCELADO") {
+        throw error instanceof Error ? error : new Error(errorMessage)
+      }
+    }
+  }
+
+  const handleConfirmCancelacion = async (
+    solicitadoPor: CancelacionOrigen,
+  ) => {
+    if (!cancelDialog) return
+    setError(null)
+    setIsCancelling(true)
+    try {
+      await handleEstadoChange(cancelDialog.turnoId, "CANCELADO", {
+        solicitadoPor,
+      })
+      setCancelDialog(null)
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo cancelar el turno.",
+      )
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -158,7 +234,9 @@ export function CalendarioMesaView({
   }
 
   const organizarTurnosPorColumnas = () => {
-    const turnosConBloques = turnos.map(turno => {
+    const turnosPorColumna: TurnoConLayout[][] = []
+
+    const turnosConBloques: TurnoConLayout[] = turnos.map((turno) => {
       const bloques = calcularBloques(turno.duracion)
       const indiceInicio = bloquesHorarios.indexOf(turno.hora)
       return {
@@ -172,7 +250,6 @@ export function CalendarioMesaView({
     .sort((a, b) => a.indiceInicio - b.indiceInicio || b.bloques - a.bloques)
 
     const columnasOcupadas: Array<Array<{ inicio: number; fin: number }>> = []
-    const turnosPorColumna: Array<Array<typeof turnosConBloques[0]>> = []
 
     turnosConBloques.forEach(turno => {
       let columnaAsignada = -1
@@ -350,7 +427,7 @@ export function CalendarioMesaView({
                 })}
 
                 {/* Columnas de turnos */}
-                {columnas.map((columna, colIndex) => (
+                {columnas.map((columna: TurnoConLayout[], colIndex: number) => (
                   <div
                     key={`col-${colIndex}`}
                     className="absolute top-0 h-full"
@@ -360,7 +437,7 @@ export function CalendarioMesaView({
                       padding: '0 4px',
                     }}
                   >
-                    {columna.map((turno) => {
+                    {columna.map((turno: TurnoConLayout) => {
                       const alturaCalculada = turno.bloques * ROW_HEIGHT_PX
                       return (
                         <div
@@ -389,6 +466,7 @@ export function CalendarioMesaView({
         </div>
       </Card>
 
+      {/* Dialog de detalles */}
       {selectedTurno && (
         <TurnoDetailDialog
           turno={selectedTurno}
@@ -398,7 +476,19 @@ export function CalendarioMesaView({
           puedeModificar={puedeModificar}
         />
       )}
+
+      <CancelarTurnoDialog
+        open={cancelDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelDialog(null)
+          }
+        }}
+        onConfirm={async ({ solicitadoPor }) => {
+          await handleConfirmCancelacion(solicitadoPor)
+        }}
+        isSubmitting={isCancelling}
+      />
     </>
   )
 }
-

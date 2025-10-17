@@ -95,64 +95,61 @@ export default function TurnosPage() {
     }
   }, [])
 
-  useEffect(() => {
+
+  async function cargarTurnos() {
     let cancelado = false
+    setTurnosLoading(true)
+    setTurnosError(null)
 
-    async function cargarTurnos() {
-      setTurnosLoading(true)
-      setTurnosError(null)
+    const params = new URLSearchParams()
+    const fechaIso = selectedDate.toISOString().slice(0, 10)
+    params.set("from", fechaIso)
+    params.set("to", fechaIso)
 
-      const params = new URLSearchParams()
-      const fechaIso = selectedDate.toISOString().slice(0, 10)
-      params.set("from", fechaIso)
-      params.set("to", fechaIso)
-
-      if (selectedProfesional !== "todos") {
-        params.set("profesionalId", selectedProfesional)
-      }
-
-      if (selectedEspecialidad !== "todas") {
-        params.set("especialidad", selectedEspecialidad)
-      }
-
-      try {
-        const response = await fetch(`/api/v1/turnos?${params.toString()}`, {
-          cache: "no-store",
-        })
-
-        if (!response.ok) {
-          const { error } = await response
-            .json()
-            .catch(() => ({ error: "No se pudieron obtener los turnos" }))
-          throw new Error(error)
-        }
-
-        const data: { turnos: TurnoApi[] } = await response.json()
-        if (!cancelado) {
-          setTurnos(data.turnos)
-        }
-      } catch (error) {
-        console.error("Error al cargar turnos:", error)
-        if (!cancelado) {
-          setTurnos([])
-          setTurnosError(
-            error instanceof Error
-              ? error.message
-              : "No se pudieron cargar los turnos. Intenta nuevamente.",
-          )
-        }
-      } finally {
-        if (!cancelado) {
-          setTurnosLoading(false)
-        }
-      }
+    if (selectedProfesional !== "todos") {
+      params.set("profesionalId", selectedProfesional)
     }
 
-    cargarTurnos()
-
-    return () => {
-      cancelado = true
+    if (selectedEspecialidad !== "todas") {
+      params.set("especialidad", selectedEspecialidad)
     }
+
+    try {
+      const response = await fetch(`/api/v1/turnos?${params.toString()}`, {
+        cache: "no-store",
+      })
+
+      if (!response.ok) {
+        const { error } = await response
+          .json()
+          .catch(() => ({ error: "No se pudieron obtener los turnos" }))
+        throw new Error(error)
+      }
+
+      const data: { turnos: TurnoApi[] } = await response.json()
+      if (!cancelado) {
+        setTurnos(data.turnos)
+      }
+    } catch (error) {
+      console.error("Error al cargar turnos:", error)
+      if (!cancelado) {
+        setTurnos([])
+        setTurnosError(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los turnos. Intenta nuevamente.",
+        )
+      }
+    } finally {
+      if (!cancelado) {
+        setTurnosLoading(false)
+      }
+    }
+    return cancelado;
+  }
+
+  useEffect(() => {
+    cargarTurnos();
   }, [selectedDate, selectedProfesional, selectedEspecialidad, reloadKey])
 
 
@@ -299,6 +296,8 @@ export default function TurnosPage() {
           turnos={turnos}
           loading={turnosLoading}
           error={turnosError}
+          rol={user.rol}
+          onTurnoUpdate={cargarTurnos}
         />
 
         {/* Nuevo Turno Dialog */}

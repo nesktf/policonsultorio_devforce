@@ -193,57 +193,11 @@ const MONTH_LABELS = [
   'Diciembre',
 ];
 
-export async function getPacientesNuevosPorMes(
-  year: number,
-  obraSocialId?: number | null,
-) {
-  const start = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
-
-  const where: Record<string, unknown> = {
-    fecha_registro: {
-      gte: start,
-      lt: end,
-    },
-  };
-
-  if (obraSocialId != null) {
-    where.id_obra_social = obraSocialId;
-  }
-
-  const pacientes = await prisma.paciente.findMany({
-    where,
-    select: {
-      fecha_registro: true,
-    },
-  });
-
-  const meses = MONTH_LABELS.map((label, index) => ({
-    month: index + 1,
-    label,
-    cantidad: 0,
-  }));
-
-  for (const paciente of pacientes) {
-    const fecha = new Date(paciente.fecha_registro);
-    const monthIndex = fecha.getUTCMonth();
-    meses[monthIndex].cantidad += 1;
-  }
-
-  return {
-    year,
-    obraSocialId: obraSocialId ?? null,
-    total: pacientes.length,
-    meses,
-  };
-}
-
-//nuevo
-
-export async function getPacientesNuevosPorPeriodo(
+export async function getPacientesNuevosPorPeriodoConAgrupacion(
   fechaInicio: Date,
   fechaFin: Date,
   obraSocialFilter?: number | null | 'sin-obra-social',
+  agrupacion: 'day' | 'week' | 'month' = 'month',
 ) {
   const start = new Date(fechaInicio);
   start.setHours(0, 0, 0, 0);
@@ -278,33 +232,102 @@ export async function getPacientesNuevosPorPeriodo(
     },
   });
 
-  // Agrupar por mes
-  const mesesMap = new Map<string, number>();
-  const diffMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
-  
-  for (let i = 0; i < diffMonths; i++) {
-    const date = new Date(start.getFullYear(), start.getMonth() + i, 1);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    mesesMap.set(key, 0);
-  }
+  // Importar funciones de date-fns para la agrupación
+  const { format: formatDate, startOfISOWeek, getISOWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, addWeeks, addMonths } = require('date-fns');
+  const { es } = require('date-fns/locale');
 
-  for (const paciente of pacientes) {
-    const fecha = new Date(paciente.fecha_registro);
-    const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
-    if (mesesMap.has(key)) {
-      mesesMap.set(key, mesesMap.get(key)! + 1);
+  // Agrupar por período según la agrupación seleccionada
+  const periodosMap = new Map<string, { fechaInicio: Date; fechaFin: Date; cantidad: number }>();
+
+  // Para semanas y meses, inicializar todos los períodos con 0
+  if (agrupacion === 'week') {
+    let currentStart = startOfISOWeek(start);
+    while (currentStart <= end) {
+      const weekNumber = getISOWeek(currentStart);
+      const key = `${currentStart.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+      const currentEnd = new Date(currentStart);
+      currentEnd.setDate(currentEnd.getDate() + 6);
+      currentEnd.setHours(23, 59, 59, 999);
+      
+      periodosMap.set(key, {
+        fechaInicio: new Date(currentStart),
+        fechaFin: new Date(currentEnd),
+        cantidad: 0,
+      });
+      
+      currentStart = addWeeks(currentStart, 1);
+    }
+  } else if (agrupacion === 'month') {
+    let currentStart = startOfMonth(start);
+    while (currentStart <= end) {
+      const key = formatDate(currentStart, 'yyyy-MM');
+      const currentEnd = endOfMonth(currentStart);
+      
+      periodosMap.set(key, {
+        fechaInicio: new Date(currentStart),
+        fechaFin: new Date(currentEnd),
+        cantidad: 0,
+      });
+      
+      currentStart = addMonths(currentStart, 1);
     }
   }
 
-  const meses = Array.from(mesesMap.entries()).map(([key, cantidad]) => {
-    const [year, month] = key.split('-');
-    return {
-      month: parseInt(month),
-      year: parseInt(year),
-      label: `${MONTH_LABELS[parseInt(month) - 1]} ${year}`,
-      cantidad,
-    };
-  });
+  // Contar pacientes por período
+  for (const paciente of pacientes) {
+    const fecha = new Date(paciente.fecha_registro);
+    let key: string;
+    let inicio: Date;
+    let fin: Date;
+
+    if (agrupacion === 'day') {
+      inicio = startOfDay(fecha);
+      fin = endOfDay(fecha);
+      key = formatDate(inicio, 'yyyy-MM-dd');
+    } else if (agrupacion === 'week') {
+      inicio = startOfISOWeek(fecha);
+      fin = new Date(inicio);
+      fin.setDate(fin.getDate() + 6);
+      fin.setHours(23, 59, 59, 999);
+      const weekNumber = getISOWeek(inicio);
+      key = `${inicio.getFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+    } else {
+      inicio = startOfMonth(fecha);
+      fin = endOfMonth(fecha);
+      key = formatDate(inicio, 'yyyy-MM');
+    }
+
+    const periodo = periodosMap.get(key) ?? { fechaInicio: inicio, fechaFin: fin, cantidad: 0 };
+    periodo.cantidad += 1;
+    periodosMap.set(key, periodo);
+  }
+
+  // Convertir a array y ordenar
+  const periodos = Array.from(periodosMap.entries())
+    .map(([key, data]) => {
+      let label: string;
+      const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+      if (agrupacion === 'day') {
+        label = capitalize(formatDate(data.fechaInicio, "EEEE d 'de' MMMM yyyy", { locale: es }));
+      } else if (agrupacion === 'week') {
+        const weekNum = getISOWeek(data.fechaInicio);
+        const inicioTexto = capitalize(formatDate(data.fechaInicio, 'd MMM', { locale: es }));
+        const finTexto = capitalize(formatDate(data.fechaFin, 'd MMM yyyy', { locale: es }));
+        label = `Semana ${String(weekNum).padStart(2, '0')} (${inicioTexto} - ${finTexto})`;
+      } else {
+        label = capitalize(formatDate(data.fechaInicio, 'MMMM yyyy', { locale: es }));
+      }
+
+      return {
+        id: key,
+        label,
+        cantidad: data.cantidad,
+        fechaInicio: data.fechaInicio.toISOString(),
+        fechaFin: data.fechaFin.toISOString(),
+      };
+    })
+    .sort((a, b) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime());
 
   // Distribución por obra social
   const obrasSocialesMap = new Map<string, { nombre: string; cantidad: number }>();
@@ -345,7 +368,7 @@ export async function getPacientesNuevosPorPeriodo(
     fechaFin: end.toISOString(),
     obraSocialId: obraSocialFilter === 'sin-obra-social' ? null : (obraSocialFilter ?? null),
     total: pacientes.length,
-    meses,
+    periodos,
     distribucionObrasSociales,
     promedioDiario: parseFloat(promedioDiario.toFixed(2)),
     diasAnalizados: diffDays,

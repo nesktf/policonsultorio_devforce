@@ -1,5 +1,7 @@
 "use client"
 
+import { MouseEvent } from "react"
+
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,8 +11,10 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
-import { User, Stethoscope, Clock, MoreVertical, CheckCircle, XCircle, Calendar, UserX } from "lucide-react"
+import { User, Stethoscope, Clock, MoreVertical, CheckCircle, XCircle, Calendar, UserX, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+type CancelacionOrigen = "PACIENTE" | "PROFESIONAL"
 
 interface Turno {
   id: string
@@ -30,10 +34,14 @@ interface Turno {
   notas?: string
 }
 
+interface EstadoChangeOptions {
+  solicitadoPor?: CancelacionOrigen
+}
+
 interface TurnoCardProps {
   turno: Turno
   onClick: () => void
-  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"]) => void
+  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"], opciones?: EstadoChangeOptions) => void
   puedeModificar?: boolean
 }
 
@@ -74,8 +82,8 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
   const config = estadoConfig[turno.estado]
   const Icon = config.icon
 
-  const handleEstadoClick = (e: React.MouseEvent, nuevoEstado: Turno["estado"]) => {
-    e.stopPropagation()
+  const handleEstadoClick = (event: MouseEvent, nuevoEstado: Turno["estado"]) => {
+    event.stopPropagation()
     if (puedeModificar) {
       onEstadoChange(turno.id, nuevoEstado)
     }
@@ -91,6 +99,7 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
       onClick={onClick}
     >
       {/* Header */}
+      {turno.duracion >= 30 && (
       <div className="flex items-start justify-between gap-2 mb-2">
         <Badge variant="outline" className={cn("gap-1 text-xs", config.badge)}>
           <Icon className="h-3 w-3" />
@@ -143,6 +152,7 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
             )}
           </DropdownMenu>
       </div>
+      )}
 
       {/* Contenido Principal */}
       <div className="flex-grow min-h-0 space-y-2 flex flex-col justify-center">
@@ -161,10 +171,10 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
 
         {/* Profesional (siempre) */}
         <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-muted-foreground shrink-0" />
-          <div className="min-w-0 flex-1">
+          <Stethoscope className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="min-w-0 flex-1 gap-2">
             <p className="text-sm font-medium truncate leading-tight">{turno.profesional.nombre}</p>
-            {turno.duracion >= 30 && (
+            {turno.duracion >= 15 && (
               <p className="text-xs text-muted-foreground">{turno.profesional.especialidad}</p>
             )}
           </div>
@@ -173,7 +183,7 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
         {/* motivo (solo si hay espacio) */}
         {turno.duracion >= 45 && (
           <div className="flex items-center gap-2">
-            <Stethoscope className="h-4 w-4 text-muted-foreground shrink-0" />
+            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate leading-tight">Motivo</p>
               <p className="text-xs text-muted-foreground">{turno.motivo}</p>
