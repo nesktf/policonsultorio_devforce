@@ -45,6 +45,7 @@ Integral system for running and managing a polyclinic. Built using the
 Clone the repository and install the npm dependencies
 ```sh
 $ git clone https://github.com/nesktf/policonsultorio_devforce.git
+$ cd policonsultorio_devforce/
 $ npm install
 ```
 

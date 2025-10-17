@@ -45,6 +45,7 @@ el framework web [Next.js](https://nextjs.org)
 Clonar el repositorio e instala las dependencias de npm
 ```sh
 $ git clone https://github.com/nesktf/policonsultorio_devforce.git
+$ cd policonsultorio_devforce/
 $ npm install
 ```
 
