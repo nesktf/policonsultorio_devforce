@@ -199,8 +199,8 @@ export function VerProfesionalDialog({
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {profesional.obras_sociales.map((os) => (
-                    <Badge key={os.id_obra_social} variant="outline">
+                  {profesional.obras_sociales.map((os, index) => (
+                    <Badge key={`${os.id_obra_social}-${index}`} variant="outline">
                       {os.obra_social.nombre}
                     </Badge>
                   ))}
@@ -220,10 +220,6 @@ export function VerProfesionalDialog({
                   <div className="p-4 bg-blue-50 rounded-lg">
                     <p className="text-sm font-medium text-blue-900">Total de Turnos</p>
                     <p className="text-2xl font-bold text-blue-700">{profesional._count.turnos}</p>
-                  </div>
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <p className="text-sm font-medium text-green-900">Historias Clínicas</p>
-                    <p className="text-2xl font-bold text-green-700">{profesional._count.historias}</p>
                   </div>
                 </div>
               </CardContent>

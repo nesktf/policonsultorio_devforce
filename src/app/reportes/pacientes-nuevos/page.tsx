@@ -1,17 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { exportarReportePacientesNuevos } from "@/utils/pdfExport"
 import { useAuth } from "@/context/auth-context"
+
 import { 
   UserPlus,
   Calendar, 
-  TrendingUp, 
-  TrendingDown,
+  TrendingUp,
   AlertCircle,
   ArrowLeft,
   Download,
@@ -23,12 +24,20 @@ import {
   Filter
 } from "lucide-react"
 import Link from "next/link"
+import {
+  Cell,
+  Pie,
+  PieChart as RechartsPieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts"
 
-interface MesData {
-  month: number
-  year: number
+interface PeriodoData {
+  id: string
   label: string
   cantidad: number
+  fechaInicio: string
+  fechaFin: string
 }
 
 interface ObraSocialDistribucion {
@@ -40,17 +49,24 @@ interface ReporteData {
   fechaInicio: string
   fechaFin: string
   total: number
-  meses: MesData[]
+  periodos: PeriodoData[]
   distribucionObrasSociales: ObraSocialDistribucion[]
   promedioDiario: number
   diasAnalizados: number
   mensaje?: string
 }
 
+type GroupByOption = "day" | "week" | "month"
+
 interface ObraSocial {
   id: number
   nombre: string
 }
+
+const COLORES_GRAFICO = [
+  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+  '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
+]
 
 export default function NuevosPacientesPage() {
   const { user } = useAuth()
@@ -59,6 +75,30 @@ export default function NuevosPacientesPage() {
   const [error, setError] = useState<string | null>(null)
   const [obrasSociales, setObrasSociales] = useState<ObraSocial[]>([])
   
+  const handleExport = async () => {
+  if (reporte) {
+    // Obtener el nombre de la obra social si hay filtro
+    let obraSocialNombre: string | undefined = undefined
+    
+    if (obraSocialId !== "todos") {
+      if (obraSocialId === "sin-obra-social") {
+        obraSocialNombre = "Sin obra social"
+      } else {
+        const obraSocial = obrasSociales.find(os => os.id.toString() === obraSocialId)
+        obraSocialNombre = obraSocial?.nombre
+      }
+    }
+    
+    // Crear el objeto con el filtro
+    const reporteConFiltro = {
+      ...reporte,
+      obraSocialFiltro: obraSocialNombre
+    }
+    
+    await exportarReportePacientesNuevos(reporteConFiltro, groupBy)
+  }
+}
+
   // Filtros
   const [fechaInicio, setFechaInicio] = useState(() => {
     const date = new Date()
@@ -69,6 +109,12 @@ export default function NuevosPacientesPage() {
     return new Date().toISOString().split('T')[0]
   })
   const [obraSocialId, setObraSocialId] = useState<string>("todos")
+  const [groupBy, setGroupBy] = useState<GroupByOption>("month")
+
+  const numberFormatter = useMemo(
+    () => new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }),
+    []
+  )
 
   const cargarObrasSociales = async () => {
     try {
@@ -83,7 +129,6 @@ export default function NuevosPacientesPage() {
   }
 
   const cargarReporte = async () => {
-    // Validar que las fechas estén completas antes de hacer la petición
     if (!fechaInicio || !fechaFin || fechaInicio.length !== 10 || fechaFin.length !== 10) {
       return
     }
@@ -95,6 +140,7 @@ export default function NuevosPacientesPage() {
       const params = new URLSearchParams({
         fechaInicio,
         fechaFin,
+        groupBy,
       })
       
       if (obraSocialId !== "todos") {
@@ -127,7 +173,28 @@ export default function NuevosPacientesPage() {
     if (user && user.rol === "GERENTE") {
       cargarReporte()
     }
-  }, [fechaInicio, fechaFin, obraSocialId, user])
+  }, [fechaInicio, fechaFin, obraSocialId, groupBy, user])
+
+  const periodoConMasPacientes = reporte && reporte.periodos && reporte.periodos.length > 0 ? 
+    reporte.periodos.reduce((max, periodo) => periodo.cantidad > max.cantidad ? periodo : max, reporte.periodos[0])
+    : null
+
+  const obraSocialPrincipal = reporte && reporte.distribucionObrasSociales && reporte.distribucionObrasSociales.length > 0
+    ? reporte.distribucionObrasSociales[0]
+    : null
+
+  const obrasSocialesData = useMemo(() => {
+    if (!reporte) return []
+
+    return reporte.distribucionObrasSociales
+      .filter(os => os.cantidad > 0)
+      .map((os, index) => ({
+        name: os.nombre,
+        value: os.cantidad,
+        color: COLORES_GRAFICO[index % COLORES_GRAFICO.length],
+        porcentaje: reporte.total > 0 ? (os.cantidad / reporte.total) * 100 : 0
+      }))
+  }, [reporte])
 
   if (!user) {
     return (
@@ -164,19 +231,6 @@ export default function NuevosPacientesPage() {
     )
   }
 
-  const mesConMasPacientes = reporte && reporte.meses.length > 0 ? 
-    reporte.meses.reduce((max, mes) => mes.cantidad > max.cantidad ? mes : max, reporte.meses[0])
-    : null
-
-  const obraSocialPrincipal = reporte && reporte.distribucionObrasSociales.length > 0
-    ? reporte.distribucionObrasSociales[0]
-    : null
-
-  const COLORES_GRAFICO = [
-    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-    '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
-  ]
-
   return (
     <MainLayout>
       <div className="p-6 space-y-6">
@@ -204,7 +258,12 @@ export default function NuevosPacientesPage() {
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Actualizar
             </Button>
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2" 
+              onClick={handleExport} 
+              disabled={!reporte || loading}
+            >
               <Download className="h-4 w-4" />
               Exportar
             </Button>
@@ -310,7 +369,7 @@ export default function NuevosPacientesPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">Total Pacientes</p>
                       <p className="text-3xl font-bold text-primary">{reporte.total}</p>
-                      <p className="text-xs text-muted-foreground mt-1">en el período</p>
+                      <p className="text-xs text-muted-foreground mt-1">en el perí­odo</p>
                     </div>
                     <Users className="h-8 w-8 text-primary opacity-20" />
                   </div>
@@ -334,12 +393,12 @@ export default function NuevosPacientesPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Mes Pico</p>
+                      <p className="text-sm text-muted-foreground">Perí­odo Pico</p>
                       <p className="text-3xl font-bold text-green-600">
-                        {mesConMasPacientes?.cantidad || 0}
+                        {periodoConMasPacientes?.cantidad || 0}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {mesConMasPacientes?.label || '-'}
+                      <p className="text-xs text-muted-foreground mt-1 truncate max-w-[120px]">
+                        {periodoConMasPacientes?.label || '-'}
                       </p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-green-600 opacity-20" />
@@ -366,7 +425,7 @@ export default function NuevosPacientesPage() {
             </div>
 
             {/* Insights */}
-            {mesConMasPacientes && mesConMasPacientes.cantidad > 0 && (
+            {periodoConMasPacientes && periodoConMasPacientes.cantidad > 0 && (
               <Card className="bg-blue-50 border-blue-200">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
@@ -374,8 +433,8 @@ export default function NuevosPacientesPage() {
                     <div>
                       <p className="font-semibold text-blue-900">Análisis de Crecimiento</p>
                       <p className="text-sm text-blue-700">
-                        <strong>{mesConMasPacientes.label}</strong> registró la mayor cantidad de pacientes nuevos con{' '}
-                        <strong>{mesConMasPacientes.cantidad} registros</strong>.
+                        <strong>{periodoConMasPacientes.label}</strong> registró la mayor cantidad de pacientes nuevos con{' '}
+                        <strong>{periodoConMasPacientes.cantidad} registros</strong>.
                         {obraSocialPrincipal && (
                           <> La obra social con mayor demanda es <strong>{obraSocialPrincipal.nombre}</strong> con{' '}
                           <strong>{obraSocialPrincipal.cantidad} pacientes</strong> ({((obraSocialPrincipal.cantidad / reporte.total) * 100).toFixed(1)}% del total).</>
@@ -387,248 +446,165 @@ export default function NuevosPacientesPage() {
               </Card>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Gráfico de Torta - Distribución por Obra Social */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PieChart className="h-5 w-5" />
-                    Distribución por Obra Social
-                  </CardTitle>
-                  <CardDescription>
-                    Proporción de pacientes por cobertura
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {reporte.distribucionObrasSociales.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No hay datos disponibles
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center">
-                        <svg width="280" height="280" viewBox="0 0 280 280">
-                          {(() => {
-                            let currentAngle = -90
-                            return reporte.distribucionObrasSociales.map((os, index) => {
-                              const porcentaje = (os.cantidad / reporte.total) * 100
-                              const angle = (porcentaje / 100) * 360
-                              const startAngle = currentAngle
-                              const endAngle = currentAngle + angle
-                              currentAngle = endAngle
-
-                              const startRad = (startAngle * Math.PI) / 180
-                              const endRad = (endAngle * Math.PI) / 180
-                              const x1 = 140 + 100 * Math.cos(startRad)
-                              const y1 = 140 + 100 * Math.sin(startRad)
-                              const x2 = 140 + 100 * Math.cos(endRad)
-                              const y2 = 140 + 100 * Math.sin(endRad)
-                              const largeArc = angle > 180 ? 1 : 0
-
-                              return (
-                                <path
-                                  key={index}
-                                  d={`M 140 140 L ${x1} ${y1} A 100 100 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                                  fill={COLORES_GRAFICO[index % COLORES_GRAFICO.length]}
-                                  stroke="white"
-                                  strokeWidth="2"
-                                />
-                              )
-                            })
-                          })()}
-                          <circle cx="140" cy="140" r="60" fill="white" />
-                          <text x="140" y="135" textAnchor="middle" className="text-2xl font-bold" fill="#1f2937">
-                            {reporte.total}
-                          </text>
-                          <text x="140" y="155" textAnchor="middle" className="text-xs" fill="#6b7280">
-                            pacientes
-                          </text>
-                        </svg>
-                      </div>
-
-                      <div className="space-y-2">
-                        {reporte.distribucionObrasSociales.map((os, index) => {
-                          const porcentaje = ((os.cantidad / reporte.total) * 100).toFixed(1)
-                          return (
-                            <div key={index} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: COLORES_GRAFICO[index % COLORES_GRAFICO.length] }}
-                                />
-                                <span className="text-sm font-medium">{os.nombre}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold">{os.cantidad}</span>
-                                <span className="text-xs text-muted-foreground">({porcentaje}%)</span>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Gráfico de Barras - Distribución Mensual */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    Distribución Mensual
-                  </CardTitle>
-                  <CardDescription>
-                    Pacientes registrados por mes
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {reporte.total === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No hay datos para el período seleccionado
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {reporte.meses.map((mes, index) => {
-                        const porcentaje = reporte.total > 0 
-                          ? ((mes.cantidad / reporte.total) * 100).toFixed(1)
-                          : "0"
-                        const maxCantidad = Math.max(...reporte.meses.map(m => m.cantidad))
-                        const anchoBarra = maxCantidad > 0 
-                          ? (mes.cantidad / maxCantidad) * 100
-                          : 0
-
-                        return (
-                          <div key={index} className="space-y-1">
-                            <div className="flex items-center gap-3">
-                              <div className="w-28 text-sm font-medium truncate">{mes.label}</div>
-                              <div className="flex-1 h-10 bg-gray-100 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-blue-500 flex items-center justify-end pr-3 text-xs text-white font-medium transition-all"
-                                  style={{ width: `${anchoBarra}%` }}
-                                >
-                                  {mes.cantidad > 0 && `${mes.cantidad}`}
-                                </div>
-                              </div>
-                              <div className="w-20 text-sm text-right">
-                                <span className="font-semibold">{mes.cantidad}</span>
-                                <span className="text-muted-foreground text-xs ml-1">
-                                  ({porcentaje}%)
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Tabla Detallada */}
+            {/* GrÃ¡fico de Torta - DistribuciÃ³n por Obra Social */}
             <Card>
               <CardHeader>
-                <CardTitle>Análisis Mensual Detallado</CardTitle>
-                <CardDescription>Registros mensuales en el período seleccionado</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="h-5 w-5" />
+                  Distribución por Obra Social
+                </CardTitle>
+                <CardDescription>
+                  Proporción de pacientes por cobertura
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="text-left p-3 font-semibold">Mes</th>
-                        <th className="text-right p-3 font-semibold">Cantidad</th>
-                        <th className="text-right p-3 font-semibold">% del Total</th>
-                        <th className="text-center p-3 font-semibold">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reporte.meses.map((mes, index) => {
-                        const porcentaje = reporte.total > 0 
-                          ? ((mes.cantidad / reporte.total) * 100).toFixed(1)
-                          : "0"
-                        const esMejorMes = mes.cantidad === mesConMasPacientes?.cantidad && mes.cantidad > 0
+                {reporte.distribucionObrasSociales.length === 0 || reporte.total === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No hay datos disponibles
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-8 lg:flex-row">
+                    <div className="w-full lg:w-1/2">
+                      <ResponsiveContainer width="100%" height={320}>
+                        <RechartsPieChart>
+                          <Pie
+                            data={obrasSocialesData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={110}
+                            dataKey="value"
+                            label={({ name, value }) =>
+                              `${name}: ${numberFormatter.format(value)}`
+                            }
+                          >
+                            {obrasSocialesData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            formatter={(value: number, name: string) => [
+                              numberFormatter.format(value),
+                              name,
+                            ]}
+                          />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    </div>
 
-                        return (
-                          <tr key={index} className="border-t hover:bg-muted/50">
-                            <td className="p-3 font-medium">{mes.label}</td>
-                            <td className="p-3 text-right font-semibold">{mes.cantidad}</td>
-                            <td className="p-3 text-right text-muted-foreground">{porcentaje}%</td>
-                            <td className="p-3 text-center">
-                              {esMejorMes && (
-                                <Badge variant="default" className="gap-1">
+                    <div className="grid w-full gap-4 lg:w-1/2">
+                      {obrasSocialesData.map((item) => (
+                        <div key={item.name} className="rounded border bg-card p-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="h-4 w-4 rounded-full"
+                                style={{ backgroundColor: item.color }}
+                              />
+                              <span className="font-semibold">{item.name}</span>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xl font-bold text-foreground">
+                                {numberFormatter.format(item.value)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.porcentaje.toFixed(1)}% del total
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* GrÃ¡fico de Barras - DistribuciÃ³n por PerÃ­odo */}
+            <Card>
+              <CardHeader>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Distribución Temporal
+                    </CardTitle>
+                    <CardDescription>
+                      Pacientes registrados por perÃ­odo
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="groupByPeriodo" className="text-sm text-muted-foreground">
+                      Agrupación:
+                    </label>
+                    <select
+                      id="groupByPeriodo"
+                      value={groupBy}
+                      onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
+                      className="rounded border px-3 py-1 text-sm"
+                    >
+                      <option value="day">Diaria</option>
+                      <option value="week">Semanal</option>
+                      <option value="month">Mensual</option>
+                    </select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {!reporte.periodos || reporte.total === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No hay datos para el perí­odo seleccionado
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reporte.periodos.map((periodo, index) => {
+                      const porcentaje = reporte.total > 0 
+                        ? ((periodo.cantidad / reporte.total) * 100).toFixed(1)
+                        : "0"
+                      const maxCantidad = Math.max(...reporte.periodos.map(p => p.cantidad))
+                      const anchoBarra = maxCantidad > 0 
+                        ? (periodo.cantidad / maxCantidad) * 100
+                        : 0
+                      const esMejorPeriodo = periodo.cantidad === periodoConMasPacientes?.cantidad && periodo.cantidad > 0
+
+                      return (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold min-w-[200px] truncate">{periodo.label}</span>
+                              {esMejorPeriodo && (
+                                <Badge variant="default" className="gap-1 text-xs">
                                   <TrendingUp className="h-3 w-3" />
                                   Pico
                                 </Badge>
                               )}
-                              {mes.cantidad === 0 && (
-                                <Badge variant="secondary">Sin registros</Badge>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg font-bold text-foreground">
+                                {numberFormatter.format(periodo.cantidad)}
+                              </span>
+                              <span className="text-sm text-muted-foreground w-16 text-right">
+                                {porcentaje}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+                            <div 
+                              className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out flex items-center justify-end px-3"
+                              style={{ width: `${anchoBarra}%` }}
+                            >
+                              {periodo.cantidad > 0 && anchoBarra > 15 && (
+                                <span className="text-xs text-white font-semibold">
+                                  {numberFormatter.format(periodo.cantidad)}
+                                </span>
                               )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                    <tfoot className="bg-muted font-semibold">
-                      <tr>
-                        <td className="p-3">Total</td>
-                        <td className="p-3 text-right">{reporte.total}</td>
-                        <td className="p-3 text-right">100%</td>
-                        <td className="p-3"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Análisis de Obras Sociales - Tabla */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Ranking de Obras Sociales</CardTitle>
-                <CardDescription>Detalle de pacientes por cobertura médica</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="text-left p-3 font-semibold">Posición</th>
-                        <th className="text-left p-3 font-semibold">Obra Social</th>
-                        <th className="text-right p-3 font-semibold">Pacientes</th>
-                        <th className="text-right p-3 font-semibold">Porcentaje</th>
-                        <th className="text-right p-3 font-semibold">Promedio/Día</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reporte.distribucionObrasSociales.map((os, index) => {
-                        const porcentaje = ((os.cantidad / reporte.total) * 100).toFixed(1)
-                        const promedioDia = (os.cantidad / reporte.diasAnalizados).toFixed(2)
-                        
-                        return (
-                          <tr key={index} className="border-t hover:bg-muted/50">
-                            <td className="p-3">
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: COLORES_GRAFICO[index % COLORES_GRAFICO.length] }}
-                                />
-                                <span className="font-semibold">#{index + 1}</span>
-                              </div>
-                            </td>
-                            <td className="p-3 font-medium">{os.nombre}</td>
-                            <td className="p-3 text-right font-semibold">{os.cantidad}</td>
-                            <td className="p-3 text-right">
-                              <Badge variant="outline">{porcentaje}%</Badge>
-                            </td>
-                            <td className="p-3 text-right text-muted-foreground">{promedioDia}</td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>
