@@ -9,8 +9,8 @@ import { Toaster } from "@/components/ui/toaster"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "MediAdmin - Sistema de Gestión Médica",
-  description: "Sistema integral para la administración de policonsultorios",
+  title: "DevForce - Policonsultorio",
+  description: "Sistema integral para la administración de policonsultorio",
   generator: "v0.app",
 }
 

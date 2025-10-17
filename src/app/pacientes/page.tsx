@@ -108,9 +108,9 @@ export default function PacientesPage() {
   }
 
   const canViewPacientes = user.rol === "GERENTE" || user.rol === "MESA_ENTRADA" || user.rol === "PROFESIONAL"
-  const canCreatePacientes = user.rol === "GERENTE" || user.rol === "MESA_ENTRADA"
-  const canEditPacientes = user.rol === "GERENTE" || user.rol === "MESA_ENTRADA"
-  const canViewHistorias = user.rol === "PROFESIONAL" || user.rol === "GERENTE"
+  const canCreatePacientes = user.rol === "MESA_ENTRADA"
+  const canEditPacientes = user.rol === "MESA_ENTRADA"
+  const canViewHistorias = user.rol === "PROFESIONAL" 
 
   if (!canViewPacientes) {
     return (

@@ -1,814 +1,769 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { MainLayout } from "@/components/layout/main-layout"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/context/auth-context"
+import { AntecedentesFamiliaresCard } from "@/components/pacientes/antecedentes-familiares-card"
+import { Input } from "@/components/ui/input"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useAuth } from "@/context/auth-context";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Calendar,
-  Stethoscope,
   FileText,
-  Heart,
+  Calendar,
+  User,
+  Stethoscope,
+  Pill,
   Activity,
+  AlertCircle,
+  ArrowLeft,
+  Clock,
+  Heart,
   Thermometer,
   Weight,
-  Ruler,
-  Plus,
-  Trash2,
+  Eye,
+  UserCheck,
   Loader2,
-  Pill,
-} from "lucide-react";
+  Search,
+  BeakerIcon,
+} from "lucide-react"
+import Link from "next/link"
+import { Role } from "@/generated/prisma"
 
-interface Paciente {
-  id: string;
-  nombre: string;
-  apellido: string;
-  dni: string;
-  fechaNacimiento?: string;
+type PacienteData = {
+  id: number,
+  nombre: string,
+  apellido: string,
+  dni: string,
+  fechaNacimiento: string,
+  obraSocial: string,
+  numeroAfiliado: string,
+  antecedentes: string,
+  profesionalesAsignados: string[],
 }
 
-interface NuevaConsultaDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  paciente: Paciente;
-  profesionalId: number;
-  onConsultaCreada: (consulta: any) => void;
+type HistoriaData = {
+  id: string,
+  pacienteId: string,
+  profesionalId: string,
+  fecha: string,
+  hora: string,
+  profesional: string,
+  especialidad: string,
+  motivo: string | null,
+  anamnesis: string,
+  examenFisico: string,
+  signosVitales: any,
+  diagnostico: string,
+  tratamiento: string,
+  medicamentos: any[],
+  estudiosComplementarios: any[],
+  indicaciones: string,
+  proximoControl: string,
+  observaciones: string,
 }
 
-export function NuevaConsultaDialog({
-  open,
-  onOpenChange,
-  paciente,
-  profesionalId,
-  onConsultaCreada,
-}: NuevaConsultaDialogProps) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [prescribirMedicamentos, setPrescribirMedicamentos] = useState(false);
-  const [prescribirEstudios, setPrescribirEstudios] = useState(false);
+export default function HistoriasClinicasPage() {
+  const { user } = useAuth()
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pacienteId = searchParams.get("paciente")
 
-  const [formData, setFormData] = useState({
-    fecha: new Date().toISOString().split("T")[0],
-    hora: new Date().toTimeString().slice(0, 5),
-    motivo: "",
-    detalle: "",
-    examenFisico: "",
-    diagnostico: "",
-    tratamiento: "",
-    indicaciones: "",
-    observaciones: "",
-    proximoControl: "",
-    estudiosComplementarios: [""],
-    signosVitales: {
-      presionArterial: "",
-      frecuenciaCardiaca: "",
-      temperatura: "",
-      peso: "",
-      altura: "",
-      oxigenacion: "",
-    },
-    medicamentos: [
-      {
-        nombre: "",
-        dosis: "",
-        frecuencia: "",
-        duracion: "",
-      },
-    ],
-  });
+  const [loading, setLoading] = useState(true)
+  const [profesionalId, setProfesionalId] = useState<number | null>(null)
+  const [pacientes, setPacientes] = useState<PacienteData[]>([])
+  const [historias, setHistorias] = useState<HistoriaData[]>([])
+  const [paciente, setPaciente] = useState<PacienteData | null>(null)
+  const [historiaClinica, setHistoriaClinica] = useState<HistoriaData[]>([])
+  const [vistaLista, setVistaLista] = useState(!pacienteId)
+  const [pacientesFiltrados, setPacientesFiltrados] = useState<PacienteData[]>([])
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  // Función para formatear hora local
+  const formatearHoraLocal = (fechaISO: string) => {
+    const fecha = new Date(fechaISO)
+    return fecha.toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })
+  }
 
-  const handleSignosVitalesChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      signosVitales: {
-        ...prev.signosVitales,
-        [field]: value,
-      },
-    }));
-  };
-
-  const handleMedicamentoChange = (
-    index: number,
-    field: string,
-    value: string
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      medicamentos: prev.medicamentos.map((med, i) =>
-        i === index ? { ...med, [field]: value } : med
-      ),
-    }));
-  };
-
-  const agregarMedicamento = () => {
-    setFormData((prev) => ({
-      ...prev,
-      medicamentos: [
-        ...prev.medicamentos,
-        { nombre: "", dosis: "", frecuencia: "", duracion: "" },
-      ],
-    }));
-  };
-
-  const eliminarMedicamento = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      medicamentos: prev.medicamentos.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleEstudioChange = (index: number, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      estudiosComplementarios: prev.estudiosComplementarios.map((estudio, i) =>
-        i === index ? value : estudio
-      ),
-    }));
-  };
-
-  const agregarEstudio = () => {
-    setFormData((prev) => ({
-      ...prev,
-      estudiosComplementarios: [...prev.estudiosComplementarios, ""],
-    }));
-  };
-
-  const eliminarEstudio = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      estudiosComplementarios: prev.estudiosComplementarios.filter(
-        (_, i) => i !== index
-      ),
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  // Obtener el ID del profesional del usuario actual
+  const getProfesionalId = async () => {
+    if (!user || user.rol !== Role.PROFESIONAL) return null
+    
     try {
-      if (!formData.motivo || !formData.diagnostico) {
-        toast({
-          title: "Error de validación",
-          description: "El motivo de consulta y diagnóstico son obligatorios",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Validar medicamentos si se habilitó la prescripción
-      if (prescribirMedicamentos) {
-        const medicamentosCompletos = formData.medicamentos.filter(med => 
-          med.nombre.trim() !== "" && 
-          med.dosis.trim() !== "" && 
-          med.frecuencia.trim() !== "" && 
-          med.duracion.trim() !== ""
-        );
-
-        if (medicamentosCompletos.length === 0) {
-          toast({
-            title: "Error de validación",
-            description: "Debe agregar al menos un medicamento completo o desmarcar la opción 'Prescribir medicamentos'",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-
-        const medicamentosIncompletos = formData.medicamentos.filter(med => 
-          med.nombre.trim() !== "" && (!med.dosis.trim() || !med.frecuencia.trim() || !med.duracion.trim())
-        );
-
-        if (medicamentosIncompletos.length > 0) {
-          toast({
-            title: "Error de validación",
-            description: "Todos los medicamentos que tengan nombre deben tener también dosis, frecuencia y duración",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-      }
-
-      const historiaData = {
-        pacienteId: paciente.id,
-        profesionalId: profesionalId.toString(),
-        fecha: `${formData.fecha}T${formData.hora}:00`,
-        motivo: formData.motivo,
-        detalle: formData.detalle || "",
-        examenFisico: formData.examenFisico || null,
-        signosVitales: formData.signosVitales.presionArterial
-          ? {
-              presionArterial: formData.signosVitales.presionArterial,
-              frecuenciaCardiaca: formData.signosVitales.frecuenciaCardiaca,
-              temperatura: formData.signosVitales.temperatura,
-              peso: formData.signosVitales.peso,
-              altura: formData.signosVitales.altura,
-              oxigenacion: formData.signosVitales.oxigenacion,
-            }
-          : null,
-        diagnostico: formData.diagnostico,
-        tratamiento: formData.tratamiento || null,
-        indicaciones: formData.indicaciones || null,
-        observaciones: formData.observaciones || null,
-        proximoControl: formData.proximoControl
-          ? `${formData.proximoControl}T00:00:00`
-          : null,
-        medicamentos: prescribirMedicamentos 
-          ? formData.medicamentos.filter((m) => 
-              m.nombre.trim() !== "" && 
-              m.dosis.trim() !== "" && 
-              m.frecuencia.trim() !== "" && 
-              m.duracion.trim() !== ""
-            )
-          : [],
-        estudiosComplementarios: prescribirEstudios
-          ? formData.estudiosComplementarios
-              .filter((e) => e.trim() !== "")
-              .map((e) => ({
-                tipo: e,
-                resultado: "Pendiente",
-                fecha: formData.fecha,
-              }))
-          : [],
-      };
-
-      const response = await fetch("/api/v2/historia", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ historia: historiaData }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Error al crear consulta");
-      }
-
-      const result = await response.json();
-
-      toast({
-        title: "Consulta registrada",
-        description: "La consulta médica ha sido registrada exitosamente",
-      });
-
-      onConsultaCreada(historiaData);
-      onOpenChange(false);
-
-      // Reset form
-      setFormData({
-        fecha: new Date().toISOString().split("T")[0],
-        hora: new Date().toTimeString().slice(0, 5),
-        motivo: "",
-        detalle: "",
-        examenFisico: "",
-        diagnostico: "",
-        tratamiento: "",
-        indicaciones: "",
-        observaciones: "",
-        proximoControl: "",
-        estudiosComplementarios: [""],
-        signosVitales: {
-          presionArterial: "",
-          frecuenciaCardiaca: "",
-          temperatura: "",
-          peso: "",
-          altura: "",
-          oxigenacion: "",
-        },
-        medicamentos: [
-          {
-            nombre: "",
-            dosis: "",
-            frecuencia: "",
-            duracion: "",
-          },
-        ],
-      });
-      setPrescribirMedicamentos(false);
-      setPrescribirEstudios(false);
-    } catch (error: any) {
-      console.error("Error creando consulta:", error);
-      toast({
-        title: "Error",
-        description:
-          error.message ||
-          "No se pudo registrar la consulta. Intente nuevamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      const response = await fetch(`/api/v2/profesional/by-user/${user.id}`)
+      if (!response.ok) return null
+      
+      const data = await response.json()
+      return data.profesionalId
+    } catch (error) {
+      console.error("Error obteniendo ID de profesional:", error)
+      return null
     }
+  }
+
+  // Obtener pacientes con turnos del profesional
+  const fetchPacientesConTurnos = async (profesionalId: number) => {
+    try {
+      const turnosRes = await fetch(`/api/v2/turnos?id_profesional=${profesionalId}`)
+      if (!turnosRes.ok) throw new Error("Error al obtener turnos")
+      const turnosData = await turnosRes.json()
+      
+      const pacientesIds = [...new Set(turnosData.turnos.map((t: any) => t.id_paciente))]
+      
+      const pacientesRes = await fetch("/api/v2/historia/paciente")
+      if (!pacientesRes.ok) throw new Error("Error al obtener pacientes")
+      const pacientesData = await pacientesRes.json()
+      
+      const pacientesConTurnos = pacientesData.pacientes.filter((p: PacienteData) => 
+        pacientesIds.includes(p.id)
+      )
+      
+      setPacientes(pacientesConTurnos)
+      setPacientesFiltrados(pacientesConTurnos)
+      
+    } catch (error) {
+      console.error("Error fetching pacientes con turnos:", error)
+    }
+  }
+
+  // Obtener todos los pacientes (para gerente)
+  const fetchTodosPacientes = async () => {
+    try {
+      const res = await fetch("/api/v2/historia/paciente")
+      if (!res.ok) throw new Error("Error al obtener pacientes")
+      const data = await res.json()
+      setPacientes(data.pacientes)
+      setPacientesFiltrados(data.pacientes)
+    } catch (error) {
+      console.error("Error fetching pacientes:", error)
+    }
+  }
+
+  // Obtener historias clínicas
+  const fetchHistorias = async (profesionalId?: number) => {
+    try {
+      let url = "/api/v2/historia"
+      if (profesionalId) {
+        url += `?id_profesional=${profesionalId}`
+      }
+      
+      const res = await fetch(url)
+      if (!res.ok) throw new Error("Error al obtener historias")
+      const data = await res.json()
+      setHistorias(data.historias)
+    } catch (error) {
+      console.error("Error fetching historias:", error)
+    }
+  }
+
+  const onSearchTerm = (newTerm: string) => {
+    const filtrados = pacientes.filter((paciente) => {
+      return paciente.nombre.toLowerCase().includes(newTerm.toLowerCase()) ||
+              paciente.apellido.toLowerCase().includes(newTerm.toLowerCase()) ||
+              paciente.dni.includes(newTerm);
+    });
+    setPacientesFiltrados(filtrados);
+    setSearchTerm(newTerm);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Nueva Consulta - {paciente.apellido}, {paciente.nombre}
-          </DialogTitle>
-          <DialogDescription>
-            DNI: {paciente.dni} • Registrar nueva consulta médica
-          </DialogDescription>
-        </DialogHeader>
+  // Inicializar datos
+  useEffect(() => {
+    const initData = async () => {
+      if (!user) {
+        setLoading(false)
+        return
+      }
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6 overflow-y-auto flex-1 pr-2"
-        >
-          {/* Información básica */}
+      setLoading(true)
+
+      try {
+        if (user.rol === Role.PROFESIONAL) {
+          const profId = await getProfesionalId()
+          if (profId) {
+            setProfesionalId(profId)
+            await Promise.all([
+              fetchPacientesConTurnos(profId),
+              fetchHistorias(profId)
+            ])
+          }
+        } else if (user.rol === Role.GERENTE) {
+          await Promise.all([
+            fetchTodosPacientes(),
+            fetchHistorias()
+          ])
+        }
+      } catch (error) {
+        console.error("Error inicializando datos:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initData()
+  }, [user])
+
+  // Manejar selección de paciente
+  useEffect(() => {
+    if (pacienteId && !vistaLista && pacientes.length > 0) {
+      const parsed = parseInt(pacienteId)
+      const pacienteEncontrado = pacientes.find((p) => p.id === parsed)
+
+      if (!pacienteEncontrado) {
+        setPaciente(null)
+        return
+      }
+
+      setPaciente(pacienteEncontrado)
+
+      let historiasDelPaciente = historias.filter(
+        (h) => h.pacienteId === pacienteId
+      )
+
+      setHistoriaClinica(
+        historiasDelPaciente.sort(
+          (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+        )
+      )
+    } else if (!pacienteId) {
+      setVistaLista(true)
+    }
+  }, [pacienteId, pacientes, historias, user, vistaLista, profesionalId])
+
+  const verHistoriaClinica = (pacienteSeleccionado: PacienteData) => {
+    router.push(`/historias-clinicas?paciente=${pacienteSeleccionado.id}`)
+    setVistaLista(false)
+  }
+
+  const volverALista = () => {
+    router.push("/historias-clinicas")
+    setVistaLista(true)
+    setPaciente(null)
+    setHistoriaClinica([])
+  }
+
+  const calcularEdad = (fechaNacimiento: string) => {
+    const hoy = new Date()
+    const nacimiento = new Date(fechaNacimiento)
+    let edad = hoy.getFullYear() - nacimiento.getFullYear()
+    const mes = hoy.getMonth() - nacimiento.getMonth()
+
+    if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+      edad--
+    }
+
+    return edad
+  }
+
+  const formatearFecha = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString("es-AR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  }
+
+  const formatearFechaCorta = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString("es-AR")
+  }
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-screen">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (!user) {
+    return (
+      <MainLayout>
+        <div className="p-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Información de la Consulta
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="fecha">Fecha *</Label>
-                  <Input
-                    id="fecha"
-                    type="date"
-                    value={formData.fecha}
-                    onChange={(e) => handleInputChange("fecha", e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="hora">Hora *</Label>
-                  <Input
-                    id="hora"
-                    type="time"
-                    value={formData.hora}
-                    onChange={(e) => handleInputChange("hora", e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="motivo">Motivo de Consulta *</Label>
-                <Textarea
-                  id="motivo"
-                  value={formData.motivo}
-                  onChange={(e) => handleInputChange("motivo", e.target.value)}
-                  placeholder="Describe el motivo de la consulta..."
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="detalle">Detalle / Anamnesis</Label>
-                <Textarea
-                  id="detalle"
-                  value={formData.detalle}
-                  onChange={(e) => handleInputChange("detalle", e.target.value)}
-                  placeholder="Información detallada sobre la consulta..."
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="examenFisico">Examen Físico</Label>
-                <Textarea
-                  id="examenFisico"
-                  value={formData.examenFisico}
-                  onChange={(e) =>
-                    handleInputChange("examenFisico", e.target.value)
-                  }
-                  placeholder="Hallazgos del examen físico..."
-                  rows={3}
-                />
-              </div>
+            <CardContent className="flex items-center justify-center h-32">
+              <p className="text-muted-foreground">Debes iniciar sesión para acceder a esta sección.</p>
             </CardContent>
           </Card>
+        </div>
+      </MainLayout>
+    )
+  }
 
-          {/* Signos Vitales */}
+  if (user.rol === Role.MESA_ENTRADA) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
+              <AlertCircle className="h-12 w-12 text-muted-foreground" />
+              <p className="text-muted-foreground">No tienes permisos para acceder a las historias clínicas.</p>
+              <Link href="/pacientes">
+                <Button variant="outline" className="gap-2 bg-transparent">
+                  <ArrowLeft className="h-4 w-4" />
+                  Volver a Pacientes
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (vistaLista) {
+    return (
+      <MainLayout>
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Historias Clínicas</h1>
+              <p className="text-muted-foreground">
+                {user.rol === Role.PROFESIONAL 
+                  ? "Pacientes con turnos asignados" 
+                  : "Gestión de historias clínicas"}
+              </p>
+            </div>
+          </div>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nombre, apellido, o DNI..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchTerm(e.target.value) }
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Stethoscope className="h-4 w-4" />
-                Signos Vitales
+                <UserCheck className="h-5 w-5" />
+                Pacientes ({pacientesFiltrados.length})
               </CardTitle>
+              <CardDescription>
+                Selecciona un paciente para ver su historia clínica completa
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="presionArterial" className="flex items-center gap-2">
-                    <Heart className="h-4 w-4 text-red-500" />
-                    Presión Arterial
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="presionArterial"
-                      value={formData.signosVitales.presionArterial}
-                      onChange={(e) =>
-                        handleSignosVitalesChange("presionArterial", e.target.value)
-                      }
-                      placeholder="120/80"
-                      className="pr-12"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                      mmHg
-                    </span>
-                  </div>
+              {pacientesFiltrados.length === 0 ? (
+                <div className="text-center py-8">
+                  <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">
+                    {user.rol === Role.PROFESIONAL
+                      ? "No tienes pacientes con turnos asignados"
+                      : "No se encontraron pacientes"}
+                  </p>
                 </div>
-
-                <div>
-                  <Label htmlFor="frecuenciaCardiaca" className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-blue-500" />
-                    Frecuencia Cardíaca
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="frecuenciaCardiaca"
-                      value={formData.signosVitales.frecuenciaCardiaca}
-                      onChange={(e) =>
-                        handleSignosVitalesChange("frecuenciaCardiaca", e.target.value)
-                      }
-                      placeholder="72"
-                      className="pr-10"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                      lpm
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="temperatura" className="flex items-center gap-2">
-                    <Thermometer className="h-4 w-4 text-orange-500" />
-                    Temperatura
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="temperatura"
-                      value={formData.signosVitales.temperatura}
-                      onChange={(e) =>
-                        handleSignosVitalesChange("temperatura", e.target.value)
-                      }
-                      placeholder="36.5"
-                      className="pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                      °C
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="peso" className="flex items-center gap-2">
-                    <Weight className="h-4 w-4 text-green-500" />
-                    Peso
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="peso"
-                      value={formData.signosVitales.peso}
-                      onChange={(e) =>
-                        handleSignosVitalesChange("peso", e.target.value)
-                      }
-                      placeholder="70"
-                      className="pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                      kg
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="altura" className="flex items-center gap-2">
-                    <Ruler className="h-4 w-4 text-purple-500" />
-                    Altura
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="altura"
-                      value={formData.signosVitales.altura}
-                      onChange={(e) =>
-                        handleSignosVitalesChange("altura", e.target.value)
-                      }
-                      placeholder="175"
-                      className="pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                      cm
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="oxigenacion" className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-cyan-500" />
-                    Oxigenación
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="oxigenacion"
-                      value={formData.signosVitales.oxigenacion}
-                      onChange={(e) =>
-                        handleSignosVitalesChange("oxigenacion", e.target.value)
-                      }
-                      placeholder="98"
-                      className="pr-6"
-                    />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                      %
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Diagnóstico y Tratamiento */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Diagnóstico y Tratamiento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="diagnostico">Diagnóstico *</Label>
-                <Textarea
-                  id="diagnostico"
-                  value={formData.diagnostico}
-                  onChange={(e) =>
-                    handleInputChange("diagnostico", e.target.value)
-                  }
-                  placeholder="Diagnóstico médico..."
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="tratamiento">Tratamiento</Label>
-                <Textarea
-                  id="tratamiento"
-                  value={formData.tratamiento}
-                  onChange={(e) =>
-                    handleInputChange("tratamiento", e.target.value)
-                  }
-                  placeholder="Plan de tratamiento..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="indicaciones">Indicaciones</Label>
-                <Textarea
-                  id="indicaciones"
-                  value={formData.indicaciones}
-                  onChange={(e) =>
-                    handleInputChange("indicaciones", e.target.value)
-                  }
-                  placeholder="Indicaciones para el paciente..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="observaciones">Observaciones</Label>
-                <Textarea
-                  id="observaciones"
-                  value={formData.observaciones}
-                  onChange={(e) =>
-                    handleInputChange("observaciones", e.target.value)
-                  }
-                  placeholder="Observaciones adicionales..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="proximoControl">Próximo Control</Label>
-                <Input
-                  id="proximoControl"
-                  type="date"
-                  value={formData.proximoControl}
-                  onChange={(e) =>
-                    handleInputChange("proximoControl", e.target.value)
-                  }
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Medicamentos */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-3 mb-2">
-                <Checkbox
-                  id="prescribir-medicamentos"
-                  checked={prescribirMedicamentos}
-                  onCheckedChange={(checked) => setPrescribirMedicamentos(checked as boolean)}
-                />
-                <Label htmlFor="prescribir-medicamentos" className="flex items-center gap-2 cursor-pointer">
-                  <Pill className="h-4 w-4" />
-                  Prescribir Medicamentos
-                </Label>
-              </div>
-              <CardDescription>
-                {prescribirMedicamentos 
-                  ? "Agregue los medicamentos que desea prescribir al paciente" 
-                  : "Marque la casilla para prescribir medicamentos"}
-              </CardDescription>
-            </CardHeader>
-            {prescribirMedicamentos && (
-              <CardContent className="space-y-4">
-                {formData.medicamentos.map((medicamento, index) => (
-                  <div key={index} className="border rounded-lg p-4 space-y-3 bg-blue-50/30">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-medium text-blue-900 flex items-center gap-2">
-                        <Pill className="h-4 w-4" />
-                        Medicamento {index + 1}
-                      </h4>
-                      {formData.medicamentos.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => eliminarMedicamento(index)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="md:col-span-2">
-                        <Label className="flex items-center gap-2">
-                          <span>Nombre del Medicamento *</span>
-                        </Label>
-                        <Input
-                          value={medicamento.nombre}
-                          onChange={(e) => handleMedicamentoChange(index, "nombre", e.target.value)}
-                          placeholder="Ej: Paracetamol, Ibuprofeno..."
-                          className="font-medium"
-                        />
-                      </div>
-                      <div>
-                        <Label>Dosis *</Label>
-                        <Input
-                          value={medicamento.dosis}
-                          onChange={(e) => handleMedicamentoChange(index, "dosis", e.target.value)}
-                          placeholder="Ej: 500mg, 1 comprimido..."
-                        />
-                      </div>
-                      <div>
-                        <Label>Frecuencia *</Label>
-                        <Input
-                          value={medicamento.frecuencia}
-                          onChange={(e) => handleMedicamentoChange(index, "frecuencia", e.target.value)}
-                          placeholder="Ej: Cada 8 horas, 3 veces al día..."
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Label>Duración *</Label>
-                        <Input
-                          value={medicamento.duracion}
-                          onChange={(e) => handleMedicamentoChange(index, "duracion", e.target.value)}
-                          placeholder="Ej: 7 días, 2 semanas..."
-                        />
-                      </div>
-                    </div>
-
-                    {/* Vista previa del medicamento */}
-                    {medicamento.nombre && (
-                      <div className="mt-3 p-2 bg-blue-100 rounded-lg border-l-4 border-blue-500">
-                        <p className="text-sm text-blue-900">
-                          <span className="font-semibold">{medicamento.nombre}</span>
-                          {medicamento.dosis && <span className="text-blue-700"> • {medicamento.dosis}</span>}
-                          {medicamento.frecuencia && <span className="text-blue-700"> • {medicamento.frecuencia}</span>}
-                          {medicamento.duracion && <span className="text-blue-700"> • {medicamento.duracion}</span>}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={agregarMedicamento} 
-                  className="w-full border-dashed border-2 hover:bg-blue-50 hover:border-blue-300"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Otro Medicamento
-                </Button>
-              </CardContent>
-            )}
-          </Card>
-
-          {/* Estudios Complementarios */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-3 mb-2">
-                <Checkbox
-                  id="prescribir-estudios"
-                  checked={prescribirEstudios}
-                  onCheckedChange={(checked) => setPrescribirEstudios(checked as boolean)}
-                />
-                <Label htmlFor="prescribir-estudios" className="flex items-center gap-2 cursor-pointer">
-                  <FileText className="h-4 w-4" />
-                  Solicitar Estudios Complementarios
-                </Label>
-              </div>
-              <CardDescription>
-                {prescribirEstudios 
-                  ? "Agregue los estudios que desea solicitar al paciente" 
-                  : "Marque la casilla para solicitar estudios complementarios"}
-              </CardDescription>
-            </CardHeader>
-            {prescribirEstudios && (
-              <CardContent className="space-y-3">
-                {formData.estudiosComplementarios.map((estudio, index) => (
-                  <div key={index} className="flex gap-2 items-start p-3 bg-green-50/30 rounded-lg border border-green-200">
-                    <div className="flex-1">
-                      <Label className="text-sm font-medium text-green-900">
-                        Estudio {index + 1}
-                      </Label>
-                      <Input
-                        value={estudio}
-                        onChange={(e) => handleEstudioChange(index, e.target.value)}
-                        placeholder="Ej: Radiografía de tórax, Análisis de sangre, Ecografía..."
-                        className="mt-1"
-                      />
-                      {estudio.trim() && (
-                        <div className="mt-2 p-2 bg-green-100 rounded-lg border-l-4 border-green-500">
-                          <p className="text-sm text-green-900">
-                            <span className="font-semibold">{estudio}</span>
-                            <span className="text-green-700"> • Resultado: Pendiente</span>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    {formData.estudiosComplementarios.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => eliminarEstudio(index)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-6"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={agregarEstudio} 
-                  className="w-full border-dashed border-2 hover:bg-green-50 hover:border-green-300"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Otro Estudio
-                </Button>
-              </CardContent>
-            )}
-          </Card>
-
-          {/* Botones */}
-          <div className="flex justify-end gap-3 pt-4 pb-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Guardando...
-                </>
               ) : (
-                "Guardar Consulta"
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pacientesFiltrados.map((pacienteItem) => {
+                    const consultasPaciente = historias
+                      .filter((h) => h.pacienteId === pacienteItem.id.toString())
+                      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                    const ultimaConsulta = consultasPaciente[0]
+                    const especialidades = [...new Set(consultasPaciente.map((c) => c.especialidad))]
+
+                    return (
+                      <Card
+                        key={pacienteItem.id}
+                        className="hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => verHistoriaClinica(pacienteItem)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-medium text-primary">
+                                  {pacienteItem.nombre[0]}
+                                  {pacienteItem.apellido[0]}
+                                </span>
+                              </div>
+                              <div>
+                                <h3 className="font-semibold">
+                                  {pacienteItem.apellido}, {pacienteItem.nombre}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">DNI: {pacienteItem.dni}</p>
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Consultas:</span>
+                              <Badge variant="secondary">{consultasPaciente.length}</Badge>
+                            </div>
+
+                            {ultimaConsulta && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Última consulta:</span>
+                                <span className="text-xs">{formatearFechaCorta(ultimaConsulta.fecha)}</span>
+                              </div>
+                            )}
+
+                            {especialidades.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {especialidades.slice(0, 2).map((esp, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {esp}
+                                  </Badge>
+                                ))}
+                                {especialidades.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{especialidades.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
               )}
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  if (!pacienteId || !paciente) {
+    return (
+      <MainLayout>
+        <div className="p-6">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center h-32 space-y-4">
+              <AlertCircle className="h-12 w-12 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                {user.rol === Role.PROFESIONAL 
+                  ? "No tienes permisos para ver la historia clínica de este paciente o el paciente no tiene turnos contigo."
+                  : "No se encontró el paciente especificado."}
+              </p>
+              <Button variant="outline" className="gap-2 bg-transparent" onClick={volverALista}>
+                <ArrowLeft className="h-4 w-4" />
+                Volver a Lista
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </MainLayout>
+    )
+  }
+
+  return (
+    <MainLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="sm" className="gap-2" onClick={volverALista}>
+              <ArrowLeft className="h-4 w-4" />
+              Volver
             </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Historia Clínica</h1>
+              <p className="text-muted-foreground">
+                {user.rol === Role.PROFESIONAL
+                  ? "Tus consultas con este paciente"
+                  : "Registro médico completo del paciente"}
+              </p>
+            </div>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Información del Paciente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                  <span className="text-lg font-medium text-primary">
+                    {paciente.nombre[0]}
+                    {paciente.apellido[0]}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold">
+                    {paciente.apellido}, {paciente.nombre}
+                  </h3>
+                  <p className="text-muted-foreground">DNI: {paciente.dni}</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    <strong>Edad:</strong> {calcularEdad(paciente.fechaNacimiento)} años
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">
+                    <strong>Fecha de nacimiento:</strong> {formatearFecha(paciente.fechaNacimiento)}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-sm">
+                  <strong>Obra Social:</strong> {paciente.obraSocial || "No especificada"}
+                </div>
+                <div className="text-sm">
+                  <strong>N° Afiliado:</strong> {paciente.numeroAfiliado || "N/A"}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <AntecedentesFamiliaresCard 
+          pacienteId={paciente.id.toString()}
+          antecedentesInitial={paciente.antecedentes}
+          editable={user.rol === Role.PROFESIONAL}
+          compact={false}
+        />
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Resumen de Historia Clínica
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <FileText className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-blue-600">{historiaClinica.length}</p>
+                <p className="text-sm text-blue-700">Total Consultas</p>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <Calendar className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-green-600">
+                  {historiaClinica.length > 0 ? formatearFechaCorta(historiaClinica[0].fecha) : "N/A"}
+                </p>
+                <p className="text-sm text-green-700">Última Consulta</p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <Stethoscope className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-purple-600">
+                  {[...new Set(historiaClinica.map((h) => h.especialidad))].length}
+                </p>
+                <p className="text-sm text-purple-700">Especialidades</p>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <Pill className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-orange-600">
+                  {historiaClinica.reduce((acc, h) => acc + (h.medicamentos?.length || 0), 0)}
+                </p>
+                <p className="text-sm text-orange-700">Medicamentos</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {user.rol === Role.PROFESIONAL ? "Mis Consultas" : "Historial de Consultas"} ({historiaClinica.length})
+            </CardTitle>
+            <CardDescription>
+              {user.rol === Role.PROFESIONAL 
+                ? "Consultas que has realizado con este paciente"
+                : "Consultas ordenadas por fecha (más reciente primero)"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {historiaClinica.length === 0 ? (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  {user.rol === Role.PROFESIONAL 
+                    ? "No has realizado consultas con este paciente"
+                    : "No hay consultas registradas"}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {historiaClinica.map((consulta, index) => (
+                  <div key={consulta.id} className="border border-border rounded-lg p-6 space-y-4">
+                    <div className="flex items-center justify-between pb-4 border-b">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-primary">#{historiaClinica.length - index}</span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-lg">{consulta.motivo}</h3>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {formatearFecha(consulta.fecha)}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {formatearHoraLocal(consulta.fecha)}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Stethoscope className="h-3 w-3" />
+                              {consulta.profesional}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">{consulta.especialidad}</Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                            HISTORIA DE LA ENFERMEDAD ACTUAL
+                          </h4>
+                          <p className="text-sm">{consulta.anamnesis}</p>
+                        </div>
+
+                        {consulta.examenFisico && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">EXAMEN FÍSICO</h4>
+                            <p className="text-sm">{consulta.examenFisico}</p>
+                          </div>
+                        )}
+
+                        {consulta.signosVitales && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">SIGNOS VITALES</h4>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              {consulta.signosVitales.presionArterial && (
+                                <div className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3 text-red-500" />
+                                  <span>PA: {consulta.signosVitales.presionArterial}</span>
+                                </div>
+                              )}
+                              {consulta.signosVitales.frecuenciaCardiaca && (
+                                <div className="flex items-center gap-1">
+                                  <Activity className="h-3 w-3 text-blue-500" />
+                                  <span>FC: {consulta.signosVitales.frecuenciaCardiaca}</span>
+                                </div>
+                              )}
+                              {consulta.signosVitales.temperatura && (
+                                <div className="flex items-center gap-1">
+                                  <Thermometer className="h-3 w-3 text-orange-500" />
+                                  <span>T°: {consulta.signosVitales.temperatura}</span>
+                                </div>
+                              )}
+                              {consulta.signosVitales.peso && (
+                                <div className="flex items-center gap-1">
+                                  <Weight className="h-3 w-3 text-green-500" />
+                                  <span>Peso: {consulta.signosVitales.peso}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 className="font-medium text-sm text-muted-foreground mb-2">DIAGNÓSTICO</h4>
+                          <p className="text-sm font-medium">{consulta.diagnostico}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {consulta.tratamiento && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">TRATAMIENTO</h4>
+                            <p className="text-sm">{consulta.tratamiento}</p>
+                          </div>
+                        )}
+
+                        {consulta.medicamentos && consulta.medicamentos.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                              <Pill className="h-4 w-4" />
+                              MEDICAMENTOS PRESCRITOS
+                            </h4>
+                            <div className="space-y-2">
+                              {consulta.medicamentos.map((med: any, idx: number) => (
+                                <div key={idx} className="text-sm p-2 bg-blue-50 rounded border-l-2 border-blue-500">
+                                  <p className="font-medium">{med.nombre}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {med.dosis} • {med.frecuencia} • {med.duracion}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {consulta.estudiosComplementarios && consulta.estudiosComplementarios.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                              <BeakerIcon className="h-4 w-4" />
+                              ESTUDIOS COMPLEMENTARIOS
+                            </h4>
+                            <div className="space-y-2">
+                              {consulta.estudiosComplementarios.map((estudio: any, idx: number) => (
+                                <div key={idx} className="text-sm p-2 bg-green-50 rounded border-l-2 border-green-500">
+                                  <p className="font-medium">{estudio.tipo}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Resultado: {estudio.resultado}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {consulta.indicaciones && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">INDICACIONES</h4>
+                            <p className="text-sm">{consulta.indicaciones}</p>
+                          </div>
+                        )}
+
+                        {consulta.proximoControl && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">PRÓXIMO CONTROL</h4>
+                            <p className="text-sm font-medium text-primary">
+                              {formatearFecha(consulta.proximoControl)}
+                            </p>
+                          </div>
+                        )}
+
+                        {consulta.observaciones && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2">OBSERVACIONES</h4>
+                            <p className="text-sm italic">{consulta.observaciones}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </MainLayout>
+  )
 }

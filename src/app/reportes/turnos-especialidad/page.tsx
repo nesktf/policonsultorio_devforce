@@ -94,7 +94,7 @@ export default function ReporteTurnosPage() {
   }
 
   useEffect(() => {
-    if (user && user.rol === "GERENTE") {
+    if (user && user.rol === "GERENTE" || user && user.rol === "MESA_ENTRADA" ) {
       cargarReporte()
     }
   }, [fechaInicio, fechaFin, user])
@@ -113,7 +113,7 @@ export default function ReporteTurnosPage() {
     )
   }
 
-  if (user.rol !== "GERENTE") {
+  if (user.rol === "PROFESIONAL") {
     return (
       <MainLayout>
         <div className="p-6">

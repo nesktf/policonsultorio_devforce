@@ -37,6 +37,7 @@ export default function TurnosPage() {
   const [turnos, setTurnos] = useState<TurnoApi[]>([])
   const [turnosLoading, setTurnosLoading] = useState(false)
   const [turnosError, setTurnosError] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelado = false
 
@@ -55,25 +56,32 @@ export default function TurnosPage() {
           throw new Error("No se pudieron obtener los profesionales")
         }
 
-        const especialidadesData: Array<{ id: string; nombre: string }> =
-          await especialidadesRes.json()
-        const profesionalesData: Array<{
-          id: number
-          nombre: string
-          apellido: string
-          especialidad: string
-        }> = await profesionalesRes.json()
+        const especialidadesData = await especialidadesRes.json()
+        const profesionalesData = await profesionalesRes.json()
 
         if (cancelado) return
 
+        // Verificar que especialidadesData sea un array
+        const especialidadesArray = Array.isArray(especialidadesData) 
+          ? especialidadesData 
+          : []
+
+        // Verificar que profesionalesData sea un array
+        const profesionalesArray = Array.isArray(profesionalesData) 
+          ? profesionalesData 
+          : []
+
         setEspecialidades([
           { id: "todas", nombre: "Todas las especialidades" },
-          ...especialidadesData,
+          ...especialidadesArray.map((esp: any) => ({
+            id: esp.especialidad || esp.id || esp.nombre,
+            nombre: esp.nombre || esp.especialidad || "Sin nombre"
+          })),
         ])
 
         setProfesionales([
           { id: "todos", nombre: "Todos los profesionales", especialidad: "" },
-          ...profesionalesData.map((prof) => ({
+          ...profesionalesArray.map((prof: any) => ({
             id: String(prof.id),
             nombre: `${prof.apellido}, ${prof.nombre}`,
             especialidad: prof.especialidad,
@@ -81,6 +89,11 @@ export default function TurnosPage() {
         ])
       } catch (error) {
         console.error("Error al cargar filtros de turnos:", error)
+        if (!cancelado) {
+          // Establecer valores por defecto en caso de error
+          setEspecialidades([{ id: "todas", nombre: "Todas las especialidades" }])
+          setProfesionales([{ id: "todos", nombre: "Todos los profesionales", especialidad: "" }])
+        }
       } finally {
         if (!cancelado) {
           setFiltersLoading(false)
@@ -94,7 +107,6 @@ export default function TurnosPage() {
       cancelado = true
     }
   }, [])
-
 
   async function cargarTurnos() {
     let cancelado = false
@@ -126,9 +138,11 @@ export default function TurnosPage() {
         throw new Error(error)
       }
 
-      const data: { turnos: TurnoApi[] } = await response.json()
+      const data = await response.json()
+      
       if (!cancelado) {
-        setTurnos(data.turnos)
+        // Verificar que data.turnos sea un array
+        setTurnos(Array.isArray(data.turnos) ? data.turnos : [])
       }
     } catch (error) {
       console.error("Error al cargar turnos:", error)
@@ -145,14 +159,12 @@ export default function TurnosPage() {
         setTurnosLoading(false)
       }
     }
-    return cancelado;
+    return cancelado
   }
 
   useEffect(() => {
-    cargarTurnos();
+    cargarTurnos()
   }, [selectedDate, selectedProfesional, selectedEspecialidad, reloadKey])
-
-
 
   if (!user) {
     return (
@@ -288,7 +300,6 @@ export default function TurnosPage() {
             </Card>
           ))}
         </div>
-
 
         {/* Calendar */}
         <TurnosCalendar
