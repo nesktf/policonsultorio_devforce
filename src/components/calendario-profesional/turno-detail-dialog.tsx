@@ -271,6 +271,23 @@ TurnoDetailDialogProps) {
               Asistió
             </Button>
           )}
+          {/* 🆕 Botón Cancelar */}
+          {turno.estado !== "CANCELADO" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (onEstadoChange) {
+                  onEstadoChange(turno.id, "CANCELADO");
+                }
+                onOpenChange(false); // cerrar diálogo
+              }}
+              className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <XCircle className="h-3.5 w-3.5" />
+              Cancelar
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
