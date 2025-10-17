@@ -530,7 +530,7 @@ export default function NuevosPacientesPage() {
                       Distribución Temporal
                     </CardTitle>
                     <CardDescription>
-                      Pacientes registrados por perÃ­odo
+                      Pacientes registrados por perí­odo
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">

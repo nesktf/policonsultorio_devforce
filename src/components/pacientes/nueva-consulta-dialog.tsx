@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useState } from "react";
 import {
   Dialog,
@@ -14,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -29,6 +29,7 @@ import {
   Plus,
   Trash2,
   Loader2,
+  Pill,
 } from "lucide-react";
 
 interface Paciente {
@@ -57,12 +58,14 @@ export function NuevaConsultaDialog({
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [prescribirMedicamentos, setPrescribirMedicamentos] = useState(false);
+  const [prescribirEstudios, setPrescribirEstudios] = useState(false);
 
   const [formData, setFormData] = useState({
     fecha: new Date().toISOString().split("T")[0],
     hora: new Date().toTimeString().slice(0, 5),
-    motivoConsulta: "",
-    anamnesis: "",
+    motivo: "",
+    detalle: "",
     examenFisico: "",
     diagnostico: "",
     tratamiento: "",
@@ -76,7 +79,7 @@ export function NuevaConsultaDialog({
       temperatura: "",
       peso: "",
       altura: "",
-      saturacionOxigeno: "",
+      oxigenacion: "",
     },
     medicamentos: [
       {
@@ -165,8 +168,7 @@ export function NuevaConsultaDialog({
     setLoading(true);
 
     try {
-      // Validaciones básicas
-      if (!formData.motivoConsulta || !formData.diagnostico) {
+      if (!formData.motivo || !formData.diagnostico) {
         toast({
           title: "Error de validación",
           description: "El motivo de consulta y diagnóstico son obligatorios",
@@ -176,12 +178,46 @@ export function NuevaConsultaDialog({
         return;
       }
 
+      // Validar medicamentos si se habilitó la prescripción
+      if (prescribirMedicamentos) {
+        const medicamentosCompletos = formData.medicamentos.filter(med => 
+          med.nombre.trim() !== "" && 
+          med.dosis.trim() !== "" && 
+          med.frecuencia.trim() !== "" && 
+          med.duracion.trim() !== ""
+        );
+
+        if (medicamentosCompletos.length === 0) {
+          toast({
+            title: "Error de validación",
+            description: "Debe agregar al menos un medicamento completo o desmarcar la opción 'Prescribir medicamentos'",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        const medicamentosIncompletos = formData.medicamentos.filter(med => 
+          med.nombre.trim() !== "" && (!med.dosis.trim() || !med.frecuencia.trim() || !med.duracion.trim())
+        );
+
+        if (medicamentosIncompletos.length > 0) {
+          toast({
+            title: "Error de validación",
+            description: "Todos los medicamentos que tengan nombre deben tener también dosis, frecuencia y duración",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
       const historiaData = {
         pacienteId: paciente.id,
         profesionalId: profesionalId.toString(),
         fecha: `${formData.fecha}T${formData.hora}:00`,
-        motivo: formData.motivoConsulta,
-        detalle: formData.anamnesis || "",
+        motivo: formData.motivo,
+        detalle: formData.detalle || "",
         examenFisico: formData.examenFisico || null,
         signosVitales: formData.signosVitales.presionArterial
           ? {
@@ -190,7 +226,7 @@ export function NuevaConsultaDialog({
               temperatura: formData.signosVitales.temperatura,
               peso: formData.signosVitales.peso,
               altura: formData.signosVitales.altura,
-              oxigenacion: formData.signosVitales.saturacionOxigeno,
+              oxigenacion: formData.signosVitales.oxigenacion,
             }
           : null,
         diagnostico: formData.diagnostico,
@@ -200,16 +236,23 @@ export function NuevaConsultaDialog({
         proximoControl: formData.proximoControl
           ? `${formData.proximoControl}T00:00:00`
           : null,
-        medicamentos: formData.medicamentos.filter(
-          (m) => m.nombre.trim() !== ""
-        ),
-        estudiosComplementarios: formData.estudiosComplementarios
-          .filter((e) => e.trim() !== "")
-          .map((e) => ({
-            tipo: e,
-            resultado: "Pendiente",
-            fecha: formData.fecha,
-          })),
+        medicamentos: prescribirMedicamentos 
+          ? formData.medicamentos.filter((m) => 
+              m.nombre.trim() !== "" && 
+              m.dosis.trim() !== "" && 
+              m.frecuencia.trim() !== "" && 
+              m.duracion.trim() !== ""
+            )
+          : [],
+        estudiosComplementarios: prescribirEstudios
+          ? formData.estudiosComplementarios
+              .filter((e) => e.trim() !== "")
+              .map((e) => ({
+                tipo: e,
+                resultado: "Pendiente",
+                fecha: formData.fecha,
+              }))
+          : [],
       };
 
       const response = await fetch("/api/v2/historia", {
@@ -237,8 +280,8 @@ export function NuevaConsultaDialog({
       setFormData({
         fecha: new Date().toISOString().split("T")[0],
         hora: new Date().toTimeString().slice(0, 5),
-        motivoConsulta: "",
-        anamnesis: "",
+        motivo: "",
+        detalle: "",
         examenFisico: "",
         diagnostico: "",
         tratamiento: "",
@@ -252,7 +295,7 @@ export function NuevaConsultaDialog({
           temperatura: "",
           peso: "",
           altura: "",
-          saturacionOxigeno: "",
+          oxigenacion: "",
         },
         medicamentos: [
           {
@@ -263,6 +306,8 @@ export function NuevaConsultaDialog({
           },
         ],
       });
+      setPrescribirMedicamentos(false);
+      setPrescribirEstudios(false);
     } catch (error: any) {
       console.error("Error creando consulta:", error);
       toast({
@@ -279,27 +324,26 @@ export function NuevaConsultaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Nueva Consulta Médica
+            Nueva Consulta - {paciente.apellido}, {paciente.nombre}
           </DialogTitle>
           <DialogDescription>
-            Paciente: {paciente.apellido}, {paciente.nombre} • DNI:{" "}
-            {paciente.dni}
+            DNI: {paciente.dni} • Registrar nueva consulta médica
           </DialogDescription>
         </DialogHeader>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-6 overflow-y-auto max-h-[70vh] px-1"
+          className="space-y-6 overflow-y-auto flex-1 pr-2"
         >
           {/* Información básica */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
                 Información de la Consulta
               </CardTitle>
             </CardHeader>
@@ -327,166 +371,22 @@ export function NuevaConsultaDialog({
                 </div>
               </div>
               <div>
-                <Label htmlFor="motivoConsulta">Motivo de Consulta *</Label>
+                <Label htmlFor="motivo">Motivo de Consulta *</Label>
                 <Textarea
-                  id="motivoConsulta"
-                  value={formData.motivoConsulta}
-                  onChange={(e) =>
-                    handleInputChange("motivoConsulta", e.target.value)
-                  }
-                  placeholder="Describa el motivo principal de la consulta..."
+                  id="motivo"
+                  value={formData.motivo}
+                  onChange={(e) => handleInputChange("motivo", e.target.value)}
+                  placeholder="Describe el motivo de la consulta..."
                   required
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Signos Vitales */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Heart className="h-5 w-5" />
-                Signos Vitales
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <Label
-                    htmlFor="presionArterial"
-                    className="flex items-center gap-1"
-                  >
-                    <Heart className="h-4 w-4 text-red-500" />
-                    Presión Arterial
-                  </Label>
-                  <Input
-                    id="presionArterial"
-                    value={formData.signosVitales.presionArterial}
-                    onChange={(e) =>
-                      handleSignosVitalesChange(
-                        "presionArterial",
-                        e.target.value
-                      )
-                    }
-                    placeholder="120/80"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="frecuenciaCardiaca"
-                    className="flex items-center gap-1"
-                  >
-                    <Activity className="h-4 w-4 text-blue-500" />
-                    FC (lpm)
-                  </Label>
-                  <Input
-                    id="frecuenciaCardiaca"
-                    type="number"
-                    value={formData.signosVitales.frecuenciaCardiaca}
-                    onChange={(e) =>
-                      handleSignosVitalesChange(
-                        "frecuenciaCardiaca",
-                        e.target.value
-                      )
-                    }
-                    placeholder="72"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="temperatura"
-                    className="flex items-center gap-1"
-                  >
-                    <Thermometer className="h-4 w-4 text-orange-500" />
-                    Temperatura (°C)
-                  </Label>
-                  <Input
-                    id="temperatura"
-                    type="number"
-                    step="0.1"
-                    value={formData.signosVitales.temperatura}
-                    onChange={(e) =>
-                      handleSignosVitalesChange("temperatura", e.target.value)
-                    }
-                    placeholder="36.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="peso" className="flex items-center gap-1">
-                    <Weight className="h-4 w-4 text-green-500" />
-                    Peso (kg)
-                  </Label>
-                  <Input
-                    id="peso"
-                    type="number"
-                    step="0.1"
-                    value={formData.signosVitales.peso}
-                    onChange={(e) =>
-                      handleSignosVitalesChange("peso", e.target.value)
-                    }
-                    placeholder="70.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="altura" className="flex items-center gap-1">
-                    <Ruler className="h-4 w-4 text-purple-500" />
-                    Altura (cm)
-                  </Label>
-                  <Input
-                    id="altura"
-                    type="number"
-                    value={formData.signosVitales.altura}
-                    onChange={(e) =>
-                      handleSignosVitalesChange("altura", e.target.value)
-                    }
-                    placeholder="175"
-                  />
-                </div>
-                <div>
-                  <Label
-                    htmlFor="saturacionOxigeno"
-                    className="flex items-center gap-1"
-                  >
-                    <div className="w-4 h-4 bg-cyan-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs text-white font-bold">O₂</span>
-                    </div>
-                    Saturación O₂ (%)
-                  </Label>
-                  <Input
-                    id="saturacionOxigeno"
-                    type="number"
-                    value={formData.signosVitales.saturacionOxigeno}
-                    onChange={(e) =>
-                      handleSignosVitalesChange(
-                        "saturacionOxigeno",
-                        e.target.value
-                      )
-                    }
-                    placeholder="98"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Evaluación Médica */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Stethoscope className="h-5 w-5" />
-                Evaluación Médica
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="anamnesis">Anamnesis</Label>
+                <Label htmlFor="detalle">Detalle / Anamnesis</Label>
                 <Textarea
-                  id="anamnesis"
-                  value={formData.anamnesis}
-                  onChange={(e) =>
-                    handleInputChange("anamnesis", e.target.value)
-                  }
-                  placeholder="Historia clínica actual, antecedentes relevantes..."
+                  id="detalle"
+                  value={formData.detalle}
+                  onChange={(e) => handleInputChange("detalle", e.target.value)}
+                  placeholder="Información detallada sobre la consulta..."
                   rows={3}
                 />
               </div>
@@ -502,6 +402,154 @@ export function NuevaConsultaDialog({
                   rows={3}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Signos Vitales */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Stethoscope className="h-4 w-4" />
+                Signos Vitales
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="presionArterial" className="flex items-center gap-2">
+                    <Heart className="h-4 w-4 text-red-500" />
+                    Presión Arterial
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="presionArterial"
+                      value={formData.signosVitales.presionArterial}
+                      onChange={(e) =>
+                        handleSignosVitalesChange("presionArterial", e.target.value)
+                      }
+                      placeholder="120/80"
+                      className="pr-12"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                      mmHg
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="frecuenciaCardiaca" className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-blue-500" />
+                    Frecuencia Cardíaca
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="frecuenciaCardiaca"
+                      value={formData.signosVitales.frecuenciaCardiaca}
+                      onChange={(e) =>
+                        handleSignosVitalesChange("frecuenciaCardiaca", e.target.value)
+                      }
+                      placeholder="72"
+                      className="pr-10"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                      lpm
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="temperatura" className="flex items-center gap-2">
+                    <Thermometer className="h-4 w-4 text-orange-500" />
+                    Temperatura
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="temperatura"
+                      value={formData.signosVitales.temperatura}
+                      onChange={(e) =>
+                        handleSignosVitalesChange("temperatura", e.target.value)
+                      }
+                      placeholder="36.5"
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                      °C
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="peso" className="flex items-center gap-2">
+                    <Weight className="h-4 w-4 text-green-500" />
+                    Peso
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="peso"
+                      value={formData.signosVitales.peso}
+                      onChange={(e) =>
+                        handleSignosVitalesChange("peso", e.target.value)
+                      }
+                      placeholder="70"
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                      kg
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="altura" className="flex items-center gap-2">
+                    <Ruler className="h-4 w-4 text-purple-500" />
+                    Altura
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="altura"
+                      value={formData.signosVitales.altura}
+                      onChange={(e) =>
+                        handleSignosVitalesChange("altura", e.target.value)
+                      }
+                      placeholder="175"
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                      cm
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="oxigenacion" className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-cyan-500" />
+                    Oxigenación
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="oxigenacion"
+                      value={formData.signosVitales.oxigenacion}
+                      onChange={(e) =>
+                        handleSignosVitalesChange("oxigenacion", e.target.value)
+                      }
+                      placeholder="98"
+                      className="pr-6"
+                    />
+                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                      %
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Diagnóstico y Tratamiento */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Diagnóstico y Tratamiento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="diagnostico">Diagnóstico *</Label>
                 <Textarea
@@ -510,19 +558,10 @@ export function NuevaConsultaDialog({
                   onChange={(e) =>
                     handleInputChange("diagnostico", e.target.value)
                   }
-                  placeholder="Diagnóstico principal y secundarios..."
+                  placeholder="Diagnóstico médico..."
                   required
                 />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Tratamiento */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Plan de Tratamiento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="tratamiento">Tratamiento</Label>
                 <Textarea
@@ -531,7 +570,7 @@ export function NuevaConsultaDialog({
                   onChange={(e) =>
                     handleInputChange("tratamiento", e.target.value)
                   }
-                  placeholder="Plan terapéutico..."
+                  placeholder="Plan de tratamiento..."
                 />
               </div>
               <div>
@@ -543,6 +582,17 @@ export function NuevaConsultaDialog({
                     handleInputChange("indicaciones", e.target.value)
                   }
                   placeholder="Indicaciones para el paciente..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="observaciones">Observaciones</Label>
+                <Textarea
+                  id="observaciones"
+                  value={formData.observaciones}
+                  onChange={(e) =>
+                    handleInputChange("observaciones", e.target.value)
+                  }
+                  placeholder="Observaciones adicionales..."
                 />
               </div>
               <div>
@@ -561,140 +611,183 @@ export function NuevaConsultaDialog({
 
           {/* Medicamentos */}
           <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">Medicamentos</CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={agregarMedicamento}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
-                </Button>
+            <CardHeader>
+              <div className="flex items-center space-x-3 mb-2">
+                <Checkbox
+                  id="prescribir-medicamentos"
+                  checked={prescribirMedicamentos}
+                  onCheckedChange={(checked) => setPrescribirMedicamentos(checked as boolean)}
+                />
+                <Label htmlFor="prescribir-medicamentos" className="flex items-center gap-2 cursor-pointer">
+                  <Pill className="h-4 w-4" />
+                  Prescribir Medicamentos
+                </Label>
               </div>
+              <CardDescription>
+                {prescribirMedicamentos 
+                  ? "Agregue los medicamentos que desea prescribir al paciente" 
+                  : "Marque la casilla para prescribir medicamentos"}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {formData.medicamentos.map((medicamento, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-4 gap-2 p-3 border rounded"
+            {prescribirMedicamentos && (
+              <CardContent className="space-y-4">
+                {formData.medicamentos.map((medicamento, index) => (
+                  <div key={index} className="border rounded-lg p-4 space-y-3 bg-blue-50/30">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium text-blue-900 flex items-center gap-2">
+                        <Pill className="h-4 w-4" />
+                        Medicamento {index + 1}
+                      </h4>
+                      {formData.medicamentos.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => eliminarMedicamento(index)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="md:col-span-2">
+                        <Label className="flex items-center gap-2">
+                          <span>Nombre del Medicamento *</span>
+                        </Label>
+                        <Input
+                          value={medicamento.nombre}
+                          onChange={(e) => handleMedicamentoChange(index, "nombre", e.target.value)}
+                          placeholder="Ej: Paracetamol, Ibuprofeno..."
+                          className="font-medium"
+                        />
+                      </div>
+                      <div>
+                        <Label>Dosis *</Label>
+                        <Input
+                          value={medicamento.dosis}
+                          onChange={(e) => handleMedicamentoChange(index, "dosis", e.target.value)}
+                          placeholder="Ej: 500mg, 1 comprimido..."
+                        />
+                      </div>
+                      <div>
+                        <Label>Frecuencia *</Label>
+                        <Input
+                          value={medicamento.frecuencia}
+                          onChange={(e) => handleMedicamentoChange(index, "frecuencia", e.target.value)}
+                          placeholder="Ej: Cada 8 horas, 3 veces al día..."
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label>Duración *</Label>
+                        <Input
+                          value={medicamento.duracion}
+                          onChange={(e) => handleMedicamentoChange(index, "duracion", e.target.value)}
+                          placeholder="Ej: 7 días, 2 semanas..."
+                        />
+                      </div>
+                    </div>
+
+                    {/* Vista previa del medicamento */}
+                    {medicamento.nombre && (
+                      <div className="mt-3 p-2 bg-blue-100 rounded-lg border-l-4 border-blue-500">
+                        <p className="text-sm text-blue-900">
+                          <span className="font-semibold">{medicamento.nombre}</span>
+                          {medicamento.dosis && <span className="text-blue-700"> • {medicamento.dosis}</span>}
+                          {medicamento.frecuencia && <span className="text-blue-700"> • {medicamento.frecuencia}</span>}
+                          {medicamento.duracion && <span className="text-blue-700"> • {medicamento.duracion}</span>}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={agregarMedicamento} 
+                  className="w-full border-dashed border-2 hover:bg-blue-50 hover:border-blue-300"
                 >
-                  <Input
-                    placeholder="Medicamento"
-                    value={medicamento.nombre}
-                    onChange={(e) =>
-                      handleMedicamentoChange(index, "nombre", e.target.value)
-                    }
-                  />
-                  <Input
-                    placeholder="Dosis"
-                    value={medicamento.dosis}
-                    onChange={(e) =>
-                      handleMedicamentoChange(index, "dosis", e.target.value)
-                    }
-                  />
-                  <Input
-                    placeholder="Frecuencia"
-                    value={medicamento.frecuencia}
-                    onChange={(e) =>
-                      handleMedicamentoChange(
-                        index,
-                        "frecuencia",
-                        e.target.value
-                      )
-                    }
-                  />
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Duración"
-                      value={medicamento.duracion}
-                      onChange={(e) =>
-                        handleMedicamentoChange(
-                          index,
-                          "duracion",
-                          e.target.value
-                        )
-                      }
-                    />
-                    {formData.medicamentos.length > 1 && (
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Otro Medicamento
+                </Button>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Estudios Complementarios */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-3 mb-2">
+                <Checkbox
+                  id="prescribir-estudios"
+                  checked={prescribirEstudios}
+                  onCheckedChange={(checked) => setPrescribirEstudios(checked as boolean)}
+                />
+                <Label htmlFor="prescribir-estudios" className="flex items-center gap-2 cursor-pointer">
+                  <FileText className="h-4 w-4" />
+                  Solicitar Estudios Complementarios
+                </Label>
+              </div>
+              <CardDescription>
+                {prescribirEstudios 
+                  ? "Agregue los estudios que desea solicitar al paciente" 
+                  : "Marque la casilla para solicitar estudios complementarios"}
+              </CardDescription>
+            </CardHeader>
+            {prescribirEstudios && (
+              <CardContent className="space-y-3">
+                {formData.estudiosComplementarios.map((estudio, index) => (
+                  <div key={index} className="flex gap-2 items-start p-3 bg-green-50/30 rounded-lg border border-green-200">
+                    <div className="flex-1">
+                      <Label className="text-sm font-medium text-green-900">
+                        Estudio {index + 1}
+                      </Label>
+                      <Input
+                        value={estudio}
+                        onChange={(e) => handleEstudioChange(index, e.target.value)}
+                        placeholder="Ej: Radiografía de tórax, Análisis de sangre, Ecografía..."
+                        className="mt-1"
+                      />
+                      {estudio.trim() && (
+                        <div className="mt-2 p-2 bg-green-100 rounded-lg border-l-4 border-green-500">
+                          <p className="text-sm text-green-900">
+                            <span className="font-semibold">{estudio}</span>
+                            <span className="text-green-700"> • Resultado: Pendiente</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {formData.estudiosComplementarios.length > 1 && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => eliminarMedicamento(index)}
+                        onClick={() => eliminarEstudio(index)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-6"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
 
-          {/* Estudios Complementarios */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
-                  Estudios Complementarios
-                </CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={agregarEstudio}
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={agregarEstudio} 
+                  className="w-full border-dashed border-2 hover:bg-green-50 hover:border-green-300"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Agregar
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Otro Estudio
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {formData.estudiosComplementarios.map((estudio, index) => (
-                <div key={index} className="flex gap-2">
-                  <Input
-                    placeholder="Nombre del estudio"
-                    value={estudio}
-                    onChange={(e) => handleEstudioChange(index, e.target.value)}
-                  />
-                  {formData.estudiosComplementarios.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => eliminarEstudio(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Observaciones */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Observaciones</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                id="observaciones"
-                value={formData.observaciones}
-                onChange={(e) =>
-                  handleInputChange("observaciones", e.target.value)
-                }
-                placeholder="Observaciones adicionales..."
-                rows={3}
-              />
-            </CardContent>
+              </CardContent>
+            )}
           </Card>
 
           {/* Botones */}
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-3 pt-4 pb-2">
             <Button
               type="button"
               variant="outline"

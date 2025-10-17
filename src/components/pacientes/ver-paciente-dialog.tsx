@@ -26,7 +26,16 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
   }
 
   const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString("es-AR")
+    if (!fecha) return "No registrada"
+    
+    try {
+      const fechaObj = new Date(fecha)
+      if (isNaN(fechaObj.getTime())) return "Fecha inválida"
+      
+      return fechaObj.toLocaleDateString("es-AR")
+    } catch (error) {
+      return "Fecha inválida"
+    }
   }
 
   return (
@@ -64,7 +73,7 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="flex items-center gap-3">
                   <CreditCard className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   <div>
@@ -79,12 +88,13 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
                     <span className="text-base">{formatearFecha(paciente.fechaNacimiento)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                  <div>
-                    <span className="text-sm font-medium text-muted-foreground block">Teléfono</span>
-                    <span className="text-base">{paciente.telefono}</span>
-                  </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Phone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground block">Teléfono</span>
+                  <span className="text-base">{paciente.telefono}</span>
                 </div>
               </div>
 
@@ -118,11 +128,11 @@ export function VerPacienteDialog({ open, onOpenChange, paciente }: VerPacienteD
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <span className="text-sm font-medium text-muted-foreground block mb-1">Obra Social</span>
-                  <p className="text-base">{paciente.obraSocial}</p>
+                  <p className="text-base">{paciente.obraSocial || "No registrada"}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-muted-foreground block mb-1">Número de Afiliado</span>
-                  <p className="text-base">{paciente.numeroAfiliado}</p>
+                  <p className="text-base">{paciente.numeroAfiliado || "No registrado"}</p>
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />

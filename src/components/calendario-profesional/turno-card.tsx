@@ -1,50 +1,68 @@
-"use client"
+"use client";
 
-import { MouseEvent } from "react"
+import { MouseEvent } from "react";
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
-import { Calendar, CheckCircle, Clock, MoreVertical, Stethoscope, User, UserX, XCircle } from "lucide-react"
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  MoreVertical,
+  Stethoscope,
+  User,
+  UserX,
+  XCircle,
+} from "lucide-react";
 
-type CancelacionOrigen = "PACIENTE" | "PROFESIONAL"
+type CancelacionOrigen = "PACIENTE" | "PROFESIONAL";
 
 interface Turno {
-  id: string
-  hora: string
+  id: string;
+  hora: string;
   paciente: {
-    nombre: string
-    apellido: string
-    dni: string
-    telefono: string
-  }
+    nombre: string;
+    apellido: string;
+    dni: string;
+    telefono: string;
+  };
   profesional: {
-    nombre: string
-    apellido: string
-    especialidad: string
-  }
-  estado: "PROGRAMADO" | "EN_SALA_ESPERA" | "ASISTIO" | "NO_ASISTIO" | "CANCELADO"
-  motivo: string
-  duracion: number
-  notas?: string
+    nombre: string;
+    apellido: string;
+    especialidad: string;
+  };
+  estado:
+    | "PROGRAMADO"
+    | "EN_SALA_ESPERA"
+    | "ASISTIO"
+    | "NO_ASISTIO"
+    | "CANCELADO";
+  motivo: string;
+  duracion: number;
+  notas?: string;
 }
 
 interface EstadoChangeOptions {
-  solicitadoPor?: CancelacionOrigen
+  solicitadoPor?: CancelacionOrigen;
 }
 
 interface TurnoCardProps {
-  turno: Turno
-  onClick: () => void
-  onEstadoChange: (turnoId: string, nuevoEstado: Turno["estado"], opciones?: EstadoChangeOptions) => void
-  puedeModificar?: boolean
+  turno: Turno;
+  onClick: () => void;
+  onEstadoChange: (
+    turnoId: string,
+    nuevoEstado: Turno["estado"],
+    opciones?: EstadoChangeOptions
+  ) => void;
+  puedeModificar?: boolean;
 }
 
 const estadoConfig = {
@@ -78,22 +96,34 @@ const estadoConfig = {
     icon: XCircle,
     label: "Cancelado",
   },
-} as const
+} as const;
 
-export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = true }: TurnoCardProps) {
-  const config = estadoConfig[turno.estado]
-  const Icon = config.icon
+export function TurnoCard({
+  turno,
+  onClick,
+  onEstadoChange,
+  puedeModificar = true,
+}: TurnoCardProps) {
+  const config = estadoConfig[turno.estado];
+  const Icon = config.icon;
 
-  const handleEstadoClick = (event: MouseEvent, nuevoEstado: Turno["estado"]) => {
-    event.stopPropagation()
+  const handleEstadoClick = (
+    event: MouseEvent,
+    nuevoEstado: Turno["estado"]
+  ) => {
+    event.stopPropagation();
     if (puedeModificar) {
-      onEstadoChange(turno.id, nuevoEstado)
+      onEstadoChange(turno.id, nuevoEstado);
     }
-  }
+  };
 
   return (
     <Card
-      className={cn("p-4 cursor-pointer transition-all duration-200 border-2", config.color, "hover:shadow-md")}
+      className={cn(
+        "p-4 cursor-pointer transition-all duration-200 border-2",
+        config.color,
+        "hover:shadow-md"
+      )}
       onClick={onClick}
     >
       <div className="space-y-3">
@@ -103,48 +133,6 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
             <Icon className="h-3 w-3" />
             {config.label}
           </Badge>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(event) => event.stopPropagation()}>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={!puedeModificar}>
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            {puedeModificar ? (
-              <DropdownMenuContent align="end">
-                {turno.estado !== "PROGRAMADO" ? (
-                  <DropdownMenuItem onClick={(event) => handleEstadoClick(event, "PROGRAMADO")}>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Programado
-                  </DropdownMenuItem>
-                ) : null}
-                {turno.estado !== "EN_SALA_ESPERA" ? (
-                  <DropdownMenuItem onClick={(event) => handleEstadoClick(event, "EN_SALA_ESPERA")}>
-                    <Clock className="mr-2 h-4 w-4" />
-                    En Sala de Espera
-                  </DropdownMenuItem>
-                ) : null}
-                {turno.estado !== "ASISTIO" ? (
-                  <DropdownMenuItem onClick={(event) => handleEstadoClick(event, "ASISTIO")}>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Asistió
-                  </DropdownMenuItem>
-                ) : null}
-                {turno.estado !== "NO_ASISTIO" ? (
-                  <DropdownMenuItem onClick={(event) => handleEstadoClick(event, "NO_ASISTIO")}>
-                    <UserX className="mr-2 h-4 w-4" />
-                    No Asistió
-                  </DropdownMenuItem>
-                ) : null}
-                {turno.estado !== "CANCELADO" ? (
-                  <DropdownMenuItem onClick={(event) => handleEstadoClick(event, "CANCELADO")}>
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Cancelado
-                  </DropdownMenuItem>
-                ) : null}
-              </DropdownMenuContent>
-            ) : null}
-          </DropdownMenu>
         </div>
 
         {/* Paciente */}
@@ -155,7 +143,9 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
               <p className="truncate text-sm font-semibold">
                 {turno.paciente.apellido}, {turno.paciente.nombre}
               </p>
-              <p className="text-xs text-muted-foreground">DNI: {turno.paciente.dni}</p>
+              <p className="text-xs text-muted-foreground">
+                DNI: {turno.paciente.dni}
+              </p>
             </div>
           </div>
         </div>
@@ -168,14 +158,18 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
               <p className="truncate text-sm font-medium">
                 {turno.profesional.apellido}, {turno.profesional.nombre}
               </p>
-              <p className="text-xs text-muted-foreground">{turno.profesional.especialidad}</p>
+              <p className="text-xs text-muted-foreground">
+                {turno.profesional.especialidad}
+              </p>
             </div>
           </div>
         </div>
 
         {/* Motivo */}
         <div className="border-t border-current/10 pt-2">
-          <p className="line-clamp-2 text-xs text-muted-foreground">{turno.motivo}</p>
+          <p className="line-clamp-2 text-xs text-muted-foreground">
+            {turno.motivo}
+          </p>
         </div>
 
         {/* Duración */}
@@ -185,5 +179,5 @@ export function TurnoCard({ turno, onClick, onEstadoChange, puedeModificar = tru
         </div>
       </div>
     </Card>
-  )
+  );
 }

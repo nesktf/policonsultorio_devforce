@@ -36,14 +36,14 @@ export async function GET(request: Request) {
 
     // Aplico los filtros
     if (especialidad && especialidad.trim() !== '') {
-      profesionales = profesionales.filter(prof => 
+      profesionales = profesionales.filter((prof: any) => 
         prof.especialidad.toLowerCase() === especialidad.toLowerCase()
       );
     }
 
     if (nombre && nombre.trim() !== '') {
       const termino = nombre.toLowerCase().trim();
-      profesionales = profesionales.filter(prof => 
+      profesionales = profesionales.filter((prof: any) => 
         prof.nombre.toLowerCase().includes(termino) || 
         prof.apellido.toLowerCase().includes(termino) ||
         `${prof.nombre} ${prof.apellido}`.toLowerCase().includes(termino)
@@ -52,12 +52,19 @@ export async function GET(request: Request) {
 
     if (obraSocialId && obraSocialId !== '0') {
       const obraSocialIdNum = parseInt(obraSocialId);
-      profesionales = profesionales.filter(prof => 
-        prof.obras_sociales?.some(os => os.id_obra_social === obraSocialIdNum)
+      profesionales = profesionales.filter((prof: any) => 
+        prof.obras_sociales?.some((os: any) => os.id_obra_social === obraSocialIdNum)
       );
     }
 
-    return NextResponse.json(profesionales, {
+    return NextResponse.json({
+      profesionales: profesionales.map((p: any) => ({
+        id: p.id,
+        nombre: p.nombre,
+        apellido: p.apellido,
+        especialidad: p.especialidad
+      }))
+    }, {
       headers: {
         'Cache-Control': 'no-store',
       },

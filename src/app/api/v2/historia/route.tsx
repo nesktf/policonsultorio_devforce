@@ -33,6 +33,7 @@ type SignosVitalesAPIData = {
   temperatura: string, // double, ºc
   peso: string, // double, kg
   altura: string, // double, cm
+  oxigenacion: string, // double, %
 }
 
 type HistoriaAPIData = {
@@ -107,7 +108,8 @@ export async function GET(req: NextRequest) {
         frecuenciaCardiaca: hist.signos_vitales.frecuencia,
         temperatura: hist.signos_vitales.temperatura,
         peso: hist.signos_vitales.peso,
-        altura: hist.signos_vitales.altura
+        altura: hist.signos_vitales.altura,
+        oxigenacion: hist.signos_vitales.oxigenacion
       } : null,
       diagnostico: hist.diagnostico,
       tratamiento: hist.tratamiento ? hist.tratamiento : "",
@@ -220,9 +222,6 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
   }
   const diagnostico = data.diagnostico as string;
 
-  if (!data.proximoControl) {
-    return onErr("proximoControl");
-  }
   const proximo_control = data.proximoControl ? new Date(data.proximoControl as string) : null;
 
   const tratamiento = data.tratamiento ? data.tratamiento as string : null;
@@ -232,7 +231,7 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
   let medicamentos: Array<MedicamentoDBData> = [];
   if (data.medicamentos) {
     try {
-      if (Array.isArray(data.medicamentos)) {
+      if (!Array.isArray(data.medicamentos)) {
         return onErr(`medicamentos`);
       }
       medicamentos = (data.medicamentos as Array<any>).map((med: any) => {
@@ -258,11 +257,10 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
   let estudios: Array<EstudioDBData> = []
   if (data.estudiosComplementarios) {
     try {
-      if (Array.isArray(data.estudios)) {
-        return onErr(`medicamentos`);
+      if (!Array.isArray(data.estudiosComplementarios)) {
+        return onErr(`estudiosComplementarios`);
       }
-      estudios = (data.estudios as Array<any>).map((est: any) => {
-        if (!est.tipo) {
+        estudios = (data.estudiosComplementarios as Array<any>).map((est: any) => {        if (!est.tipo) {
           throw new Error("tipo");
         }
         if (!est.resultado) {

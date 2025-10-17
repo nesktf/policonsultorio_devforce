@@ -91,15 +91,40 @@ export default function ReportesPage() {
     },
     {
       id: "turnos-profesional",
-      titulo: "Detalles por obra social",
-      descripcion: "Algunas estadisticas y datos asociados a profesionales, pacientes y obras sociales",
+      titulo: "Desempeño por Profesional",
+      descripcion: "Análisis de turnos atendidos, cancelaciones y ausencias por profesional",
       icon: Activity,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       borderColor: "border-purple-200",
       disponible: true,
+      href: "/reportes/turnos-profesional",
+      stats: ["Asistencia", "Cancelaciones", "Productividad"]
+    },
+    {
+      id: "obras-sociales",
+      titulo: "Detalles por Obra Social",
+      descripcion: "Algunas estadísticas y datos asociados a profesionales, pacientes y obras sociales",
+      icon: Users,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      disponible: true,
       href: "/reportes/obras-sociales",
-      stats: ["Ranking", "Tasas", "Comparativas"]
+      stats: ["Estadísticas", "Tasas", "Comparativas"]
+    },
+    {
+      id: "agenda-diaria",
+      titulo: "Agenda Diaria",
+      descripcion: "Turnos programados por fecha y especialidad para coordinación de mesa de entrada",
+      icon: Calendar,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-50",
+      borderColor: "border-indigo-200",
+      disponible: true,
+      href: "/reportes/agenda-diaria",
+      // stats: ["Por fecha", "Por especialidad", "Estados"],
+      stats: ["Ranking", "Tasas", "Comparativas"],
     },
     {
       id: "turnos-cancelados",
