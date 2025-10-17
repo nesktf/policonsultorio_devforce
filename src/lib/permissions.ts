@@ -95,7 +95,7 @@ export const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     // Acceso completo a todo
     canViewAllTurnos: true,
     canViewOwnTurnos: true,
-    canCreateTurnos: true,
+    canCreateTurnos: false,
     canEditTurnos: true,
     canCancelTurnos: true,
     canChangeEstadoTurno: true,

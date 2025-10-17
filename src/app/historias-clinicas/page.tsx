@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/context/auth-context"
-import { NuevaConsultaDialog } from "@/components/pacientes/nueva-consulta-dialog"
 import { AntecedentesFamiliaresCard } from "@/components/pacientes/antecedentes-familiares-card"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,7 +17,6 @@ import {
   Pill,
   Activity,
   AlertCircle,
-  Plus,
   ArrowLeft,
   Clock,
   Heart,
@@ -28,7 +26,7 @@ import {
   UserCheck,
   Loader2,
   Search,
-  Filter,
+  BeakerIcon,
 } from "lucide-react"
 import Link from "next/link"
 import { Role } from "@/generated/prisma"
@@ -78,10 +76,19 @@ export default function HistoriasClinicasPage() {
   const [historias, setHistorias] = useState<HistoriaData[]>([])
   const [paciente, setPaciente] = useState<PacienteData | null>(null)
   const [historiaClinica, setHistoriaClinica] = useState<HistoriaData[]>([])
-  const [showNuevaConsulta, setShowNuevaConsulta] = useState(false)
   const [vistaLista, setVistaLista] = useState(!pacienteId)
   const [pacientesFiltrados, setPacientesFiltrados] = useState<PacienteData[]>([])
   const [searchTerm, setSearchTerm] = useState<string>("");
+
+  // Función para formatear hora local
+  const formatearHoraLocal = (fechaISO: string) => {
+    const fecha = new Date(fechaISO)
+    return fecha.toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    })
+  }
 
   // Obtener el ID del profesional del usuario actual
   const getProfesionalId = async () => {
@@ -102,20 +109,16 @@ export default function HistoriasClinicasPage() {
   // Obtener pacientes con turnos del profesional
   const fetchPacientesConTurnos = async (profesionalId: number) => {
     try {
-      // Obtener turnos del profesional
       const turnosRes = await fetch(`/api/v2/turnos?id_profesional=${profesionalId}`)
       if (!turnosRes.ok) throw new Error("Error al obtener turnos")
       const turnosData = await turnosRes.json()
       
-      // Obtener IDs únicos de pacientes con turnos
       const pacientesIds = [...new Set(turnosData.turnos.map((t: any) => t.id_paciente))]
       
-      // Obtener todos los pacientes
       const pacientesRes = await fetch("/api/v2/historia/paciente")
       if (!pacientesRes.ok) throw new Error("Error al obtener pacientes")
       const pacientesData = await pacientesRes.json()
       
-      // Filtrar solo los pacientes que tienen turnos con este profesional
       const pacientesConTurnos = pacientesData.pacientes.filter((p: PacienteData) => 
         pacientesIds.includes(p.id)
       )
@@ -217,18 +220,9 @@ export default function HistoriasClinicasPage() {
 
       setPaciente(pacienteEncontrado)
 
-      // Filtrar historias del paciente
       let historiasDelPaciente = historias.filter(
         (h) => h.pacienteId === pacienteId
       )
-
-      // // Si es profesional, filtrar solo sus historias
-      // if (user?.rol === Role.PROFESIONAL && profesionalId) {
-      //   const profesionalIdStr = profesionalId.toString()
-      //   historiasDelPaciente = historiasDelPaciente.filter(
-      //     (h) => h.profesionalId === profesionalIdStr
-      //   )
-      // }
 
       setHistoriaClinica(
         historiasDelPaciente.sort(
@@ -275,19 +269,6 @@ export default function HistoriasClinicasPage() {
 
   const formatearFechaCorta = (fecha: string) => {
     return new Date(fecha).toLocaleDateString("es-AR")
-  }
-
-  const handleNuevaConsulta = async (nuevaConsulta: any) => {
-    // Recargar historias después de crear la consulta
-    try {
-      if (profesionalId) {
-        await fetchHistorias(profesionalId)
-      } else {
-        await fetchHistorias()
-      }
-    } catch (error) {
-      console.error("Error recargando historias:", error)
-    }
   }
 
   if (loading) {
@@ -504,12 +485,6 @@ export default function HistoriasClinicasPage() {
               </p>
             </div>
           </div>
-          {user.rol === Role.PROFESIONAL && (
-            <Button onClick={() => setShowNuevaConsulta(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nueva Consulta
-            </Button>
-          )}
         </div>
 
         <Card>
@@ -627,12 +602,6 @@ export default function HistoriasClinicasPage() {
                     ? "No has realizado consultas con este paciente"
                     : "No hay consultas registradas"}
                 </p>
-                {user.rol === Role.PROFESIONAL && (
-                  <Button onClick={() => setShowNuevaConsulta(true)} className="mt-4 gap-2" variant="outline">
-                    <Plus className="h-4 w-4" />
-                    Agregar Primera Consulta
-                  </Button>
-                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -652,7 +621,7 @@ export default function HistoriasClinicasPage() {
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              {consulta.hora}
+                              {formatearHoraLocal(consulta.fecha)}
                             </div>
                             <div className="flex items-center gap-1">
                               <Stethoscope className="h-3 w-3" />
@@ -684,22 +653,30 @@ export default function HistoriasClinicasPage() {
                           <div>
                             <h4 className="font-medium text-sm text-muted-foreground mb-2">SIGNOS VITALES</h4>
                             <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div className="flex items-center gap-1">
-                                <Heart className="h-3 w-3 text-red-500" />
-                                <span>PA: {consulta.signosVitales.presionArterial} mmHg</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Activity className="h-3 w-3 text-blue-500" />
-                                <span>FC: {consulta.signosVitales.frecuenciaCardiaca} lpm</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Thermometer className="h-3 w-3 text-orange-500" />
-                                <span>T°: {consulta.signosVitales.temperatura}°C</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Weight className="h-3 w-3 text-green-500" />
-                                <span>Peso: {consulta.signosVitales.peso} kg</span>
-                              </div>
+                              {consulta.signosVitales.presionArterial && (
+                                <div className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3 text-red-500" />
+                                  <span>PA: {consulta.signosVitales.presionArterial}</span>
+                                </div>
+                              )}
+                              {consulta.signosVitales.frecuenciaCardiaca && (
+                                <div className="flex items-center gap-1">
+                                  <Activity className="h-3 w-3 text-blue-500" />
+                                  <span>FC: {consulta.signosVitales.frecuenciaCardiaca}</span>
+                                </div>
+                              )}
+                              {consulta.signosVitales.temperatura && (
+                                <div className="flex items-center gap-1">
+                                  <Thermometer className="h-3 w-3 text-orange-500" />
+                                  <span>T°: {consulta.signosVitales.temperatura}</span>
+                                </div>
+                              )}
+                              {consulta.signosVitales.peso && (
+                                <div className="flex items-center gap-1">
+                                  <Weight className="h-3 w-3 text-green-500" />
+                                  <span>Peso: {consulta.signosVitales.peso}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -715,6 +692,44 @@ export default function HistoriasClinicasPage() {
                           <div>
                             <h4 className="font-medium text-sm text-muted-foreground mb-2">TRATAMIENTO</h4>
                             <p className="text-sm">{consulta.tratamiento}</p>
+                          </div>
+                        )}
+
+                        {consulta.medicamentos && consulta.medicamentos.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                              <Pill className="h-4 w-4" />
+                              MEDICAMENTOS PRESCRITOS
+                            </h4>
+                            <div className="space-y-2">
+                              {consulta.medicamentos.map((med: any, idx: number) => (
+                                <div key={idx} className="text-sm p-2 bg-blue-50 rounded border-l-2 border-blue-500">
+                                  <p className="font-medium">{med.nombre}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {med.dosis} • {med.frecuencia} • {med.duracion}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {consulta.estudiosComplementarios && consulta.estudiosComplementarios.length > 0 && (
+                          <div>
+                            <h4 className="font-medium text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                              <BeakerIcon className="h-4 w-4" />
+                              ESTUDIOS COMPLEMENTARIOS
+                            </h4>
+                            <div className="space-y-2">
+                              {consulta.estudiosComplementarios.map((estudio: any, idx: number) => (
+                                <div key={idx} className="text-sm p-2 bg-green-50 rounded border-l-2 border-green-500">
+                                  <p className="font-medium">{estudio.tipo}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Resultado: {estudio.resultado}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 
@@ -748,22 +763,6 @@ export default function HistoriasClinicasPage() {
             )}
           </CardContent>
         </Card>
-
-        {user.rol === Role.PROFESIONAL && paciente && profesionalId && (
-          <NuevaConsultaDialog
-            open={showNuevaConsulta}
-            onOpenChange={setShowNuevaConsulta}
-            paciente={{
-              id: paciente.id.toString(),
-              nombre: paciente.nombre,
-              apellido: paciente.apellido,
-              dni: paciente.dni,
-              fechaNacimiento: paciente.fechaNacimiento,
-            }}
-            profesionalId={profesionalId}
-            onConsultaCreada={handleNuevaConsulta}
-          />
-        )}
       </div>
     </MainLayout>
   )

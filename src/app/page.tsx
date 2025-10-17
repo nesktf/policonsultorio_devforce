@@ -16,6 +16,7 @@ import {
   ArrowRight,
   Clock,
   Stethoscope,
+  Shield
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -44,6 +45,14 @@ export default function HomePage() {
           href: "/pacientes",
           color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
           iconColor: "text-blue-600",
+        },
+        {
+          icon: Shield,
+          title: "Obras Sociales",
+          description: "Gestionar obras sociales admitidas",
+          href: "/obra-social",
+          color: "bg-pink-50 border-pink-200 hover:bg-pink-100",
+          iconColor: "text-pink-600",
         },
         {
           icon: Calendar,
@@ -83,14 +92,6 @@ export default function HomePage() {
           iconColor: "text-purple-600",
         },
         {
-          icon: Users,
-          title: "Pacientes",
-          description: "Ver información de mis pacientes",
-          href: "/pacientes",
-          color: "bg-blue-50 border-blue-200 hover:bg-blue-100",
-          iconColor: "text-blue-600",
-        },
-        {
           icon: FileText,
           title: "Historias Clínicas",
           description: "Acceder a historias clínicas",
@@ -126,6 +127,22 @@ export default function HomePage() {
           href: "/profesionales",
           color: "bg-teal-50 border-teal-200 hover:bg-teal-100",
           iconColor: "text-teal-600",
+        },
+        {
+          icon: Shield,
+          title: "Obras Sociales",
+          description: "Gestionar obras sociales admitidas",
+          href: "/obra-social",
+          color: "bg-pink-50 border-pink-200 hover:bg-pink-100",
+          iconColor: "text-pink-600",
+        },
+        {
+          icon: Calendar,
+          title: "Turnos",
+          description: "Administrar turnos y citas",
+          href: "/turnos",
+          color: "bg-purple-50 border-purple-200 hover:bg-purple-100",
+          iconColor: "text-purple-600",
         },
         {
           icon: CalendarDays,
@@ -274,7 +291,7 @@ export default function HomePage() {
         {/* Quick Stats - Solo para Gerente */}
         {user?.rol === "GERENTE" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-4 bg-blue-50 border-blue-200">
+            <Card className="p-4 border-blue-200">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Pacientes Activos</p>
@@ -284,7 +301,7 @@ export default function HomePage() {
               </div>
             </Card>
             
-            <Card className="p-4 bg-green-50 border-green-200">
+            <Card className="p-4 border-green-200">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Turnos Hoy</p>
@@ -294,7 +311,7 @@ export default function HomePage() {
               </div>
             </Card>
             
-            <Card className="p-4 bg-teal-50 border-teal-200">
+            <Card className="p-4 border-teal-200">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Profesionales</p>

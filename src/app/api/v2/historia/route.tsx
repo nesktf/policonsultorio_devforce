@@ -28,23 +28,22 @@ type EstudioAPIData = {
 }
 
 type SignosVitalesAPIData = {
-  presionArterial: string, // int XX/YYY
-  frecuenciaCardiaca: string, // int
-  temperatura: string, // double, ºc
-  peso: string, // double, kg
-  altura: string, // double, cm
-  oxigenacion: string, // double, %
+  presionArterial: string,
+  frecuenciaCardiaca: string,
+  temperatura: string,
+  peso: string,
+  altura: string,
+  oxigenacion: string,
 }
 
 type HistoriaAPIData = {
-  id: string, // int
-  pacienteId: string, // int
-  profesionalId: string, // int
-  fecha: string, // YYYY-MM-DD
-  hora: string, // HH:MM
+  id: string,
+  pacienteId: string,
+  profesionalId: string,
+  fecha: string,
+  hora: string,
   profesional: string
   especialidad: string,
-
   motivo: string | null,
   anamnesis: string,
   examenFisico: string,
@@ -92,15 +91,26 @@ export async function GET(req: NextRequest) {
 
   const toApiData = (data: DBData<HistoriaDBData>): HistoriaAPIData => {
     const hist = data.data;
+    
+    // Ajustar la fecha UTC a hora local de Argentina (GMT-3)
+    const fechaLocal = new Date(hist.fecha.getTime() - (3 * 60 * 60 * 1000));
+    
+    // Formatear hora local
+    const formatHoraLocal = (fecha: Date) => {
+      const hours = fecha.getUTCHours().toString().padStart(2, '0');
+      const minutes = fecha.getUTCMinutes().toString().padStart(2, '0');
+      return `${hours}:${minutes}`;
+    };
+
     return {
       id: data.id.toString(), 
       pacienteId: hist.paciente.id.toString(),
       profesionalId: hist.profesional.id.toString(),
-      fecha: hist.fecha.toISOString(),
-      hora: hist.fecha.toTimeString(),
+      fecha: fechaLocal.toISOString(),
+      hora: formatHoraLocal(fechaLocal),
       profesional: `${hist.profesional.nombre} ${hist.profesional.apellido}`,
       especialidad: hist.profesional.especialidad,
-      motivo: hist.profesional.especialidad,
+      motivo: hist.motivo,
       anamnesis: hist.detalle,
       examenFisico: hist.examen_fisico ? hist.examen_fisico : "",
       signosVitales: hist.signos_vitales ? {
@@ -113,8 +123,8 @@ export async function GET(req: NextRequest) {
       } : null,
       diagnostico: hist.diagnostico,
       tratamiento: hist.tratamiento ? hist.tratamiento : "",
-      medicamentos: hist.medicamentos.map((med) => (med as MedicamentoAPIData)),
-      estudiosComplementarios: hist.estudios.map((est) => (est as EstudioAPIData)),
+      medicamentos: hist.medicamentos,
+      estudiosComplementarios: hist.estudios,
       indicaciones: hist.indicaciones ? hist.indicaciones : "",
       proximoControl: hist.proximo_control ? hist.proximo_control.toISOString() : "",
       observaciones: hist.observaciones ? hist.observaciones : "",
@@ -167,7 +177,7 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
 
   const id_paciente = parseId(data.pacienteId);
   if (!id_paciente.hasValue()) {
-    return onErr("profesionalId");
+    return onErr("pacienteId");
   }
   const id_profesional = parseId(data.profesionalId);
   if (!id_profesional.hasValue()) {
@@ -260,7 +270,8 @@ function validateInputData(data: any): {parsed: HistoriaClinicaDBInput | null, w
       if (!Array.isArray(data.estudiosComplementarios)) {
         return onErr(`estudiosComplementarios`);
       }
-        estudios = (data.estudiosComplementarios as Array<any>).map((est: any) => {        if (!est.tipo) {
+      estudios = (data.estudiosComplementarios as Array<any>).map((est: any) => {
+        if (!est.tipo) {
           throw new Error("tipo");
         }
         if (!est.resultado) {

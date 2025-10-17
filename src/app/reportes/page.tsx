@@ -165,8 +165,8 @@ export default function ReportesPage() {
   ]
 
   const reportesPorRol: Record<"GERENTE" | "MESA_ENTRADA" | "PROFESIONAL", string[]> = {
-    GERENTE: reportes.map((reporte) => reporte.id),
-    MESA_ENTRADA: ["pacientes-atendidos", "turnos-cancelados"],
+    GERENTE: ["turnos-especialidad", "nuevos-pacientes", "turnos-profesional", "obras-sociales" ,],
+    MESA_ENTRADA: ["pacientes-atendidos", "turnos-cancelados", "turnos-especialidad"],
     PROFESIONAL: ["paciente-por-periodo"],
   }
 

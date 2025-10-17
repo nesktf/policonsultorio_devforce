@@ -115,31 +115,50 @@ export function NuevoTurnoDialog({
     }
   }, [open]);
 
+  // Filtrar profesionales por especialidad
+  const profesionalesFiltrados = useMemo(() => {
+    if (!especialidad || especialidad === "none") {
+      return profesionales;
+    }
+    return profesionales.filter((prof) => prof.especialidad === especialidad);
+  }, [especialidad, profesionales]);
+
+  // Cuando cambia la especialidad, resetear el profesional si no está en la lista filtrada
   useEffect(() => {
-    if (especialidad) {
-      const profesionalesEspecialidad = profesionales.filter(
-        (prof) => prof.especialidad === especialidad
+    if (especialidad === "none") {
+      setProfesionalId("none");
+      return;
+    }
+
+    const profesionalesDeEspecialidad = profesionales.filter(
+      (prof) => prof.especialidad === especialidad
+    );
+
+    if (profesionalesDeEspecialidad.length > 0) {
+      // Si el profesional actual no está en la especialidad, seleccionar el primero
+      const profesionalActualValido = profesionalesDeEspecialidad.some(
+        (prof) => prof.id === profesionalId
       );
-      if (profesionalesEspecialidad.length > 0) {
-        if (
-          !profesionalesEspecialidad.some((prof) => prof.id === profesionalId)
-        ) {
-          setProfesionalId(profesionalesEspecialidad[0].id);
-        }
-      } else {
-        setProfesionalId("none");
+      
+      if (!profesionalActualValido) {
+        setProfesionalId(profesionalesDeEspecialidad[0].id);
       }
+    } else {
+      setProfesionalId("none");
     }
   }, [especialidad, profesionales, profesionalId]);
 
+  // Cuando cambia el profesional, ajustar la especialidad si es necesario
   useEffect(() => {
     if (!profesionalId || profesionalId === "none") return;
+    
     const prof = profesionales.find((p) => p.id === profesionalId);
     if (prof && prof.especialidad && prof.especialidad !== especialidad) {
       setEspecialidad(prof.especialidad);
     }
   }, [profesionales, profesionalId, especialidad]);
 
+  // Cargar horarios disponibles
   useEffect(() => {
     if (profesionalId === "none" || !fechaIso || !duracion) {
       setHorariosDisponibles([]);
@@ -195,6 +214,7 @@ export function NuevoTurnoDialog({
     };
   }, [profesionalId, fechaIso, duracion]);
 
+  // Buscar pacientes
   useEffect(() => {
     if (busquedaPaciente.trim().length < 3) {
       setPacientesResultados([]);
@@ -233,13 +253,6 @@ export function NuevoTurnoDialog({
     return () => controller.abort();
   }, [busquedaPaciente]);
 
-  const profesionalesFiltrados = useMemo(() => {
-    if (!especialidad || especialidad === "none") {
-      return profesionales;
-    }
-    return profesionales.filter((prof) => prof.especialidad === especialidad);
-  }, [especialidad, profesionales]);
-
   const pacienteLabel = pacienteSeleccionado
     ? `${pacienteSeleccionado.apellido}, ${pacienteSeleccionado.nombre} (DNI ${pacienteSeleccionado.dni})`
     : "";
@@ -260,9 +273,6 @@ export function NuevoTurnoDialog({
       const fechaUTC = new Date(
         fechaLocal.getTime() - fechaLocal.getTimezoneOffset() * 60000
       );
-      console.log("fechaIso:", fechaIso);
-      console.log("hora:", hora);
-      console.log("fechaCompletaStr:", fechaUTC);
 
       const response = await fetch("/api/v2/turnos", {
         method: "POST",
@@ -272,7 +282,7 @@ export function NuevoTurnoDialog({
         body: JSON.stringify({
           pacienteId: pacienteSeleccionado.id,
           profesionalId: Number(profesionalId),
-          fecha: fechaUTC.toISOString(), // ISO UTC format
+          fecha: fechaUTC.toISOString(),
           durationMinutes: Number(duracion),
           motivo: motivo.trim(),
           detalle: notas.trim() || motivo.trim(),
@@ -394,7 +404,7 @@ export function NuevoTurnoDialog({
                   </SelectItem>
                   {profesionalesFiltrados.length === 0 ? (
                     <SelectItem value="sin-profesionales" disabled>
-                      No hay profesionales para la especialidad
+                      No hay profesionales para esta especialidad
                     </SelectItem>
                   ) : (
                     profesionalesFiltrados.map((prof) => (
