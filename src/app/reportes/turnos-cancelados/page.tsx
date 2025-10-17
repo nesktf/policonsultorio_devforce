@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react"
+import { ChangeEvent, useCallback, useEffect, useMemo, useState, useId } from "react"
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { MainLayout } from "@/components/layout/main-layout"
@@ -109,6 +109,7 @@ export default function ReporteTurnosCancelados() {
   const [page, setPage] = useState(1)
   const [isExporting, setIsExporting] = useState(false)
   const pageSize = 10
+  const chartGradientId = useId()
 
   const numberFormatter = useMemo(
     () =>
@@ -280,7 +281,7 @@ export default function ReporteTurnosCancelados() {
           ? `Sobre ${numberFormatter.format(totalTurnos)} turnos`
           : "Sin datos en el período",
         icon: XCircle,
-        gradient: "from-rose-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-rose-500/15 text-rose-600",
         valueClass: "text-rose-600",
       },
@@ -290,7 +291,7 @@ export default function ReporteTurnosCancelados() {
         value: reporte ? ratioFormatter.format(tasa) : "—",
         helper: "del total de turnos",
         icon: TrendingDown,
-        gradient: "from-amber-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-amber-500/15 text-amber-600",
         valueClass: "text-amber-600",
       },
@@ -300,22 +301,11 @@ export default function ReporteTurnosCancelados() {
         value: reporte ? promedioMensual.toFixed(1) : "—",
         helper: "últimos 6 meses",
         icon: Calendar,
-        gradient: "from-sky-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-sky-500/15 text-sky-600",
         valueClass: "text-sky-700",
       },
-      {
-        key: "variacion",
-        label: "Variación vs. período anterior",
-        value: reporte ? `${variacion >= 0 ? "+" : ""}${variacion.toFixed(1)}%` : "—",
-        helper: reporte
-          ? `${diferencia >= 0 ? "+" : ""}${numberFormatter.format(diferencia)} cancelaciones`
-          : "Sin datos comparativos",
-        icon: variacionStyles.icon,
-        gradient: variacionStyles.gradient,
-        iconBg: variacionStyles.iconBg,
-        valueClass: variacionStyles.valueClass,
-      },
+      
     ]
   }, [numberFormatter, ratioFormatter, reporte])
 
@@ -615,10 +605,33 @@ useEffect(() => {
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={origenesChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} interval={0} angle={-20} textAnchor="end" height={70} />
-                  <YAxis />
+                <BarChart
+                  data={origenesChartData}
+                  margin={{ top: 10, right: 24, left: 0, bottom: 0 }}
+                  barCategoryGap="22%"
+                >
+                  <defs>
+                    <linearGradient id={chartGradientId} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#FB7185" stopOpacity={0.95} />
+                      <stop offset="100%" stopColor="#F87171" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#F1BAC0" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: "#7F1D1D" }}
+                    interval={0}
+                    angle={-18}
+                    textAnchor="end"
+                    height={70}
+                    axisLine={{ stroke: "#F1BAC0" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "#7F1D1D" }}
+                    axisLine={{ stroke: "#F1BAC0" }}
+                    tickLine={false}
+                  />
                   <Tooltip
                     formatter={(value: number, name: string, entry) => [
                       numberFormatter.format(value as number),
@@ -626,8 +639,22 @@ useEffect(() => {
                         ? `${name} (${(entry.payload.porcentaje as number).toFixed(1)}%)`
                         : name,
                     ]}
+                    cursor={{ fill: "rgba(248, 113, 113, 0.08)" }}
+                    wrapperStyle={{ zIndex: 10 }}
+                    contentStyle={{
+                      backgroundColor: "rgba(69, 10, 10, 0.92)",
+                      borderRadius: 12,
+                      border: "none",
+                      color: "#FEE2E2",
+                      boxShadow: "0 10px 25px rgba(69, 10, 10, 0.35)",
+                    }}
                   />
-                  <Bar dataKey="value" fill="#ef4444" radius={[6, 6, 0, 0]} />
+                  <Bar
+                    dataKey="value"
+                    fill={`url(#${chartGradientId})`}
+                    radius={[10, 10, 0, 0]}
+                    maxBarSize={46}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}

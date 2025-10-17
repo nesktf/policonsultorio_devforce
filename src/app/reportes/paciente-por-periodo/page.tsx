@@ -20,6 +20,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useId,
 } from "react"
 import {
   Bar,
@@ -135,6 +136,7 @@ export default function ReportePacientesPorPeriodo() {
   } | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
+  const chartGradientId = useId()
 
   useEffect(() => {
     let cancelled = false
@@ -335,7 +337,7 @@ export default function ReportePacientesPorPeriodo() {
         value: reporte ? numberFormatter.format(total) : "—",
         helper: "en el período seleccionado",
         icon: Users,
-        gradient: "from-sky-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-sky-500/15 text-sky-600",
         valueClass: "text-sky-700",
       },
@@ -345,7 +347,7 @@ export default function ReportePacientesPorPeriodo() {
         value: reporte ? decimalFormatter.format(promedio) : "—",
         helper: `pacientes por ${groupLabel}`,
         icon: BarChart3,
-        gradient: "from-indigo-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-indigo-500/15 text-indigo-600",
         valueClass: "text-indigo-600",
       },
@@ -353,25 +355,14 @@ export default function ReportePacientesPorPeriodo() {
         key: "maximo",
         label: "Mayor demanda",
         value: maximo ? numberFormatter.format(maximo.total) : "—",
-        helper: maximo ? maximo.tooltipLabel : "Sin datos destacados",
+        helper: maximo ? maximo.etiqueta : "Sin datos destacados",
         highlight: maximo ? maximo.tooltipRange : undefined,
         icon: Calendar,
-        gradient: "from-amber-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-amber-500/15 text-amber-600",
         valueClass: "text-amber-600",
       },
-      {
-        key: "variacion",
-        label: "Variación de asistidos",
-        value: reporte ? `${variacion >= 0 ? "+" : ""}${variacion.toFixed(1)}%` : "—",
-        helper: reporte
-          ? `${diferencia >= 0 ? "+" : ""}${numberFormatter.format(diferencia)} pacientes vs. período anterior`
-          : "Sin datos comparativos",
-        icon: variacionStyles.icon,
-        gradient: variacionStyles.gradient,
-        iconBg: variacionStyles.iconBg,
-        valueClass: variacionStyles.valueClass,
-      },
+      
     ]
   }, [decimalFormatter, filters.groupBy, numberFormatter, reporte])
 
@@ -717,13 +708,53 @@ export default function ReportePacientesPorPeriodo() {
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={360}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="etiqueta" />
-                  <YAxis />
-                  <Tooltip content={renderTooltipContent} />
-                  <Legend />
-                  <Bar dataKey="pacientes" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 10, right: 24, left: 0, bottom: 0 }}
+                  barCategoryGap="18%"
+                >
+                  <defs>
+                    <linearGradient id={chartGradientId} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366F1" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#38BDF8" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#E2E8F0" />
+                  <XAxis
+                    dataKey="etiqueta"
+                    tick={{ fill: "#475569", fontSize: 12 }}
+                    axisLine={{ stroke: "#CBD5F5" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fill: "#475569", fontSize: 12 }}
+                    axisLine={{ stroke: "#CBD5F5" }}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    content={renderTooltipContent}
+                    cursor={{ fill: "rgba(99, 102, 241, 0.08)" }}
+                    wrapperStyle={{ zIndex: 10 }}
+                    contentStyle={{
+                      backgroundColor: "rgba(15, 23, 42, 0.95)",
+                      borderRadius: 12,
+                      border: "none",
+                      color: "#F8FAFC",
+                      boxShadow: "0 10px 25px rgba(15, 23, 42, 0.25)",
+                    }}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="circle"
+                    wrapperStyle={{ color: "#334155", fontSize: 12 }}
+                  />
+                  <Bar
+                    dataKey="pacientes"
+                    fill={`url(#${chartGradientId})`}
+                    radius={[10, 10, 0, 0]}
+                    maxBarSize={46}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}

@@ -315,6 +315,12 @@ export default function ReportePacientesAtendidos() {
     [pieData],
   )
 
+  const renderPieLabel = useCallback(
+    ({ name, percent = 0 }: { name: string; percent?: number }) =>
+      `${name}: ${(percent * 100).toFixed(1)}%`,
+    [],
+  )
+
   type ResumenCard = {
     key: string
     label: string
@@ -341,10 +347,7 @@ export default function ReportePacientesAtendidos() {
       return ratioFormatter.format(valor / totalTurnosNumber)
     }
 
-    const variacionTexto =
-      comparacion && typeof comparacion.variacion === "number"
-        ? `${comparacion.variacion >= 0 ? "+" : ""}${comparacion.variacion.toFixed(1)}% vs. período anterior`
-        : undefined
+
 
     return [
       {
@@ -353,7 +356,7 @@ export default function ReportePacientesAtendidos() {
         value: reporte ? numberFormatter.format(totalTurnosNumber) : "—",
         helper: "en el período seleccionado",
         icon: Users,
-        gradient: "from-sky-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-sky-500/15 text-sky-600",
         valueClass: "text-sky-700",
       },
@@ -362,9 +365,8 @@ export default function ReportePacientesAtendidos() {
         label: "Pacientes asistidos",
         value: reporte ? numberFormatter.format(asistidosNumber) : "—",
         helper: `${porcentaje(asistidosNumber)} del total`,
-        highlight: variacionTexto,
         icon: CheckCircle2,
-        gradient: "from-emerald-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-emerald-500/15 text-emerald-600",
         valueClass: "text-emerald-600",
       },
@@ -374,7 +376,7 @@ export default function ReportePacientesAtendidos() {
         value: reporte ? numberFormatter.format(noAsistidosNumber) : "—",
         helper: `${porcentaje(noAsistidosNumber)} del total`,
         icon: XCircle,
-        gradient: "from-amber-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-amber-500/15 text-amber-600",
         valueClass: "text-amber-600",
       },
@@ -384,7 +386,7 @@ export default function ReportePacientesAtendidos() {
         value: reporte ? numberFormatter.format(canceladosNumber) : "—",
         helper: `${porcentaje(canceladosNumber)} del total`,
         icon: Ban,
-        gradient: "from-rose-500/10 via-background to-background",
+        gradient: "",
         iconBg: "bg-rose-500/15 text-rose-600",
         valueClass: "text-rose-600",
       },
@@ -583,20 +585,26 @@ export default function ReportePacientesAtendidos() {
               <div className="flex flex-col items-center gap-8 lg:flex-row">
                 <div className="w-full lg:w-1/2">
                   <ResponsiveContainer width="100%" height={320}>
-                    <PieChart>
+                    <PieChart margin={{ top: 10 }}>
                       <Pie
                         data={pieChartData}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
+                        innerRadius={60}
                         outerRadius={110}
+                        paddingAngle={4}
                         dataKey="value"
-                        label={({ name, value }) =>
-                          `${name}: ${numberFormatter.format(value)}`
-                        }
+                        label={renderPieLabel}
+                        labelLine={false}
+                        animationDuration={600}
                       >
                         {pieChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            stroke="#ffffff"
+                            strokeWidth={2}
+                          />
                         ))}
                       </Pie>
                       <Tooltip
@@ -604,8 +612,21 @@ export default function ReportePacientesAtendidos() {
                           numberFormatter.format(value),
                           name,
                         ]}
+                        wrapperStyle={{ zIndex: 10 }}
+                        contentStyle={{
+                          backgroundColor: "rgba(15, 23, 42, 0.95)",
+                          borderRadius: 12,
+                          border: "none",
+                          color: "#F8FAFC",
+                          boxShadow: "0 10px 25px rgba(15, 23, 42, 0.25)",
+                        }}
                       />
-                      <Legend />
+                      <Legend
+                        verticalAlign="bottom"
+                        align="center"
+                        iconType="circle"
+                        wrapperStyle={{ paddingTop: 12 }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
